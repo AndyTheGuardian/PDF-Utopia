@@ -1,0 +1,205 @@
+using PdfSharp.Drawing;
+using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
+using PdfUtopia.Core;
+using PdfUtopia.Core.Pages;
+using PdfUtopia.Pdf.Rendering;
+
+namespace PdfUtopia.Pdf.Export;
+
+/// <summary>
+/// Umgang mit dem Passwortschutz beim Speichern (F22).
+/// </summary>
+public enum PasswordMode
+{
+    /// <summary>Wie die Quelldatei: geschützt mit dem beim Öffnen eingegebenen Passwort oder ungeschützt.</summary>
+    KeepSource,
+
+    /// <summary>Ohne Passwortschutz speichern.</summary>
+    Remove,
+
+    /// <summary>Mit einem neuen Passwort schützen (auch bei bisher ungeschützten Dateien).</summary>
+    Change,
+}
+
+/// <summary>
+/// Einstellungen für das Speichern.
+/// </summary>
+public sealed record ExportOptions
+{
+    /// <summary>Überschrift des Fußnotenbereichs in der Sprache der Oberfläche.</summary>
+    public string FootnoteHeading { get; init; } = "Kommentare";
+
+    /// <summary>Umgang mit dem Passwortschutz.</summary>
+    public PasswordMode PasswordMode { get; init; } = PasswordMode.KeepSource;
+
+    /// <summary>Neues Passwort bei <see cref="PasswordMode.Change"/>; sonst ohne Bedeutung.</summary>
+    public string? NewPassword { get; init; }
+
+    /// <summary>
+    /// Passwort, mit dem die Zieldatei geschützt wird.
+    /// </summary>
+    /// <param name="sourcePassword">Passwort der Quelldatei oder <c>null</c>.</param>
+    /// <returns>Das Passwort oder <c>null</c> für eine ungeschützte Datei.</returns>
+    /// <exception cref="ArgumentException">Bei <see cref="PasswordMode.Change"/> ohne neues Passwort.</exception>
+    public string? TargetPassword(string? sourcePassword) => PasswordMode switch
+    {
+        PasswordMode.Remove => null,
+        PasswordMode.Change when string.IsNullOrEmpty(NewPassword) =>
+            throw new ArgumentException("Zum Ändern des Passworts muss ein neues Passwort angegeben werden.", nameof(NewPassword)),
+        PasswordMode.Change => NewPassword,
+        _ => string.IsNullOrEmpty(sourcePassword) ? null : sourcePassword,
+    };
+}
+
+/// <summary>
+/// Speichert ein bearbeitetes Dokument als neue PDF-Datei („Speichern unter“, F7) oder extrahiert ausgewählte
+/// Seiten in eine neue Datei. Übernimmt Reihenfolge, Drehung und Löschungen der Seitenliste, schreibt
+/// Annotationen als echte PDF-Annotationen und verlängert Seiten mit Kommentaren für die Fußnoten.
+/// Der Passwortschutz wird nach <see cref="ExportOptions.PasswordMode"/> behalten, geändert oder entfernt (F22).
+/// </summary>
+public static class PdfExporter
+{
+    /// <summary>
+    /// Speichert alle Seiten in der aktuellen Reihenfolge.
+    /// </summary>
+    /// <param name="source">Die geöffnete Datei.</param>
+    /// <param name="document">Das Bearbeitungsmodell.</param>
+    /// <param name="targetPath">Zieldatei; darf die Quelldatei sein.</param>
+    /// <param name="options">Exporteinstellungen.</param>
+    public static void Save(PdfSource source, EditableDocument document, string targetPath, ExportOptions? options = null) =>
+        Write(source, document, document.Pages.ToList(), targetPath, options ?? new ExportOptions());
+
+    /// <summary>
+    /// Speichert ausgewählte Seiten in eine neue Datei, z. B. aus <see cref="PageSelectionParser"/>.
+    /// </summary>
+    /// <param name="source">Die geöffnete Datei.</param>
+    /// <param name="document">Das Bearbeitungsmodell.</param>
+    /// <param name="positions">Seitenpositionen der aktuellen Seitenliste (1-basiert), in Zielreihenfolge.</param>
+    /// <param name="targetPath">Zieldatei.</param>
+    /// <param name="options">Exporteinstellungen.</param>
+    /// <exception cref="ArgumentException">Ohne Seiten.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Bei einer Position außerhalb der Seitenliste.</exception>
+    public static void Extract(
+        PdfSource source, EditableDocument document, IReadOnlyList<int> positions, string targetPath, ExportOptions? options = null)
+    {
+        if (positions.Count == 0)
+        {
+            throw new ArgumentException("Es muss mindestens eine Seite ausgewählt sein.", nameof(positions));
+        }
+
+        foreach (var position in positions)
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(position, 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(position, document.Pages.Count);
+        }
+
+        Write(source, document, positions.Select(position => document.Pages[position - 1]).ToList(), targetPath, options ?? new ExportOptions());
+    }
+
+    /// <summary>
+    /// Baut das Zieldokument und speichert es.
+    /// </summary>
+    private static void Write(PdfSource source, EditableDocument document, IReadOnlyList<PageEntry> entries, string targetPath, ExportOptions options)
+    {
+        var targetPassword = options.TargetPassword(source.Password);
+        using var input = OpenForImport(source);
+        using var output = new PdfDocument();
+        var writer = new AnnotationWriter(output, options);
+        foreach (var entry in entries)
+        {
+            var page = output.AddPage(input.Pages[entry.SourcePageNumber - 1]);
+            var geometry = GeometryOf(page);
+            var extension = writer.Write(page, geometry, document.Annotations.For(entry.Id), entry.Rotation);
+            if (extension > 0)
+            {
+                Extend(page, geometry, extension);
+            }
+
+            page.Rotate = (geometry.FileRotation + (int)entry.Rotation) % 360;
+        }
+
+        Protect(output, targetPassword);
+        SaveAtomically(output, targetPath);
+    }
+
+    /// <summary>
+    /// Öffnet die Quelldatei aus dem Speicher zum Übernehmen von Seiten.
+    /// </summary>
+    private static PdfDocument OpenForImport(PdfSource source)
+    {
+        var stream = new MemoryStream(source.Data, writable: false);
+        return source.Password is { } password
+            ? PdfReader.Open(stream, password, PdfDocumentOpenMode.Import)
+            : PdfReader.Open(stream, PdfDocumentOpenMode.Import);
+    }
+
+    /// <summary>
+    /// Geometrie einer Seite: sichtbarer Bereich (CropBox, sonst MediaBox) und Drehung aus der Datei.
+    /// </summary>
+    private static PageGeometry GeometryOf(PdfPage page)
+    {
+        var box = page.Elements.ContainsKey("/CropBox") ? page.CropBox : page.MediaBox;
+        return new PageGeometry(box.X1, box.Y1, box.X2, box.Y2, page.Rotate);
+    }
+
+    /// <summary>
+    /// Verlängert die angezeigte Seite nach unten (MediaBox und, falls vorhanden, CropBox).
+    /// </summary>
+    private static void Extend(PdfPage page, PageGeometry geometry, double extension)
+    {
+        var marker = new PdfArray(page.Owner);
+        marker.Elements.Add(new PdfReal(extension));
+        marker.Elements.Add(new PdfInteger(geometry.FileRotation));
+        page.Elements[AnnotationWriter.ExtensionKey] = marker;
+
+        var (left, bottom, right, top) = geometry.ExtendedBox(extension);
+        var media = page.MediaBox;
+        page.MediaBox = Box(Math.Min(media.X1, left), Math.Min(media.Y1, bottom), Math.Max(media.X2, right), Math.Max(media.Y2, top));
+        if (page.Elements.ContainsKey("/CropBox"))
+        {
+            page.CropBox = Box(left, bottom, right, top);
+        }
+    }
+
+    /// <summary>
+    /// Rechteck aus Rändern.
+    /// </summary>
+    private static PdfRectangle Box(double left, double bottom, double right, double top) =>
+        new(new XPoint(left, bottom), new XPoint(right, top));
+
+    /// <summary>
+    /// Schützt das Zieldokument (Benutzer- und Besitzerpasswort gleich); <c>null</c> = ungeschützt.
+    /// </summary>
+    private static void Protect(PdfDocument output, string? password)
+    {
+        if (password is null)
+        {
+            return;
+        }
+
+        output.SecuritySettings.UserPassword = password;
+        output.SecuritySettings.OwnerPassword = password;
+    }
+
+    /// <summary>
+    /// Speichert erst in eine temporäre Datei und ersetzt dann das Ziel – ein Fehler beim Schreiben
+    /// lässt eine vorhandene Datei unversehrt.
+    /// </summary>
+    private static void SaveAtomically(PdfDocument output, string targetPath)
+    {
+        var temporary = $"{targetPath}.{Guid.NewGuid():N}.tmp";
+        try
+        {
+            output.Save(temporary);
+            File.Move(temporary, targetPath, overwrite: true);
+        }
+        finally
+        {
+            if (File.Exists(temporary))
+            {
+                File.Delete(temporary);
+            }
+        }
+    }
+}

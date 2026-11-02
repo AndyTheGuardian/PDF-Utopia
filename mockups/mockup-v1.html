@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Utopia – Mockup v1</title>
+<style>
+  :root {
+    --bg: #f3f4f7; --surface: #ffffff; --surface-2: #f8f9fb; --border: #e2e4ea;
+    --text: #1d2330; --muted: #6b7280; --hover: #eceef3;
+    --accent: #4f46e5; --accent-soft: #e9e8ff; --accent-text: #ffffff;
+    --canvas: #e4e6ec; --paper-shadow: 0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08);
+    --danger: #dc2626; --warn-bg: #fff7e6; --warn-text: #8a5a00;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #15171c; --surface: #1e2127; --surface-2: #23262e; --border: #30343e;
+      --text: #e6e8ec; --muted: #9aa0ab; --hover: #2a2e37;
+      --accent: #8b8cf8; --accent-soft: #2c2d4d; --accent-text: #14151a;
+      --canvas: #101216; --paper-shadow: 0 1px 3px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.4);
+      --warn-bg: #3a2e12; --warn-text: #f2c66d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #15171c; --surface: #1e2127; --surface-2: #23262e; --border: #30343e;
+    --text: #e6e8ec; --muted: #9aa0ab; --hover: #2a2e37;
+    --accent: #8b8cf8; --accent-soft: #2c2d4d; --accent-text: #14151a;
+    --canvas: #101216; --paper-shadow: 0 1px 3px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.4);
+    --warn-bg: #3a2e12; --warn-text: #f2c66d;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 13px/1.4 "Segoe UI", system-ui, -apple-system, "Inter", sans-serif;
+    overflow: hidden;
+  }
+  button { font: inherit; color: inherit; }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .app { display: grid; grid-template-rows: auto auto auto auto 1fr auto; height: 100vh; }
+
+  /* Menüleiste */
+  .menubar { display: flex; align-items: center; gap: 2px; padding: 4px 8px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-right: 12px; }
+  .brand .logo { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg, #6366f1, #ec4899); display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700; }
+  .menu { position: relative; }
+  .menu > button { background: none; border: 0; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+  .menu > button:hover, .menu.open > button { background: var(--hover); }
+  .dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 230px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 4px; z-index: 50; }
+  .menu.open .dropdown { display: block; }
+  .dropdown button { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; padding: 6px 10px; border-radius: 5px; cursor: pointer; text-align: left; }
+  .dropdown button:hover { background: var(--hover); }
+  .dropdown .kbd { margin-left: auto; color: var(--muted); font-size: 11px; }
+  .dropdown .sep { height: 1px; background: var(--border); margin: 4px 6px; }
+  .dropdown .label { padding: 6px 10px 2px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .dropdown .check { width: 14px; color: var(--accent); }
+
+  /* Werkzeugleiste */
+  .toolbar { display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: thin; }
+  .group { display: flex; align-items: center; gap: 2px; }
+  .divider { width: 1px; height: 26px; background: var(--border); margin: 0 6px; flex: none; }
+  .tb { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 58px; padding: 5px 6px 4px; border: 1px solid transparent; border-radius: 7px; background: none; cursor: pointer; font-size: 11px; color: var(--text); }
+  .tb:hover { background: var(--hover); }
+  .tb.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tb:disabled { opacity: .4; cursor: default; background: none; }
+  .search { margin-left: auto; display: flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; min-width: 220px; }
+  .search input { border: 0; background: none; outline: none; color: var(--text); font: inherit; width: 100%; }
+  .search .hits { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+  /* Werkzeugoptionen (Farbe / Strichstärke) */
+  .options { display: flex; align-items: center; gap: 14px; padding: 6px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); min-height: 40px; }
+  .options .title { font-weight: 600; }
+  .swatches { display: flex; gap: 6px; }
+  .swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); cursor: pointer; padding: 0; }
+  .swatch.sel { box-shadow: 0 0 0 2px var(--accent); }
+  .options label { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .options input[type=range] { accent-color: var(--accent); width: 120px; }
+  .width-preview { width: 40px; height: 22px; display: grid; place-items: center; }
+  .options .hint { margin-left: auto; color: var(--muted); font-style: italic; }
+
+  /* Dokument-Tabs */
+  .tabs { display: flex; align-items: end; gap: 2px; padding: 6px 8px 0; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .tab { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 12px; border: 1px solid transparent; border-bottom: 0; border-radius: 7px 7px 0 0; background: none; cursor: pointer; color: var(--muted); }
+  .tab.active { background: var(--canvas); border-color: var(--border); color: var(--text); margin-bottom: -1px; }
+  .tab .x { opacity: .6; } .tab .x:hover { opacity: 1; }
+  .tab .lock { width: 14px; height: 14px; }
+
+  /* Hauptbereich */
+  main { display: grid; grid-template-columns: 220px 1fr; min-height: 0; }
+  .sidebar { display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--border); min-height: 0; }
+  .sidebar header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; font-weight: 600; border-bottom: 1px solid var(--border); }
+  .sidebar header .count { color: var(--muted); font-weight: 400; }
+  .thumbs { overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+  .thumb { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; user-select: none; }
+  .thumb:hover { background: var(--hover); }
+  .thumb.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .thumb.dragging { opacity: .35; }
+  .thumb.drop-before::before { content: ""; position: absolute; top: -9px; left: 8px; right: 8px; height: 3px; border-radius: 2px; background: var(--accent); }
+  .thumb.drop-after::after { content: ""; position: absolute; bottom: -9px; left: 8px; right: 8px; height: 3px; border-radius: 2px; background: var(--accent); }
+  .mini-wrap { width: 112px; height: 158px; display: grid; place-items: center; }
+  .mini { width: 106px; height: 150px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); padding: 12px 10px; display: flex; flex-direction: column; gap: 5px; transition: transform .2s; }
+  .mini i { display: block; height: 3px; background: #d4d7de; border-radius: 2px; }
+  .mini i.h { height: 6px; width: 60%; background: #9aa0ab; margin-bottom: 3px; }
+  .mini i.img { height: 26px; background: #e7e9f0; }
+  .mini i.mk { background: #fde047; }
+  .thumb .num { font-size: 12px; color: var(--muted); }
+  .thumb.sel .num { color: var(--accent); font-weight: 600; }
+  .thumb .actions { position: absolute; top: 12px; right: 12px; display: none; flex-direction: column; gap: 4px; }
+  .thumb:hover .actions { display: flex; }
+  .thumb .actions button { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+  .thumb .actions button:hover { color: var(--accent); }
+  .thumb .actions button.del:hover { color: var(--danger); }
+  .thumb .actions svg.i { width: 14px; height: 14px; }
+
+  .viewer { overflow: auto; background: var(--canvas); padding: 32px; display: flex; justify-content: center; align-items: flex-start; }
+  .page-holder { transform-origin: top center; transition: transform .15s; }
+  .page { position: relative; width: 600px; background: #fff; color: #222; box-shadow: var(--paper-shadow); transition: transform .2s; }
+  .page-body { position: relative; height: 848px; padding: 64px 70px; font-family: Georgia, "Times New Roman", serif; font-size: 13.5px; line-height: 1.6; }
+  .page-body h1 { font-size: 24px; margin: 0 0 4px; font-weight: 600; }
+  .page-body .sub { color: #777; margin-bottom: 22px; font-size: 12px; font-family: system-ui, sans-serif; }
+  .page-body p { margin: 0 0 14px; padding: 6px 8px; margin-left: -8px; margin-right: -8px; border-radius: 4px; position: relative; border: 2px solid transparent; }
+  .page-body p.commented { background: color-mix(in srgb, var(--c) 14%, transparent); border-color: var(--c); }
+  .page-body p .badge { position: absolute; top: -11px; right: -11px; width: 22px; height: 22px; border-radius: 50%; background: var(--c); color: #fff; font: 600 11px/22px system-ui, sans-serif; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.25); }
+  .page-body .figure { height: 150px; margin: 6px 0 18px; border-radius: 4px; background: linear-gradient(135deg, #e8ebf3, #d9deea); display: grid; place-items: center; color: #8a92a6; font: 12px system-ui, sans-serif; }
+  .page-body .pno { position: absolute; bottom: 28px; left: 0; right: 0; text-align: center; color: #999; font-size: 11px; }
+  .page.tool-comment .page-body p { cursor: copy; }
+  .page.tool-comment .page-body p:hover:not(.commented) { outline: 2px dashed #a5b4fc; outline-offset: 2px; }
+  svg.overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; touch-action: none; }
+  .page.drawing svg.overlay { pointer-events: all; cursor: crosshair; }
+  svg.overlay .marker { mix-blend-mode: multiply; opacity: .55; }
+
+  .page-ext { border-top: 2px dashed #c9cdd8; padding: 14px 70px 22px; font-family: Georgia, serif; font-size: 12px; color: #333; background: #fcfcfd; }
+  .page-ext .ext-label { font: 600 10px system-ui, sans-serif; color: #9aa0ab; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .fn { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 6px; }
+  .fn .n { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--c); color: #fff; font: 600 10px/18px system-ui, sans-serif; text-align: center; margin-top: 1px; }
+  .fn .t { flex: 1; outline: none; border-radius: 3px; padding: 0 3px; }
+  .fn .t:focus { background: #eef0ff; }
+
+  .statusbar { display: flex; gap: 18px; align-items: center; padding: 4px 12px; background: var(--surface); border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+  .statusbar .zoom { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .statusbar .zoom button { background: none; border: 1px solid var(--border); border-radius: 5px; width: 22px; height: 22px; cursor: pointer; display: grid; place-items: center; }
+  .statusbar .zoom svg.i { width: 13px; height: 13px; }
+
+  /* Dialoge */
+  dialog { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); padding: 0; width: min(520px, calc(100vw - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  dialog::backdrop { background: rgba(10,12,20,.45); }
+  dialog header { padding: 16px 20px 0; font-size: 16px; font-weight: 600; }
+  dialog .body { padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; }
+  dialog footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field .help { color: var(--muted); font-size: 12px; }
+  .input, select.input { background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; color: var(--text); font: inherit; outline: none; }
+  .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .btn { padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; padding: 8px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); }
+  .chip { padding: 2px 9px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 12px; }
+  .chips .empty { color: var(--muted); font-style: italic; }
+  .hints { display: flex; flex-direction: column; gap: 4px; }
+  .hints div { background: var(--warn-bg); color: var(--warn-text); padding: 5px 9px; border-radius: 6px; font-size: 12px; }
+  .row { display: flex; gap: 12px; } .row > * { flex: 1; }
+
+  .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1d2330; color: #fff; padding: 9px 16px; border-radius: 8px; opacity: 0; transition: .2s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .tb span { display: none; } .tb { min-width: 36px; }
+    .search { min-width: 140px; }
+    .viewer { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></symbol>
+  <symbol id="i-select" viewBox="0 0 24 24"><path d="m4 4 7 17 2.5-7.5L21 11z"/></symbol>
+  <symbol id="i-comment" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol>
+  <symbol id="i-marker" viewBox="0 0 24 24"><path d="m9 15 9.5-9.5a2.1 2.1 0 0 0-3-3L6 12l-1 4z"/><path d="M4 21h16" stroke-width="3" stroke="#facc15"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M3 17c3-5 5 3 8-2s4-8 7-6 1 6-2 8"/></symbol>
+  <symbol id="i-rect" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></symbol>
+  <symbol id="i-extract" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3v5h5"/><path d="M14 3l5 5v4"/><path d="M15 18h6m-3-3 3 3-3 3"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- Menüleiste -->
+  <nav class="menubar">
+    <div class="brand"><div class="logo">PU</div>PDF Utopia</div>
+    <div class="menu"><button data-i18n="menuFile"></button>
+      <div class="dropdown">
+        <button data-act="open"><svg class="i"><use href="#i-open"/></svg><span data-i18n="open"></span><span class="kbd">Ctrl+O</span></button>
+        <button data-act="saveAs"><svg class="i"><use href="#i-save"/></svg><span data-i18n="saveAs"></span><span class="kbd">Ctrl+Shift+S</span></button>
+        <div class="sep"></div>
+        <button data-act="extract"><svg class="i"><use href="#i-extract"/></svg><span data-i18n="extract"></span><span class="kbd">Ctrl+E</span></button>
+        <button data-act="print"><svg class="i"><use href="#i-print"/></svg><span data-i18n="print"></span><span class="kbd">Ctrl+P</span></button>
+        <div class="sep"></div>
+        <button data-act="closeDoc"><svg class="i"><use href="#i-x"/></svg><span data-i18n="closeDoc"></span><span class="kbd">Ctrl+W</span></button>
+      </div>
+    </div>
+    <div class="menu"><button data-i18n="menuEdit"></button>
+      <div class="dropdown">
+        <button data-act="undo"><svg class="i"><use href="#i-undo"/></svg><span data-i18n="undo"></span><span class="kbd">Ctrl+Z</span></button>
+        <button data-act="redo"><svg class="i"><use href="#i-redo"/></svg><span data-i18n="redo"></span><span class="kbd">Ctrl+Y</span></button>
+        <div class="sep"></div>
+        <button data-act="rotate"><svg class="i"><use href="#i-rotate"/></svg><span data-i18n="rotatePage"></span></button>
+        <button data-act="delete"><svg class="i"><use href="#i-trash"/></svg><span data-i18n="deletePage"></span><span class="kbd">Del</span></button>
+        <div class="sep"></div>
+        <button data-act="find"><svg class="i"><use href="#i-search"/></svg><span data-i18n="search"></span><span class="kbd">Ctrl+F</span></button>
+        <button data-act="settings"><svg class="i"><use href="#i-gear"/></svg><span data-i18n="settings"></span></button>
+      </div>
+    </div>
+    <div class="menu"><button data-i18n="menuView"></button>
+      <div class="dropdown">
+        <div class="label" data-i18n="theme"></div>
+        <button data-theme-opt="system"><span class="check"></span><span data-i18n="themeSystem"></span></button>
+        <button data-theme-opt="light"><span class="check"></span><span data-i18n="themeLight"></span></button>
+        <button data-theme-opt="dark"><span class="check"></span><span data-i18n="themeDark"></span></button>
+        <div class="sep"></div>
+        <button data-act="zoomIn"><svg class="i"><use href="#i-plus"/></svg><span data-i18n="zoomIn"></span><span class="kbd">Ctrl++</span></button>
+        <button data-act="zoomOut"><svg class="i"><use href="#i-minus"/></svg><span data-i18n="zoomOut"></span><span class="kbd">Ctrl+-</span></button>
+      </div>
+    </div>
+    <div class="menu"><button data-i18n="menuLang"></button>
+      <div class="dropdown">
+        <button data-lang-opt="de"><span class="check"></span>Deutsch</button>
+        <button data-lang-opt="en"><span class="check"></span>English</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Werkzeugleiste -->
+  <div class="toolbar">
+    <div class="group">
+      <button class="tb" data-act="open"><svg class="i"><use href="#i-open"/></svg><span data-i18n="tOpen"></span></button>
+      <button class="tb" data-act="saveAs"><svg class="i"><use href="#i-save"/></svg><span data-i18n="tSaveAs"></span></button>
+      <button class="tb" data-act="print"><svg class="i"><use href="#i-print"/></svg><span data-i18n="tPrint"></span></button>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <button class="tb" id="btnUndo" data-act="undo"><svg class="i"><use href="#i-undo"/></svg><span data-i18n="undo"></span></button>
+      <button class="tb" id="btnRedo" data-act="redo"><svg class="i"><use href="#i-redo"/></svg><span data-i18n="redo"></span></button>
+    </div>
+    <div class="divider"></div>
+    <div class="group" id="tools">
+      <button class="tb active" data-tool="select"><svg class="i"><use href="#i-select"/></svg><span data-i18n="toolSelect"></span></button>
+      <button class="tb" data-tool="comment"><svg class="i"><use href="#i-comment"/></svg><span data-i18n="toolComment"></span></button>
+      <button class="tb" data-tool="marker"><svg class="i"><use href="#i-marker"/></svg><span data-i18n="toolMarker"></span></button>
+      <button class="tb" data-tool="freehand"><svg class="i"><use href="#i-pen"/></svg><span data-i18n="toolFreehand"></span></button>
+      <button class="tb" data-tool="rect"><svg class="i"><use href="#i-rect"/></svg><span data-i18n="toolRect"></span></button>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <button class="tb" data-act="extract"><svg class="i"><use href="#i-extract"/></svg><span data-i18n="tExtract"></span></button>
+      <button class="tb" data-act="rotate"><svg class="i"><use href="#i-rotate"/></svg><span data-i18n="tRotate"></span></button>
+      <button class="tb" data-act="delete"><svg class="i"><use href="#i-trash"/></svg><span data-i18n="tDelete"></span></button>
+    </div>
+    <div class="search">
+      <svg class="i"><use href="#i-search"/></svg>
+      <input id="search" data-i18n-ph="searchPh">
+      <span class="hits" id="hits"></span>
+    </div>
+  </div>
+
+  <!-- Werkzeugoptionen -->
+  <div class="options" id="options"></div>
+
+  <!-- Dokument-Tabs -->
+  <div class="tabs">
+    <button class="tab active"><span>musterdokument.pdf</span><svg class="i x" style="width:14px;height:14px"><use href="#i-x"/></svg></button>
+    <button class="tab" data-act="pwd"><svg class="i lock"><use href="#i-lock"/></svg><span>vertrag-2026.pdf</span><svg class="i x" style="width:14px;height:14px"><use href="#i-x"/></svg></button>
+    <button class="tab" data-act="open" title="+"><svg class="i" style="width:14px;height:14px"><use href="#i-plus"/></svg></button>
+  </div>
+
+  <main>
+    <aside class="sidebar">
+      <header><span data-i18n="pages"></span><span class="count" id="pageCount"></span></header>
+      <div class="thumbs" id="thumbs"></div>
+    </aside>
+    <section class="viewer" id="viewer">
+      <div class="page-holder" id="holder">
+        <div class="page" id="page">
+          <div class="page-body" id="pageBody"></div>
+          <div class="page-ext" id="pageExt" hidden></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span id="stPage"></span>
+    <span id="stUndo"></span>
+    <span>musterdokument.pdf · 2,4 MB</span>
+    <div class="zoom">
+      <button data-act="zoomOut"><svg class="i"><use href="#i-minus"/></svg></button>
+      <span id="stZoom" style="min-width:42px;text-align:center"></span>
+      <button data-act="zoomIn"><svg class="i"><use href="#i-plus"/></svg></button>
+    </div>
+  </footer>
+</div>
+
+<!-- Dialog: Seiten extrahieren -->
+<dialog id="dlgExtract">
+  <header data-i18n="extractTitle"></header>
+  <div class="body">
+    <div class="field">
+      <label for="extractInput" data-i18n="extractLabel"></label>
+      <input class="input" id="extractInput" value="2,4,8,13-15">
+      <span class="help" data-i18n="extractHelp"></span>
+    </div>
+    <div class="field">
+      <span data-i18n="extractResult"></span>
+      <div class="chips" id="extractChips"></div>
+      <div class="hints" id="extractHints"></div>
+    </div>
+  </div>
+  <footer>
+    <button class="btn" data-close data-i18n="cancel"></button>
+    <button class="btn primary" id="extractGo" data-i18n="extractSave"></button>
+  </footer>
+</dialog>
+
+<!-- Dialog: Einstellungen -->
+<dialog id="dlgSettings">
+  <header data-i18n="settingsTitle"></header>
+  <div class="body">
+    <div class="row">
+      <div class="field"><label data-i18n="theme"></label>
+        <select class="input" id="setTheme"><option value="system" data-i18n="themeSystem"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option></select></div>
+      <div class="field"><label data-i18n="menuLang"></label>
+        <select class="input" id="setLang"><option value="de">Deutsch</option><option value="en">English</option></select></div>
+    </div>
+    <div class="field">
+      <label for="setUndo" data-i18n="undoSteps"></label>
+      <input class="input" id="setUndo" type="number" min="1" max="500" value="50">
+      <span class="help" data-i18n="undoHelp"></span>
+    </div>
+  </div>
+  <footer><button class="btn primary" data-close data-i18n="ok"></button></footer>
+</dialog>
+
+<!-- Dialog: Passwort -->
+<dialog id="dlgPwd">
+  <header data-i18n="pwdTitle"></header>
+  <div class="body">
+    <span class="help" data-i18n="pwdHelp"></span>
+    <input class="input" type="password" data-i18n-ph="pwdPh">
+  </div>
+  <footer><button class="btn" data-close data-i18n="cancel"></button><button class="btn primary" data-close data-i18n="unlock"></button></footer>
+</dialog>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const I18N = {
+  de: {
+    menuFile: "Datei", menuEdit: "Bearbeiten", menuView: "Ansicht", menuLang: "Sprache",
+    open: "Öffnen…", saveAs: "Speichern unter…", extract: "Seiten extrahieren…", print: "Drucken…", closeDoc: "Dokument schließen",
+    undo: "Rückgängig", redo: "Wiederholen", rotatePage: "Seite drehen", deletePage: "Seite löschen",
+    search: "Suchen", settings: "Einstellungen…",
+    theme: "Design", themeSystem: "System", themeLight: "Hell", themeDark: "Dunkel", zoomIn: "Vergrößern", zoomOut: "Verkleinern",
+    tOpen: "Öffnen", tSaveAs: "Speichern unter", tPrint: "Drucken", tExtract: "Extrahieren", tRotate: "Drehen", tDelete: "Löschen",
+    toolSelect: "Auswählen", toolComment: "Kommentar", toolMarker: "Marker", toolFreehand: "Freihand", toolRect: "Rechteck",
+    searchPh: "Im Dokument suchen…", hits: "{n} Treffer",
+    pages: "Seiten", page: "Seite", color: "Farbe", width: "Strichstärke",
+    hintSelect: "Seiten links per Drag & Drop umsortieren", hintComment: "Absatz anklicken, um einen Kommentar hinzuzufügen",
+    hintMarker: "Mit Maus oder Stift über den Text ziehen", hintFreehand: "Mit Maus oder Stift auf der Seite zeichnen", hintRect: "Rechteck aufziehen",
+    stPage: "Seite {a} von {b}", stUndo: "Rückgängig: {a} / {b} Schritte",
+    footnotes: "Kommentare – Seitenverlängerung", newComment: "Neuer Kommentar – Text hier eingeben",
+    demoComment: "Zahlen bitte mit der Quartalsauswertung abgleichen.",
+    extractTitle: "Seiten extrahieren", extractLabel: "Seiten", extractHelp: "Einzeln: 2 · Bereich: 4-8 · Auswahl: 2,4,8,13-15",
+    extractResult: "Vorschau der neuen Datei", extractSave: "Extrahieren & speichern unter…", cancel: "Abbrechen", ok: "OK",
+    extractEmpty: "Keine gültigen Seiten", extractCount: "{n} Seiten",
+    hSwap: "„{t}“: Bereich umgekehrt → als {a}-{b} interpretiert",
+    hClamp: "„{t}“: Seite {p} existiert nicht → höchste Seite {m} verwendet",
+    hDup: "Seite {p} mehrfach angegeben → wird nur einmal extrahiert",
+    hInvalid: "„{t}“ ist ungültig und wird ignoriert",
+    settingsTitle: "Einstellungen", undoSteps: "Anzahl Rückgängig-Schritte", undoHelp: "Zwischen 1 und 500. Ältere Schritte werden verworfen.",
+    pwdTitle: "Passwortgeschütztes Dokument", pwdHelp: "„vertrag-2026.pdf“ ist geschützt. Bitte Passwort eingeben.", pwdPh: "Passwort", unlock: "Entsperren",
+    toastSave: "Mockup: „Speichern unter“-Dialog des Systems", toastOpen: "Mockup: Datei-öffnen-Dialog des Systems",
+    toastPrint: "Mockup: Druckdialog des Systems", toastExtract: "Mockup: {n} Seiten würden als neue Datei gespeichert",
+    toastClose: "Mockup: Dokument würde geschlossen (mit Rückfrage bei Änderungen)"
+  },
+  en: {
+    menuFile: "File", menuEdit: "Edit", menuView: "View", menuLang: "Language",
+    open: "Open…", saveAs: "Save as…", extract: "Extract pages…", print: "Print…", closeDoc: "Close document",
+    undo: "Undo", redo: "Redo", rotatePage: "Rotate page", deletePage: "Delete page",
+    search: "Find", settings: "Settings…",
+    theme: "Theme", themeSystem: "System", themeLight: "Light", themeDark: "Dark", zoomIn: "Zoom in", zoomOut: "Zoom out",
+    tOpen: "Open", tSaveAs: "Save as", tPrint: "Print", tExtract: "Extract", tRotate: "Rotate", tDelete: "Delete",
+    toolSelect: "Select", toolComment: "Comment", toolMarker: "Highlighter", toolFreehand: "Freehand", toolRect: "Rectangle",
+    searchPh: "Search document…", hits: "{n} hits",
+    pages: "Pages", page: "Page", color: "Color", width: "Stroke width",
+    hintSelect: "Drag & drop pages on the left to reorder", hintComment: "Click a paragraph to add a comment",
+    hintMarker: "Drag across the text with mouse or stylus", hintFreehand: "Draw on the page with mouse or stylus", hintRect: "Drag to draw a rectangle",
+    stPage: "Page {a} of {b}", stUndo: "Undo: {a} / {b} steps",
+    footnotes: "Comments – page extension", newComment: "New comment – type here",
+    demoComment: "Please verify these figures against the quarterly report.",
+    extractTitle: "Extract pages", extractLabel: "Pages", extractHelp: "Single: 2 · Range: 4-8 · Selection: 2,4,8,13-15",
+    extractResult: "Preview of the new file", extractSave: "Extract & save as…", cancel: "Cancel", ok: "OK",
+    extractEmpty: "No valid pages", extractCount: "{n} pages",
+    hSwap: "“{t}”: reversed range → interpreted as {a}-{b}",
+    hClamp: "“{t}”: page {p} does not exist → last page {m} used",
+    hDup: "Page {p} given more than once → extracted only once",
+    hInvalid: "“{t}” is invalid and will be ignored",
+    settingsTitle: "Settings", undoSteps: "Number of undo steps", undoHelp: "Between 1 and 500. Older steps are discarded.",
+    pwdTitle: "Password-protected document", pwdHelp: "“vertrag-2026.pdf” is protected. Please enter the password.", pwdPh: "Password", unlock: "Unlock",
+    toastSave: "Mockup: system “Save as” dialog", toastOpen: "Mockup: system open-file dialog",
+    toastPrint: "Mockup: system print dialog", toastExtract: "Mockup: {n} pages would be saved as a new file",
+    toastClose: "Mockup: document would close (asking to save changes)"
+  }
+};
+
+const MARKER_COLORS = ["#fde047", "#86efac", "#f9a8d4", "#7dd3fc", "#fdba74"];
+const PEN_COLORS = ["#111827", "#dc2626", "#2563eb", "#16a34a", "#9333ea", "#ea580c"];
+const COMMENT_COLORS = ["#6366f1", "#0ea5e9", "#10b981", "#f59e0b", "#ef4444"];
+const PARAGRAPHS = [
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Cras mattis consectetur purus sit amet fermentum.",
+  "Donec ullamcorper nulla non metus auctor fringilla. Maecenas faucibus mollis interdum. Vestibulum id ligula porta felis euismod semper. Nullam quis risus eget urna mollis ornare vel eu leo.",
+  "Aenean lacinia bibendum nulla sed consectetur. Etiam porta sem malesuada magna mollis euismod. Curabitur blandit tempus porttitor. Praesent commodo cursus magna, vel scelerisque nisl consectetur et.",
+  "Sed posuere consectetur est at lobortis. Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh."
+];
+
+const state = {
+  lang: "de", theme: "system", tool: "select", zoom: 1, undoLimit: 50,
+  colors: { marker: MARKER_COLORS[0], freehand: PEN_COLORS[1], rect: PEN_COLORS[2], comment: COMMENT_COLORS[0] },
+  widths: { marker: 18, freehand: 3, rect: 2 },
+  pages: Array.from({ length: 14 }, (_, i) => ({ id: i + 1, rot: 0 })),
+  current: 0,
+  ann: {},            // pageId -> { shapes: [], comments: [] }
+  undo: [], redo: []
+};
+
+const $ = s => document.querySelector(s);
+const t = (k, vars = {}) => (I18N[state.lang][k] ?? k).replace(/\{(\w+)\}/g, (_, v) => vars[v]);
+const annOf = id => state.ann[id] ??= { shapes: [], comments: [] };
+const currentPage = () => state.pages[state.current];
+
+// Demo-Inhalt auf Seite 1
+annOf(1).comments.push({ para: 1, color: COMMENT_COLORS[0], text: null });
+annOf(1).shapes.push(
+  { type: "marker", color: MARKER_COLORS[0], width: 18, d: "M68 168 L522 168" },
+  { type: "rect", color: PEN_COLORS[2], width: 2, x: 62, y: 328, w: 476, h: 166 },
+  { type: "freehand", color: PEN_COLORS[1], width: 3, d: "M440 720 C460 700 480 740 500 715 S530 700 540 725" }
+);
+
+/* ---------- Undo/Redo ---------- */
+function execute(cmd) {
+  cmd.do(); state.undo.push(cmd);
+  if (state.undo.length > state.undoLimit) state.undo.shift();
+  state.redo = []; render();
+}
+function undo() { const c = state.undo.pop(); if (!c) return; c.undo(); state.redo.push(c); render(); }
+function redo() { const c = state.redo.pop(); if (!c) return; c.do(); state.undo.push(c); render(); }
+
+/* ---------- Rendering ---------- */
+function applyI18n() {
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  document.querySelectorAll("[data-lang-opt]").forEach(b => b.querySelector(".check").textContent = b.dataset.langOpt === state.lang ? "✓" : "");
+  $("#setLang").value = state.lang;
+}
+function applyTheme() {
+  if (state.theme === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.dataset.theme = state.theme;
+  document.querySelectorAll("[data-theme-opt]").forEach(b => b.querySelector(".check").textContent = b.dataset.themeOpt === state.theme ? "✓" : "");
+  $("#setTheme").value = state.theme;
+}
+
+function renderThumbs() {
+  const box = $("#thumbs");
+  box.innerHTML = "";
+  state.pages.forEach((p, idx) => {
+    const hasMarker = annOf(p.id).shapes.some(s => s.type === "marker");
+    const el = document.createElement("div");
+    el.className = "thumb" + (idx === state.current ? " sel" : "");
+    el.draggable = true;
+    el.dataset.idx = idx;
+    el.innerHTML = `
+      <div class="mini-wrap"><div class="mini" style="transform:rotate(${p.rot}deg)">
+        <i class="h"></i><i class="${hasMarker ? "mk" : ""}"></i><i></i><i style="width:80%"></i><i class="img"></i><i></i><i style="width:65%"></i><i></i>
+      </div></div>
+      <span class="num">${idx + 1}${p.id !== idx + 1 ? ` <span style="opacity:.6">(${t("page")} ${p.id})</span>` : ""}</span>
+      <div class="actions">
+        <button title="${t("rotatePage")}" data-thumb-act="rotate"><svg class="i"><use href="#i-rotate"/></svg></button>
+        <button class="del" title="${t("deletePage")}" data-thumb-act="delete"><svg class="i"><use href="#i-trash"/></svg></button>
+      </div>`;
+    box.appendChild(el);
+  });
+  $("#pageCount").textContent = state.pages.length;
+}
+
+function shapeSvg(s) {
+  if (s.type === "rect") return `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="none" stroke="${s.color}" stroke-width="${s.width}" rx="2"/>`;
+  const cls = s.type === "marker" ? ' class="marker"' : "";
+  const cap = s.type === "marker" ? "butt" : "round";
+  return `<path${cls} d="${s.d}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="${cap}" stroke-linejoin="round"/>`;
+}
+
+function renderPage() {
+  const p = currentPage();
+  const a = annOf(p.id);
+  const body = $("#pageBody");
+  const commentByPara = new Map(a.comments.map((c, i) => [c.para, { ...c, n: i + 1 }]));
+  const para = i => {
+    const c = commentByPara.get(i);
+    if (!c) return `<p data-para="${i}">${PARAGRAPHS[i]}</p>`;
+    return `<p data-para="${i}" class="commented" style="--c:${c.color}">${PARAGRAPHS[i]}<span class="badge">${c.n}</span></p>`;
+  };
+  body.innerHTML = `
+    <h1>Lorem Ipsum ${p.id}</h1>
+    <div class="sub">Dolor sit amet · 2026</div>
+    ${para(0)}${para(1)}
+    <div class="figure">[ Abbildung / Figure ]</div>
+    ${para(2)}${para(3)}
+    <div class="pno">— ${p.id} —</div>
+    <svg class="overlay" id="overlay" viewBox="0 0 600 848">${a.shapes.map(shapeSvg).join("")}</svg>`;
+
+  const ext = $("#pageExt");
+  ext.hidden = a.comments.length === 0;
+  ext.innerHTML = `<div class="ext-label">${t("footnotes")}</div>` + a.comments.map((c, i) =>
+    `<div class="fn" style="--c:${c.color}"><span class="n">${i + 1}</span><span class="t" contenteditable="true" data-c="${i}">${c.text ?? t(i === 0 && p.id === 1 ? "demoComment" : "newComment")}</span></div>`).join("");
+
+  const page = $("#page");
+  page.style.transform = `rotate(${p.rot}deg)`;
+  page.className = "page" + (["marker", "freehand", "rect"].includes(state.tool) ? " drawing" : "") + (state.tool === "comment" ? " tool-comment" : "");
+  bindOverlay();
+}
+
+function renderOptions() {
+  const o = $("#options");
+  const tool = state.tool;
+  const hint = `<span class="hint">${t("hint" + tool[0].toUpperCase() + tool.slice(1))}</span>`;
+  if (tool === "select") { o.innerHTML = hint; return; }
+  const palette = tool === "marker" ? MARKER_COLORS : tool === "comment" ? COMMENT_COLORS : PEN_COLORS;
+  let html = `<span class="title">${t("tool" + tool[0].toUpperCase() + tool.slice(1))}</span>
+    <label>${t("color")} <span class="swatches">${palette.map(c =>
+      `<button class="swatch${state.colors[tool] === c ? " sel" : ""}" style="background:${c}" data-color="${c}"></button>`).join("")}</span></label>`;
+  if (tool !== "comment") {
+    const [min, max] = tool === "marker" ? [8, 30] : [1, 12];
+    const w = state.widths[tool];
+    html += `<label>${t("width")} <input type="range" id="width" min="${min}" max="${max}" value="${w}">
+      <span class="width-preview"><svg width="40" height="22"><line x1="4" y1="11" x2="36" y2="11" stroke="${state.colors[tool]}" stroke-width="${Math.min(w, 20)}" stroke-linecap="round" ${tool === "marker" ? 'opacity=".6"' : ""}/></svg></span>
+      <span style="min-width:34px">${w} px</span></label>`;
+  }
+  o.innerHTML = html + hint;
+}
+
+function renderStatus() {
+  $("#stPage").textContent = t("stPage", { a: state.current + 1, b: state.pages.length });
+  $("#stUndo").textContent = t("stUndo", { a: state.undo.length, b: state.undoLimit });
+  $("#stZoom").textContent = Math.round(state.zoom * 100) + " %";
+  $("#holder").style.transform = `scale(${state.zoom})`;
+  $("#btnUndo").disabled = !state.undo.length;
+  $("#btnRedo").disabled = !state.redo.length;
+}
+
+function render() {
+  state.current = Math.min(state.current, state.pages.length - 1);
+  applyI18n(); applyTheme(); renderThumbs(); renderPage(); renderOptions(); renderStatus();
+}
+
+/* ---------- Zeichnen auf dem Overlay ---------- */
+function bindOverlay() {
+  const svg = $("#overlay");
+  let draft = null, start = null, points = [];
+  const pt = e => {
+    const m = svg.getScreenCTM().inverse();
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m);
+    return { x: Math.round(p.x), y: Math.round(p.y) };
+  };
+  svg.onpointerdown = e => {
+    if (!["marker", "freehand", "rect"].includes(state.tool)) return;
+    svg.setPointerCapture(e.pointerId);
+    start = pt(e); points = [start];
+    const s = { type: state.tool, color: state.colors[state.tool], width: state.widths[state.tool] };
+    draft = { shape: s };
+    svg.insertAdjacentHTML("beforeend", shapeSvg(s.type === "rect" ? { ...s, x: start.x, y: start.y, w: 0, h: 0 } : { ...s, d: `M${start.x} ${start.y}` }));
+    draft.el = svg.lastElementChild;
+  };
+  svg.onpointermove = e => {
+    if (!draft) return;
+    const p = pt(e);
+    if (draft.shape.type === "rect") {
+      Object.assign(draft.shape, { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) });
+      ["x", "y"].forEach(k => draft.el.setAttribute(k, draft.shape[k]));
+      draft.el.setAttribute("width", draft.shape.w); draft.el.setAttribute("height", draft.shape.h);
+    } else {
+      // Marker bleibt waagerecht wie ein echter Textmarker
+      if (draft.shape.type === "marker") points = [start, { x: p.x, y: start.y }]; else points.push(p);
+      draft.shape.d = "M" + points.map(q => `${q.x} ${q.y}`).join(" L");
+      draft.el.setAttribute("d", draft.shape.d);
+    }
+  };
+  svg.onpointerup = () => {
+    if (!draft) return;
+    const shape = draft.shape; draft = null;
+    const tooSmall = shape.type === "rect" ? shape.w < 4 || shape.h < 4 : points.length < 2;
+    if (tooSmall) { renderPage(); return; }
+    const list = annOf(currentPage().id).shapes;
+    execute({ do: () => list.push(shape), undo: () => list.splice(list.indexOf(shape), 1) });
+  };
+}
+
+/* ---------- Seitenoperationen ---------- */
+function rotatePage(idx) {
+  const p = state.pages[idx];
+  execute({ do: () => p.rot = (p.rot + 90) % 360, undo: () => p.rot = (p.rot + 270) % 360 });
+}
+function deletePage(idx) {
+  if (state.pages.length <= 1) return;
+  const p = state.pages[idx];
+  execute({ do: () => state.pages.splice(idx, 1), undo: () => state.pages.splice(idx, 0, p) });
+}
+function movePage(from, to) {
+  if (from === to) return;
+  const doMove = (a, b) => { const [p] = state.pages.splice(a, 1); state.pages.splice(b, 0, p); state.current = b; };
+  execute({ do: () => doMove(from, to), undo: () => doMove(to, from) });
+}
+
+/* ---------- Extract: Eingabe auswerten ---------- */
+function parsePageSelection(input, max) {
+  const pages = [], hints = [], seen = new Set();
+  const add = p => { if (seen.has(p)) { hints.push(t("hDup", { p })); return; } seen.add(p); pages.push(p); };
+  const clamp = (n, token) => { if (n > max) { hints.push(t("hClamp", { t: token, p: n, m: max })); return max; } return n; };
+  for (const raw of input.split(",")) {
+    const token = raw.trim();
+    if (!token) continue;
+    const range = token.match(/^(\d+)\s*-\s*(\d+)$/);
+    const single = token.match(/^\d+$/);
+    if (!range && !single) { hints.push(t("hInvalid", { t: token })); continue; }
+    let a = Number(range ? range[1] : token), b = Number(range ? range[2] : token);
+    if (a < 1 || b < 1) { hints.push(t("hInvalid", { t: token })); continue; }
+    if (a > b) { [a, b] = [b, a]; hints.push(t("hSwap", { t: token, a, b })); }
+    a = clamp(a, token); b = clamp(b, token);
+    for (let p = a; p <= b; p++) add(p);
+  }
+  return { pages, hints };
+}
+function renderExtract() {
+  const { pages, hints } = parsePageSelection($("#extractInput").value, state.pages.length);
+  $("#extractChips").innerHTML = pages.length
+    ? pages.map(p => `<span class="chip">${p}</span>`).join("") + `<span style="margin-left:auto;color:var(--muted)">${t("extractCount", { n: pages.length })}</span>`
+    : `<span class="empty">${t("extractEmpty")}</span>`;
+  $("#extractHints").innerHTML = [...new Set(hints)].map(h => `<div>⚠ ${h}</div>`).join("");
+  $("#extractGo").disabled = !pages.length;
+  return pages;
+}
+
+/* ---------- Ereignisse ---------- */
+function toast(msg) {
+  const el = $("#toast"); el.textContent = msg; el.classList.add("show");
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove("show"), 2200);
+}
+const ACTIONS = {
+  open: () => toast(t("toastOpen")), saveAs: () => toast(t("toastSave")), print: () => toast(t("toastPrint")),
+  closeDoc: () => toast(t("toastClose")),
+  undo, redo,
+  rotate: () => rotatePage(state.current), delete: () => deletePage(state.current),
+  zoomIn: () => { state.zoom = Math.min(3, +(state.zoom + .1).toFixed(2)); renderStatus(); },
+  zoomOut: () => { state.zoom = Math.max(.3, +(state.zoom - .1).toFixed(2)); renderStatus(); },
+  find: () => $("#search").focus(),
+  extract: () => { $("#dlgExtract").showModal(); renderExtract(); },
+  settings: () => $("#dlgSettings").showModal(),
+  pwd: () => $("#dlgPwd").showModal()
+};
+
+document.addEventListener("click", e => {
+  const menuBtn = e.target.closest(".menu > button");
+  document.querySelectorAll(".menu.open").forEach(m => { if (!menuBtn || m !== menuBtn.parentElement) m.classList.remove("open"); });
+  if (menuBtn) { menuBtn.parentElement.classList.toggle("open"); return; }
+
+  const act = e.target.closest("[data-act]");
+  if (act) { ACTIONS[act.dataset.act]?.(); return; }
+
+  const themeOpt = e.target.closest("[data-theme-opt]");
+  if (themeOpt) { state.theme = themeOpt.dataset.themeOpt; applyTheme(); return; }
+  const langOpt = e.target.closest("[data-lang-opt]");
+  if (langOpt) { state.lang = langOpt.dataset.langOpt; render(); return; }
+
+  const toolBtn = e.target.closest("[data-tool]");
+  if (toolBtn) {
+    state.tool = toolBtn.dataset.tool;
+    document.querySelectorAll("[data-tool]").forEach(b => b.classList.toggle("active", b === toolBtn));
+    renderPage(); renderOptions(); return;
+  }
+  const sw = e.target.closest("[data-color]");
+  if (sw) { state.colors[state.tool] = sw.dataset.color; renderOptions(); return; }
+
+  const thumbAct = e.target.closest("[data-thumb-act]");
+  if (thumbAct) {
+    const idx = +thumbAct.closest(".thumb").dataset.idx;
+    thumbAct.dataset.thumbAct === "rotate" ? rotatePage(idx) : deletePage(idx);
+    return;
+  }
+  const thumb = e.target.closest(".thumb");
+  if (thumb) { state.current = +thumb.dataset.idx; render(); return; }
+
+  const para = e.target.closest(".page-body p");
+  if (para && state.tool === "comment" && !para.classList.contains("commented")) {
+    const list = annOf(currentPage().id).comments;
+    const c = { para: +para.dataset.para, color: state.colors.comment, text: null };
+    execute({ do: () => list.push(c), undo: () => list.splice(list.indexOf(c), 1) });
+  }
+  if (e.target.matches("[data-close]")) e.target.closest("dialog").close();
+});
+
+document.addEventListener("input", e => {
+  if (e.target.id === "width") { state.widths[state.tool] = +e.target.value; renderOptions(); $("#width").focus(); }
+  if (e.target.id === "extractInput") renderExtract();
+  if (e.target.id === "setUndo") state.undoLimit = Math.max(1, Math.min(500, +e.target.value || 1)), renderStatus();
+  if (e.target.id === "search") $("#hits").textContent = e.target.value ? t("hits", { n: e.target.value.length > 2 ? 7 : 23 }) : "";
+  if (e.target.matches(".fn .t")) annOf(currentPage().id).comments[+e.target.dataset.c].text = e.target.textContent;
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "setTheme") { state.theme = e.target.value; applyTheme(); }
+  if (e.target.id === "setLang") { state.lang = e.target.value; render(); }
+});
+$("#extractGo").onclick = () => { const n = renderExtract().length; $("#dlgExtract").close(); toast(t("toastExtract", { n })); };
+
+// Drag & Drop in der Seitenliste
+let dragFrom = null;
+const thumbs = $("#thumbs");
+thumbs.addEventListener("dragstart", e => {
+  const th = e.target.closest(".thumb"); dragFrom = +th.dataset.idx;
+  th.classList.add("dragging"); e.dataTransfer.effectAllowed = "move";
+});
+thumbs.addEventListener("dragover", e => {
+  const th = e.target.closest(".thumb"); if (!th) return;
+  e.preventDefault();
+  thumbs.querySelectorAll(".drop-before,.drop-after").forEach(x => x.classList.remove("drop-before", "drop-after"));
+  const r = th.getBoundingClientRect();
+  th.classList.add(e.clientY < r.top + r.height / 2 ? "drop-before" : "drop-after");
+});
+thumbs.addEventListener("drop", e => {
+  e.preventDefault();
+  const th = e.target.closest(".thumb"); if (!th || dragFrom === null) return;
+  let to = +th.dataset.idx + (th.classList.contains("drop-after") ? 1 : 0);
+  if (to > dragFrom) to--;
+  movePage(dragFrom, to); dragFrom = null;
+});
+thumbs.addEventListener("dragend", () => { dragFrom = null; renderThumbs(); });
+
+document.addEventListener("keydown", e => {
+  if (e.target.isContentEditable || e.target.matches("input")) return;
+  const k = e.key.toLowerCase();
+  if (e.ctrlKey && k === "z") { e.preventDefault(); undo(); }
+  else if (e.ctrlKey && k === "y") { e.preventDefault(); redo(); }
+  else if (e.ctrlKey && k === "e") { e.preventDefault(); ACTIONS.extract(); }
+  else if (e.ctrlKey && k === "f") { e.preventDefault(); ACTIONS.find(); }
+  else if (k === "delete") deletePage(state.current);
+  else if (k === "arrowdown" || k === "arrowup") { state.current = Math.max(0, Math.min(state.pages.length - 1, state.current + (k === "arrowdown" ? 1 : -1))); render(); }
+});
+
+render();
+</script>
+</body>
+</html>

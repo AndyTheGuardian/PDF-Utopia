@@ -1,0 +1,12 @@
+# Build-Ausgaben
+bin/
+obj/
+publish/
+TestResults/
+
+# IDE
+.vs/
+.idea/
+*.user
+*.suo
+.vscode/

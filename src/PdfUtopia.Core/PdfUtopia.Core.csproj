@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Fachlogik ohne Oberfläche und ohne PDF-Bibliothek: vollständig testbar. -->
+  <PropertyGroup>
+    <RootNamespace>PdfUtopia.Core</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PdfUtopia.Core.Tests" />
+  </ItemGroup>
+
+</Project>

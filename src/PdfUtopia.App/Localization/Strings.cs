@@ -1,0 +1,193 @@
+namespace PdfUtopia.App.Localization;
+
+/// <summary>
+/// Alle Texte der Oberfläche auf Deutsch und Englisch, nach Bereichen geordnet.
+/// </summary>
+public static class Strings
+{
+    /// <summary>
+    /// Schlüssel → (Deutsch, Englisch).
+    /// </summary>
+    public static IReadOnlyDictionary<string, (string German, string English)> All { get; } = new Dictionary<string, (string, string)>
+    {
+        // Menü
+        ["Menu.File"] = ("_Datei", "_File"),
+        ["Menu.Open"] = ("_Öffnen…", "_Open…"),
+        ["Menu.SaveAs"] = ("_Speichern unter…", "Save _as…"),
+        ["Menu.Extract"] = ("Seiten _extrahieren…", "_Extract pages…"),
+        ["Menu.Print"] = ("_Drucken…", "_Print…"),
+        ["Menu.CloseDocument"] = ("Dokument _schließen", "_Close document"),
+        ["Menu.Exit"] = ("_Beenden", "E_xit"),
+        ["Menu.Edit"] = ("_Bearbeiten", "_Edit"),
+        ["Menu.Undo"] = ("_Rückgängig", "_Undo"),
+        ["Menu.Redo"] = ("_Wiederholen", "_Redo"),
+        ["Menu.RotatePage"] = ("Seite _drehen", "_Rotate page"),
+        ["Menu.DeletePage"] = ("Seite _löschen", "_Delete page"),
+        ["Menu.Find"] = ("_Suchen", "_Find"),
+        ["Menu.Settings"] = ("_Einstellungen…", "_Settings…"),
+        ["Menu.View"] = ("_Ansicht", "_View"),
+        ["Menu.Theme"] = ("Design", "Theme"),
+        ["Menu.ThemeSystem"] = ("_System", "_System"),
+        ["Menu.ThemeLight"] = ("_Hell", "_Light"),
+        ["Menu.ThemeDark"] = ("_Dunkel", "_Dark"),
+        ["Menu.Accent"] = ("_Akzentfarbe…", "_Accent color…"),
+        ["Menu.ZoomIn"] = ("_Vergrößern", "Zoom _in"),
+        ["Menu.ZoomOut"] = ("Ver_kleinern", "Zoom _out"),
+        ["Menu.Language"] = ("Sp_rache", "_Language"),
+
+        // Werkzeugleiste
+        ["Toolbar.Open"] = ("Öffnen", "Open"),
+        ["Toolbar.SaveAs"] = ("Speichern unter", "Save as"),
+        ["Toolbar.Print"] = ("Drucken", "Print"),
+        ["Toolbar.Undo"] = ("Rückgängig", "Undo"),
+        ["Toolbar.Redo"] = ("Wiederholen", "Redo"),
+        ["Toolbar.Extract"] = ("Extrahieren", "Extract"),
+        ["Toolbar.Rotate"] = ("Drehen", "Rotate"),
+        ["Toolbar.Delete"] = ("Löschen", "Delete"),
+        ["Toolbar.ZoomOut"] = ("Verkleinern", "Zoom out"),
+        ["Toolbar.ZoomIn"] = ("Vergrößern", "Zoom in"),
+        ["Toolbar.SearchPlaceholder"] = ("Im Dokument suchen…", "Search document…"),
+        ["Toolbar.Hits"] = ("{0} Treffer", "{0} hits"),
+        ["Toolbar.NoHits"] = ("Keine Treffer", "No hits"),
+        ["Toolbar.Accent"] = ("Akzentfarbe", "Accent color"),
+        ["Toolbar.ClearSearch"] = ("Suche beenden (Esc)", "End search (Esc)"),
+        ["Status.FitHeight"] = ("Volle Höhe", "Full height"),
+        ["Status.FitWidth"] = ("Volle Breite", "Full width"),
+        ["Status.FitPage"] = ("Ganze Seite", "Whole page"),
+
+        // Werkzeuge
+        ["Tool.Select"] = ("Auswählen", "Select"),
+        ["Tool.Comment"] = ("Kommentar", "Comment"),
+        ["Tool.Marker"] = ("Marker", "Highlighter"),
+        ["Tool.Freehand"] = ("Freihand", "Freehand"),
+        ["Tool.Rectangle"] = ("Rechteck", "Rectangle"),
+        ["Tool.Eraser"] = ("Radierer", "Eraser"),
+
+        // Werkzeugoptionen und Hinweise
+        ["Options.Color"] = ("Farbe", "Color"),
+        ["Options.Width"] = ("Strichstärke", "Stroke width"),
+        ["Options.Smoothing"] = ("Glättung", "Smoothing"),
+        ["Options.Pressure"] = ("Druckempfindlich (Stylus)", "Pressure-sensitive (stylus)"),
+        ["Options.NoPressure"] = ("Der Stift meldet keinen Andruck – die Linie bleibt gleich dick", "The stylus reports no pressure – line width stays constant"),
+        ["Options.EraserSize"] = ("Größe", "Size"),
+        ["Hint.Select"] = ("Seiten links per Drag & Drop umsortieren", "Drag & drop pages on the left to reorder"),
+        ["Hint.Comment"] = ("Absatz anklicken oder Bereich aufziehen, um einen Kommentar hinzuzufügen", "Click a paragraph or drag an area to add a comment"),
+        ["Hint.Marker"] = ("Mit Maus oder Stift über den Text ziehen", "Drag across the text with mouse or stylus"),
+        ["Hint.Freehand"] = ("Mit Maus oder Stift auf der Seite zeichnen", "Draw on the page with mouse or stylus"),
+        ["Hint.Rectangle"] = ("Rechteck aufziehen", "Drag to draw a rectangle"),
+        ["Hint.Eraser"] = ("Über Marker, Freihand oder Rechtecke streichen – auch mit dem Radierer-Ende des Stifts",
+                           "Stroke over highlights, freehand lines or rectangles – also with the stylus eraser end"),
+
+        // Seitenliste, Ansicht, Statusleiste
+        ["Pages.Title"] = ("Seiten", "Pages"),
+        ["Pages.Rotate"] = ("Seite drehen", "Rotate page"),
+        ["Pages.Delete"] = ("Seite löschen", "Delete page"),
+        ["Pages.Original"] = ("Seite {0}", "Page {0}"),
+        ["Empty.Title"] = ("Keine PDF geöffnet", "No PDF open"),
+        ["Empty.Hint"] = ("Datei öffnen (Strg+O) oder eine PDF-Datei hierher ziehen", "Open a file (Ctrl+O) or drop a PDF file here"),
+        ["Status.Page"] = ("Seite {0} von {1}", "Page {0} of {1}"),
+        ["Status.Undo"] = ("Rückgängig: {0} / {1} Schritte", "Undo: {0} / {1} steps"),
+        ["Status.NoDocument"] = ("Kein Dokument geöffnet", "No document open"),
+        ["Status.Modified"] = ("geändert", "modified"),
+        ["Footnotes.Heading"] = ("Kommentare", "Comments"),
+        ["Comment.New"] = ("Neuer Kommentar", "New comment"),
+        ["Comment.Remove"] = ("Kommentar entfernen", "Remove comment"),
+
+        // Extrahieren
+        ["Extract.Title"] = ("Seiten extrahieren", "Extract pages"),
+        ["Extract.Label"] = ("Seiten", "Pages"),
+        ["Extract.Help"] = ("Einzeln: 2 · Bereich: 4-8 · Auswahl: 2,4,8,13-15", "Single: 2 · Range: 4-8 · Selection: 2,4,8,13-15"),
+        ["Extract.Preview"] = ("Vorschau der neuen Datei", "Preview of the new file"),
+        ["Extract.Empty"] = ("Keine gültigen Seiten", "No valid pages"),
+        ["Extract.Count"] = ("{0} Seiten", "{0} pages"),
+        ["Extract.Save"] = ("Extrahieren & speichern unter…", "Extract & save as…"),
+        ["Extract.HintInvalid"] = ("„{0}“ ist ungültig und wird ignoriert", "“{0}” is invalid and will be ignored"),
+        ["Extract.HintSwap"] = ("„{0}“: Bereich umgekehrt → als {1}-{2} interpretiert", "“{0}”: reversed range → interpreted as {1}-{2}"),
+        ["Extract.HintClamp"] = ("„{0}“: Seite {1} existiert nicht → höchste Seite {2} verwendet", "“{0}”: page {1} does not exist → last page {2} used"),
+        ["Extract.HintDuplicate"] = ("Seite {0} mehrfach angegeben → wird nur einmal extrahiert", "Page {0} given more than once → extracted only once"),
+
+        // Speichern
+        ["Save.Title"] = ("Speichern unter", "Save as"),
+        ["Save.Protection"] = ("Passwortschutz", "Password protection"),
+        ["Save.KeepNone"] = ("Ohne Passwort (wie bisher)", "No password (as before)"),
+        ["Save.KeepProtected"] = ("Passwort behalten", "Keep password"),
+        ["Save.Change"] = ("Neues Passwort festlegen", "Set a new password"),
+        ["Save.Remove"] = ("Passwort entfernen", "Remove password"),
+        ["Save.NewPassword"] = ("Neues Passwort", "New password"),
+        ["Save.RepeatPassword"] = ("Passwort wiederholen", "Repeat password"),
+        ["Save.Mismatch"] = ("Die Passwörter stimmen nicht überein.", "The passwords do not match."),
+        ["Save.EmptyPassword"] = ("Bitte ein Passwort eingeben.", "Please enter a password."),
+        ["Save.Continue"] = ("Weiter…", "Continue…"),
+        ["Save.SuggestedSuffix"] = ("-bearbeitet", "-edited"),
+        ["Save.ExtractSuffix"] = ("-auszug", "-extract"),
+
+        // Passwort beim Öffnen
+        ["Password.Title"] = ("Passwortgeschütztes Dokument", "Password-protected document"),
+        ["Password.Message"] = ("„{0}“ ist geschützt. Bitte Passwort eingeben.", "“{0}” is protected. Please enter the password."),
+        ["Password.Wrong"] = ("Das Passwort ist falsch. Bitte erneut eingeben.", "The password is wrong. Please try again."),
+        ["Password.Placeholder"] = ("Passwort", "Password"),
+        ["Password.Unlock"] = ("Entsperren", "Unlock"),
+
+        // Einstellungen
+        ["Settings.Title"] = ("Einstellungen", "Settings"),
+        ["Settings.Theme"] = ("Design", "Theme"),
+        ["Settings.Language"] = ("Sprache", "Language"),
+        ["Settings.UndoSteps"] = ("Anzahl Rückgängig-Schritte", "Number of undo steps"),
+        ["Settings.UndoHelp"] = ("Zwischen 1 und 500. Ältere Schritte werden verworfen.", "Between 1 and 500. Older steps are discarded."),
+
+        // Allgemeine Dialoge und Meldungen
+        ["Dialog.Ok"] = ("OK", "OK"),
+        ["Dialog.Cancel"] = ("Abbrechen", "Cancel"),
+        ["Dialog.Save"] = ("Speichern", "Save"),
+        ["Dialog.Discard"] = ("Verwerfen", "Discard"),
+        ["Dialog.PdfFiles"] = ("PDF-Dateien", "PDF files"),
+        ["Close.Title"] = ("Ungespeicherte Änderungen", "Unsaved changes"),
+        ["Close.Message"] = ("„{0}“ hat ungespeicherte Änderungen. Möchten Sie sie speichern?", "“{0}” has unsaved changes. Do you want to save them?"),
+        ["Error.OpenTitle"] = ("Datei kann nicht geöffnet werden", "File cannot be opened"),
+        ["Error.FileNotReadable"] = ("Die Datei „{0}“ ist nicht lesbar.", "The file “{0}” cannot be read."),
+        ["Error.InvalidFormat"] = ("„{0}“ ist keine gültige PDF-Datei oder beschädigt.", "“{0}” is not a valid PDF file or is damaged."),
+        ["Error.UnsupportedSecurity"] = ("Das Sicherheitsverfahren von „{0}“ wird nicht unterstützt.", "The security method of “{0}” is not supported."),
+        ["Error.Unknown"] = ("„{0}“ konnte nicht geöffnet werden.", "“{0}” could not be opened."),
+        ["Error.SaveTitle"] = ("Speichern fehlgeschlagen", "Saving failed"),
+        ["Error.SaveMessage"] = ("Die Datei konnte nicht gespeichert werden:\n{0}", "The file could not be saved:\n{0}"),
+        ["Print.Title"] = ("Drucken", "Print"),
+        ["Print.Message"] = ("Das Dokument wird im PDF-Betrachter des Systems geöffnet. Dort können Sie es drucken.",
+                             "The document is opened in the system’s PDF viewer, where you can print it."),
+
+        // Farbwahl
+        ["Accent.Title"] = ("Akzentfarbe", "Accent color"),
+        ["Accent.TitleFor"] = ("Farbe – {0}", "Color – {0}"),
+        ["Accent.Pastel"] = ("PASTELL", "PASTEL"),
+        ["Accent.Strong"] = ("KRÄFTIG", "STRONG"),
+        ["Accent.Neutral"] = ("NEUTRAL", "NEUTRAL"),
+        ["Accent.Custom"] = ("BENUTZERDEFINIERT", "CUSTOM"),
+        ["Accent.Own"] = ("EIGENE FARBE", "OWN COLOR"),
+        ["Accent.Apply"] = ("Übernehmen", "Apply"),
+        ["Accent.Default"] = ("Standard", "Default"),
+        ["Accent.Saved"] = ("wird gespeichert", "is saved"),
+        ["Accent.HexHint"] = ("Hex-Code im Format #25A0C3", "Hex code in the format #25A0C3"),
+        ["Accent.HexInvalid"] = ("Ungültig – bitte im Format #25A0C3 eingeben.", "Invalid – please use the format #25A0C3."),
+        ["Accent.NoCustom"] = ("Noch keine – eigene Farbe unten per Hex-Code übernehmen.", "None yet – add your own color below via hex code."),
+        ["Accent.Remove"] = ("Entfernen", "Remove"),
+        ["Accent.SaturationTip"] = ("Sättigung der Pastellfarben nach HSV (0 % = 0, 100 % = 255)", "Saturation of the pastel colors (HSV, 0 % = 0, 100 % = 255)"),
+        ["Accent.CustomName"] = ("Benutzerdefiniert", "Custom"),
+        ["Accent.DefaultMark"] = ("(Standard)", "(default)"),
+
+        // Farbnamen
+        ["Color.PastelBlue"] = ("Pastellblau", "Pastel blue"),
+        ["Color.Mint"] = ("Mint", "Mint"),
+        ["Color.PastelYellow"] = ("Pastellgelb", "Pastel yellow"),
+        ["Color.Peach"] = ("Pfirsich", "Peach"),
+        ["Color.Rose"] = ("Rosé", "Rose"),
+        ["Color.Lavender"] = ("Lavendel", "Lavender"),
+        ["Color.Indigo"] = ("Indigo", "Indigo"),
+        ["Color.Blue"] = ("Blau", "Blue"),
+        ["Color.Green"] = ("Grün", "Green"),
+        ["Color.Yellow"] = ("Gelb", "Yellow"),
+        ["Color.Orange"] = ("Orange", "Orange"),
+        ["Color.Red"] = ("Rot", "Red"),
+        ["Color.Violet"] = ("Violett", "Violet"),
+        ["Color.Black95"] = ("95 % Schwarz", "95 % black"),
+        ["Color.White95"] = ("95 % Weiß", "95 % white"),
+    };
+}

@@ -1,0 +1,76 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:loc="using:PdfUtopia.App.Localization"
+             xmlns:vm="using:PdfUtopia.App.ViewModels"
+             x:Class="PdfUtopia.App.Views.ColorPickerView"
+             x:DataType="vm:ColorPickerViewModel"
+             Width="320">
+  <UserControl.Styles>
+    <Style Selector="TextBlock.groupTitle">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+      <Setter Property="Margin" Value="0,8,0,6" />
+    </Style>
+  </UserControl.Styles>
+
+  <UserControl.DataTemplates>
+    <DataTemplate x:DataType="vm:SwatchViewModel">
+      <Panel>
+        <Button Classes="swatch" Classes.selected="{Binding IsSelected}" ToolTip.Tip="{Binding ToolTip}"
+                Background="{Binding Hex, Converter={StaticResource HexToBrush}}"
+                Command="{Binding $parent[UserControl].((vm:ColorPickerViewModel)DataContext).SelectCommand}" CommandParameter="{Binding}" />
+        <Button Content="✕" IsVisible="{Binding IsCustom}" ToolTip.Tip="{loc:T Accent.Remove}" FontSize="9" Padding="0"
+                Width="16" Height="16" CornerRadius="8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,2,0"
+                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                Command="{Binding $parent[UserControl].((vm:ColorPickerViewModel)DataContext).RemoveCommand}" CommandParameter="{Binding}" />
+      </Panel>
+    </DataTemplate>
+  </UserControl.DataTemplates>
+
+  <StackPanel Margin="4">
+    <TextBlock Text="{Binding Title}" FontWeight="SemiBold" Margin="0,0,0,4" />
+    <Grid ColumnDefinitions="*,Auto">
+      <TextBlock Classes="groupTitle" Text="{loc:T Accent.Pastel}" VerticalAlignment="Center" />
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6" ToolTip.Tip="{loc:T Accent.SaturationTip}">
+        <Slider Minimum="10" Maximum="90" Width="110" Value="{Binding SliderValue}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Saturation, StringFormat='{}{0} %'}" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding SaturationByteText}" Classes="hint" VerticalAlignment="Center" Width="40" />
+      </StackPanel>
+    </Grid>
+    <ItemsControl ItemsSource="{Binding Pastel}">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    </ItemsControl>
+
+    <TextBlock Classes="groupTitle" Text="{loc:T Accent.Strong}" />
+    <ItemsControl ItemsSource="{Binding Strong}">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    </ItemsControl>
+
+    <TextBlock Classes="groupTitle" Text="{loc:T Accent.Neutral}" />
+    <ItemsControl ItemsSource="{Binding Neutral}">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    </ItemsControl>
+
+    <TextBlock Classes="groupTitle" Text="{loc:T Accent.Custom}" />
+    <ItemsControl ItemsSource="{Binding Custom}" IsVisible="{Binding HasCustomColors}">
+      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+    </ItemsControl>
+    <TextBlock Classes="hint" Text="{loc:T Accent.NoCustom}" IsVisible="{Binding !HasCustomColors}" TextWrapping="Wrap" />
+
+    <TextBlock Classes="groupTitle" Text="{loc:T Accent.Own}" />
+    <StackPanel Orientation="Horizontal" Spacing="6">
+      <TextBox Text="{Binding HexInput}" Width="110" MaxLength="7" PlaceholderText="#25A0C3" FontFamily="Cascadia Mono, Consolas, Menlo, DejaVu Sans Mono, monospace" />
+      <Button Content="{loc:T Accent.Apply}" Command="{Binding ApplyHexCommand}" />
+    </StackPanel>
+    <TextBlock Classes="hint" Text="{loc:T Accent.HexHint}" IsVisible="{Binding !HasHexError}" Margin="0,4,0,0" />
+    <TextBlock Text="{Binding HexError}" Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding HasHexError}" Margin="0,4,0,0" FontSize="12" />
+
+    <Grid ColumnDefinitions="*,Auto" Margin="0,10,0,0">
+      <Button Command="{Binding ResetCommand}" Padding="0" Background="Transparent" BorderThickness="0">
+        <TextBlock Text="{loc:T Accent.Default}" TextDecorations="Underline" />
+      </Button>
+      <TextBlock Grid.Column="1" Classes="hint" Text="{loc:T Accent.Saved}" VerticalAlignment="Center" />
+    </Grid>
+  </StackPanel>
+</UserControl>

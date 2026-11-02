@@ -1,0 +1,74 @@
+using PdfUtopia.Core.Settings;
+using PdfUtopia.Pdf.Export;
+
+namespace PdfUtopia.App.Services;
+
+/// <summary>
+/// Antwort auf die Frage nach ungespeicherten Änderungen.
+/// </summary>
+public enum UnsavedChangesChoice
+{
+    /// <summary>Vorgang abbrechen.</summary>
+    Cancel,
+
+    /// <summary>Erst speichern.</summary>
+    Save,
+
+    /// <summary>Änderungen verwerfen.</summary>
+    Discard,
+}
+
+/// <summary>
+/// Ergebnis des Einstellungsdialogs.
+/// </summary>
+/// <param name="Theme">Erscheinungsbild.</param>
+/// <param name="Language">Sprache.</param>
+/// <param name="UndoLimit">Höchstzahl der Rückgängig-Schritte.</param>
+public sealed record SettingsChoice(ThemePreference Theme, UiLanguage Language, int UndoLimit);
+
+/// <summary>
+/// Dialoge und Dateiauswahl, entkoppelt vom ViewModel (testbar, austauschbar).
+/// </summary>
+public interface IDialogService
+{
+    /// <summary>Wählt PDF-Dateien zum Öffnen.</summary>
+    /// <returns>Die lokalen Pfade (leer bei Abbruch).</returns>
+    Task<IReadOnlyList<string>> PickPdfFilesAsync();
+
+    /// <summary>Wählt das Ziel für „Speichern unter“.</summary>
+    /// <param name="suggestedName">Vorgeschlagener Dateiname.</param>
+    /// <returns>Der lokale Pfad oder <c>null</c> bei Abbruch.</returns>
+    Task<string?> PickSaveFileAsync(string suggestedName);
+
+    /// <summary>Fragt nach dem Passwort einer geschützten Datei.</summary>
+    /// <param name="fileName">Dateiname für die Meldung.</param>
+    /// <param name="previousAttemptWrong">Ob der vorige Versuch falsch war.</param>
+    /// <returns>Das Passwort oder <c>null</c> bei Abbruch.</returns>
+    Task<string?> PromptPasswordAsync(string fileName, bool previousAttemptWrong);
+
+    /// <summary>Fragt, wie der Passwortschutz beim Speichern behandelt wird (F22).</summary>
+    /// <param name="sourceIsProtected">Ob die Quelldatei geschützt ist.</param>
+    /// <returns>Modus und ggf. neues Passwort, oder <c>null</c> bei Abbruch.</returns>
+    Task<(PasswordMode Mode, string? NewPassword)?> AskPasswordModeAsync(bool sourceIsProtected);
+
+    /// <summary>Zeigt den Extract-Dialog mit Live-Vorschau.</summary>
+    /// <param name="pageCount">Seitenanzahl der aktuellen Seitenliste.</param>
+    /// <returns>Die Seitenpositionen oder <c>null</c> bei Abbruch.</returns>
+    Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount);
+
+    /// <summary>Zeigt die Einstellungen.</summary>
+    /// <param name="current">Aktuelle Werte.</param>
+    /// <returns>Die neuen Werte oder <c>null</c> bei Abbruch.</returns>
+    Task<SettingsChoice?> EditSettingsAsync(SettingsChoice current);
+
+    /// <summary>Fragt nach dem Umgang mit ungespeicherten Änderungen.</summary>
+    /// <param name="fileName">Dateiname.</param>
+    /// <returns>Die Wahl.</returns>
+    Task<UnsavedChangesChoice> AskUnsavedChangesAsync(string fileName);
+
+    /// <summary>Zeigt eine Meldung.</summary>
+    /// <param name="title">Titel.</param>
+    /// <param name="message">Text.</param>
+    /// <returns>Ein Task, der nach dem Schließen endet.</returns>
+    Task ShowMessageAsync(string title, string message);
+}

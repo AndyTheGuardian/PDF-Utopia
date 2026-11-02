@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/PdfUtopia.App/PdfUtopia.App.csproj" />
+    <Project Path="src/PdfUtopia.Core/PdfUtopia.Core.csproj" />
+    <Project Path="src/PdfUtopia.Pdf/PdfUtopia.Pdf.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/PdfUtopia.Core.Tests/PdfUtopia.Core.Tests.csproj" />
+    <Project Path="tests/PdfUtopia.Pdf.Tests/PdfUtopia.Pdf.Tests.csproj" />
+  </Folder>
+</Solution>

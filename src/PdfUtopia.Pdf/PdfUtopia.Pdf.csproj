@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Anbindung an die PDF-Bibliotheken: PDFium (Anzeigen) und PDFsharp (Schreiben). -->
+  <PropertyGroup>
+    <RootNamespace>PdfUtopia.Pdf</RootNamespace>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="PDFiumCore" Version="157.0.8100" />
+    <!-- 6.2.4 ist die letzte MIT-lizenzierte Version; ab 6.3 steht PDFsharp unter AGPL-3.0 mit Lizenzprüfung (A21) -->
+    <PackageReference Include="PDFsharp" Version="6.2.4" />
+    <!-- PDFsharp verlangt 8.0.1 mit bekannter Sicherheitslücke (GHSA-846f-f764-76mx): korrigierte Version erzwingen -->
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="PdfUtopia.Pdf.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\PdfUtopia.Core\PdfUtopia.Core.csproj" />
+  </ItemGroup>
+
+</Project>

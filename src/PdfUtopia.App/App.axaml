@@ -1,0 +1,256 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="using:PdfUtopia.App.Converters"
+             x:Class="PdfUtopia.App.App"
+             RequestedThemeVariant="Default">
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <converters:HexToBrushConverter x:Key="HexToBrush" />
+      <converters:EnumEqualsConverter x:Key="EnumEquals" />
+
+      <!-- Werden vom ThemeService passend zur Akzentfarbe und zum Theme überschrieben (A14, A16) -->
+      <SolidColorBrush x:Key="AccentBrush" Color="#4F46E5" />
+      <SolidColorBrush x:Key="AccentSoftBrush" Color="#E3E2F7" />
+      <SolidColorBrush x:Key="AccentForegroundBrush" Color="#F4F7FC" />
+      <SolidColorBrush x:Key="AccentBorderBrush" Color="#4F46E5" />
+      <SolidColorBrush x:Key="AccentTextBrush" Color="#4F46E5" />
+
+      <!-- Symbole aus Mockup v2 (24 × 24, als Linien gezeichnet) -->
+      <StreamGeometry x:Key="IconOpen">M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z</StreamGeometry>
+      <StreamGeometry x:Key="IconSave">M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M7 3v5h8V3 M7 21v-7h10v7</StreamGeometry>
+      <StreamGeometry x:Key="IconPrint">M6 9V3h12v6 M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2 M6 14h12v7H6z</StreamGeometry>
+      <StreamGeometry x:Key="IconUndo">M9 14L4 9l5-5 M4 9h11a5 5 0 0 1 0 10h-3</StreamGeometry>
+      <StreamGeometry x:Key="IconRedo">M15 14l5-5-5-5 M20 9H9a5 5 0 0 0 0 10h3</StreamGeometry>
+      <StreamGeometry x:Key="IconSelect">M4 4l7 17 2.5-7.5L21 11z</StreamGeometry>
+      <StreamGeometry x:Key="IconComment">M4 5h16v11H9l-5 4z M8 9h8 M8 12h5</StreamGeometry>
+      <StreamGeometry x:Key="IconMarker">M9 15l9.5-9.5a2.1 2.1 0 0 0-3-3L6 12l-1 4z M4 21h16</StreamGeometry>
+      <StreamGeometry x:Key="IconPen">M3 17c3-5 5 3 8-2s4-8 7-6 1 6-2 8</StreamGeometry>
+      <StreamGeometry x:Key="IconRect">M4 6h16v12H4z</StreamGeometry>
+      <StreamGeometry x:Key="IconEraser">M15.5 4.5L20 9a1.5 1.5 0 0 1 0 2.1L12 19H7l-3-3a1.5 1.5 0 0 1 0-2.1l9.4-9.4a1.5 1.5 0 0 1 2.1 0z M9 10.5L14 15.5 M7 19h13</StreamGeometry>
+      <StreamGeometry x:Key="IconExtract">M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5 M14 3v5h5 M14 3l5 5v4 M15 18h6 M18 15l3 3-3 3</StreamGeometry>
+      <StreamGeometry x:Key="IconRotate">M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7</StreamGeometry>
+      <StreamGeometry x:Key="IconTrash">M4 7h16 M10 11v6 M14 11v6 M6 7l1 13h10l1-13 M9 7V4h6v3</StreamGeometry>
+      <StreamGeometry x:Key="IconSearch">M18 11a7 7 0 1 1-14 0a7 7 0 1 1 14 0z M20 20l-4-4</StreamGeometry>
+      <StreamGeometry x:Key="IconPlus">M12 5v14 M5 12h14</StreamGeometry>
+      <StreamGeometry x:Key="IconMinus">M5 12h14</StreamGeometry>
+      <StreamGeometry x:Key="IconClose">M6 6l12 12 M18 6L6 18</StreamGeometry>
+      <StreamGeometry x:Key="IconFitHeight">M12 3v18 M8 7l4-4 4 4 M8 17l4 4 4-4</StreamGeometry>
+      <StreamGeometry x:Key="IconFitWidth">M3 12h18 M7 8l-4 4 4 4 M17 8l4 4-4 4</StreamGeometry>
+      <StreamGeometry x:Key="IconFitPage">M6 3h12v18H6z M9 8h6 M9 12h6 M9 16h4</StreamGeometry>
+      <StreamGeometry x:Key="IconLock">M5 11h14v10H5z M8 11V8a4 4 0 0 1 8 0v3</StreamGeometry>
+
+      <ResourceDictionary.ThemeDictionaries>
+        <!-- Helles Theme ohne reines Weiß (A11), Werte aus Mockup v2 -->
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="AppBackgroundBrush" Color="#ECEEF2" />
+          <SolidColorBrush x:Key="SurfaceBrush" Color="#F7F8FA" />
+          <SolidColorBrush x:Key="Surface2Brush" Color="#F1F2F5" />
+          <SolidColorBrush x:Key="AppBorderBrush" Color="#DCDFE6" />
+          <SolidColorBrush x:Key="TextBrush" Color="#1D2330" />
+          <SolidColorBrush x:Key="MutedTextBrush" Color="#6B7280" />
+          <SolidColorBrush x:Key="HoverBrush" Color="#ECEEF3" />
+          <SolidColorBrush x:Key="CanvasBrush" Color="#E4E6EC" />
+          <SolidColorBrush x:Key="WarnBackgroundBrush" Color="#FFF7E6" />
+          <SolidColorBrush x:Key="WarnTextBrush" Color="#8A5A00" />
+          <SolidColorBrush x:Key="DangerBrush" Color="#DC2626" />
+
+          <SolidColorBrush x:Key="TextControlBackground" Color="#F1F2F5" />
+          <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#ECEEF3" />
+          <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#F7F8FA" />
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#F1F2F5" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#ECEEF3" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#F7F8FA" />
+          <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#F7F8FA" />
+          <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#F7F8FA" />
+        </ResourceDictionary>
+
+        <!-- Dunkles Theme in neutralem Grau, Dokumenthintergrund #252525 -->
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="AppBackgroundBrush" Color="#181818" />
+          <SolidColorBrush x:Key="SurfaceBrush" Color="#1F1F1F" />
+          <SolidColorBrush x:Key="Surface2Brush" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="AppBorderBrush" Color="#3A3A3A" />
+          <SolidColorBrush x:Key="TextBrush" Color="#E6E6E6" />
+          <SolidColorBrush x:Key="MutedTextBrush" Color="#A0A0A0" />
+          <SolidColorBrush x:Key="HoverBrush" Color="#303030" />
+          <SolidColorBrush x:Key="CanvasBrush" Color="#252525" />
+          <SolidColorBrush x:Key="WarnBackgroundBrush" Color="#3A2E12" />
+          <SolidColorBrush x:Key="WarnTextBrush" Color="#F2C66D" />
+          <SolidColorBrush x:Key="DangerBrush" Color="#F06A6A" />
+
+          <SolidColorBrush x:Key="TextControlBackground" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#303030" />
+          <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#1F1F1F" />
+          <SolidColorBrush x:Key="ComboBoxBackground" Color="#2B2B2B" />
+          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#303030" />
+          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#1F1F1F" />
+          <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#1F1F1F" />
+          <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#1F1F1F" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+
+    <Style Selector="TextBlock.hint">
+      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+      <Setter Property="FontSize" Value="12" />
+    </Style>
+    <Style Selector="TextBlock.title">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Linien-Symbole -->
+    <!-- Symbole in ihrem 24er-Raster zeichnen und verkleinern; „Einpassen“ würde flache Symbole (Minus) verzerren -->
+    <Style Selector="Path.icon">
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Height" Value="24" />
+      <Setter Property="Margin" Value="-3" />
+      <Setter Property="Stretch" Value="None" />
+      <Setter Property="RenderTransform" Value="scale(0.75)" />
+      <Setter Property="Stroke" Value="{DynamicResource TextBrush}" />
+      <Setter Property="StrokeThickness" Value="1.8" />
+      <Setter Property="StrokeLineCap" Value="Round" />
+      <Setter Property="StrokeJoin" Value="Round" />
+    </Style>
+    <Style Selector="Path.icon.small">
+      <Setter Property="Margin" Value="-5.5" />
+      <Setter Property="RenderTransform" Value="scale(0.55)" />
+    </Style>
+
+    <!-- Werkzeugleiste: Symbol über Beschriftung -->
+    <Style Selector=":is(Button).tb">
+      <Setter Property="MinWidth" Value="52" />
+      <Setter Property="Padding" Value="4,5,4,4" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector=":is(Button).tb:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="ToggleButton.tb:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector=":is(Button).tb:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Opacity" Value="0.4" />
+    </Style>
+    <!-- Werkzeuge als Optionsfelder im Aussehen der Werkzeugleiste (nicht abwählbar) -->
+    <Style Selector="RadioButton.tb">
+      <Setter Property="MinWidth" Value="52" />
+      <Setter Property="Padding" Value="4,5,4,4" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="7" Padding="{TemplateBinding Padding}" Content="{TemplateBinding Content}"
+                            HorizontalContentAlignment="Center" Foreground="{TemplateBinding Foreground}" />
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.tb:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="RadioButton.tb:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="RadioButton.tb:checked Path.icon">
+      <Setter Property="Stroke" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+
+    <!-- Ansichten in der Statusleiste (Volle Höhe, Volle Breite, Ganze Seite) -->
+    <Style Selector="RadioButton.fit">
+      <Setter Property="Padding" Value="6,2" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="5" Padding="{TemplateBinding Padding}" Content="{TemplateBinding Content}"
+                            Foreground="{TemplateBinding Foreground}" />
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.fit:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="RadioButton.fit:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="RadioButton.fit:checked Path.icon">
+      <Setter Property="Stroke" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+
+    <Style Selector="Border.divider">
+      <Setter Property="Width" Value="1" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="Margin" Value="6,0" />
+      <Setter Property="Background" Value="{DynamicResource AppBorderBrush}" />
+    </Style>
+
+    <!-- Akzentfarbige Schaltfläche (Dialoge) -->
+    <Style Selector="Button.accent">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+      <Setter Property="Opacity" Value="0.9" />
+    </Style>
+
+    <!-- Auswahlfelder mit Rahmen in Akzentfarbe, Textboxen neutral (A16) -->
+    <Style Selector="ComboBox">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <Style Selector="TextBox">
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <!-- Markierter Text: Schrift automatisch hell oder dunkel zur Akzentfarbe, damit er bei jeder Farbe lesbar bleibt -->
+      <Setter Property="SelectionBrush" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="SelectionForegroundBrush" Value="{DynamicResource AccentForegroundBrush}" />
+    </Style>
+    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource MutedTextBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource MutedTextBrush}" />
+    </Style>
+    <!-- Fußnotenfelder auf der Seite: ohne Rahmen (nach den allgemeinen Textbox-Stilen, damit sie gewinnen) -->
+    <Style Selector="TextBox.paper:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.paper:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+
+    <!-- Farbpunkte -->
+    <Style Selector="Button.swatch">
+      <Setter Property="Width" Value="30" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="15" />
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="Margin" Value="0,0,8,8" />
+    </Style>
+    <Style Selector="Button.swatch.selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+  </Application.Styles>
+</Application>
