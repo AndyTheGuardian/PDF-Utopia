@@ -59,6 +59,19 @@
     <Style Selector="Border.thumb:pointerover StackPanel.thumbActions">
       <Setter Property="IsVisible" Value="True" />
     </Style>
+    <!-- Hinweise „Seite enthält …“ je Annotationsart: wie die Bearbeitungsknöpfe, aber links, immer sichtbar und in
+         Akzentfarbe (bei zu geringem Kontrast in der satteren Rahmenvariante), damit sie sich von ihnen abheben -->
+    <Style Selector="Border.thumbBadge Path.icon">
+      <Setter Property="Stroke" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <Style Selector="Border.thumbBadge">
+      <Setter Property="Width" Value="26" />
+      <Setter Property="Height" Value="26" />
+      <Setter Property="CornerRadius" Value="6" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
     <Style Selector="Button.thumbAction">
       <Setter Property="Width" Value="26" />
       <Setter Property="Height" Value="26" />
@@ -377,6 +390,20 @@
                               <TextBlock Text="{Binding Label}" Classes="hint" />
                               <TextBlock Text="{Binding OriginalHint}" Classes="hint" Opacity="0.7" />
                             </StackPanel>
+                          </StackPanel>
+                          <StackPanel Spacing="4" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="4,4,0,0">
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasComments}" ToolTip.Tip="{loc:T Pages.HasComments}">
+                              <Path Classes="icon small" Data="{StaticResource IconComment}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasHighlights}" ToolTip.Tip="{loc:T Pages.HasHighlights}">
+                              <Path Classes="icon small" Data="{StaticResource IconMarker}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasInk}" ToolTip.Tip="{loc:T Pages.HasInk}">
+                              <Path Classes="icon small" Data="{StaticResource IconPen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasRectangles}" ToolTip.Tip="{loc:T Pages.HasRectangles}">
+                              <Path Classes="icon small" Data="{StaticResource IconRect}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
                           </StackPanel>
                           <StackPanel Classes="thumbActions" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0">
                             <Button Classes="thumbAction" ToolTip.Tip="{loc:T Pages.Rotate}"

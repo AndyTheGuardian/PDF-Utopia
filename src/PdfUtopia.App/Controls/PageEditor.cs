@@ -45,6 +45,8 @@ public sealed class PageEditor : Control
     private PdfPoint _start;
     private PdfPoint _current;
     private PdfPoint? _pointer;
+    private bool _eraserEndHovering;
+    private bool _eraserCursorShown;
     private Guid? _hoveredBadge;
     private PdfRect? _suggestedParagraph;
     private DocumentViewModel? _subscribed;
@@ -207,6 +209,7 @@ public sealed class PageEditor : Control
         base.OnPointerMoved(e);
         var point = e.GetCurrentPoint(this);
         _pointer = ToPoint(point.Position);
+        _eraserEndHovering = point.Properties.IsEraser;
         if (_gesture is null)
         {
             UpdateHover(_pointer.Value, point.Properties.IsEraser);
@@ -245,6 +248,7 @@ public sealed class PageEditor : Control
     {
         base.OnPointerExited(e);
         _pointer = null;
+        _eraserEndHovering = false;
         _hoveredBadge = null;
         _suggestedParagraph = null;
         Cursor = Cursor.Default;
@@ -372,10 +376,13 @@ public sealed class PageEditor : Control
             : erasing ? new Cursor(StandardCursorType.None)
             : Options?.Tool is Tool.Select or null ? Cursor.Default
             : new Cursor(StandardCursorType.Cross);
-        if (previous != _hoveredBadge || erasing)
+        // Radierkreis folgt dem Zeiger; verschwindet er (Werkzeug oder Stiftende gewechselt), einmal neu zeichnen
+        if (previous != _hoveredBadge || erasing || _eraserCursorShown)
         {
             InvalidateVisual();
         }
+
+        _eraserCursorShown = erasing;
     }
 
     /// <summary>
@@ -392,7 +399,7 @@ public sealed class PageEditor : Control
                 context.FillRectangle(new SolidColorBrush(WithAlpha(highlight.ColorHex, MarkerAlpha)), ToRect(highlight.Bounds));
                 break;
             case RectangleAnnotation rectangle:
-                context.DrawRectangle(null, new Pen(Brush(rectangle.ColorHex), rectangle.Width), ToRect(rectangle.Bounds));
+                DrawRounded(context, null, new Pen(Brush(rectangle.ColorHex), rectangle.Width), ToRect(rectangle.Bounds));
                 break;
             case CommentAnnotation comment:
                 DrawComment(context, comment);
@@ -427,7 +434,7 @@ public sealed class PageEditor : Control
     {
         var rect = ToRect(comment.Bounds);
         var border = DrawingColors.CommentBorder(comment.ColorHex);
-        context.DrawRectangle(new SolidColorBrush(WithAlpha(comment.ColorHex, CommentFillAlpha)), new Pen(Brush(border), CommentBorderWidth), rect, 4, 4);
+        DrawRounded(context, new SolidColorBrush(WithAlpha(comment.ColorHex, CommentFillAlpha)), new Pen(Brush(border), CommentBorderWidth), rect);
 
         var number = Document!.Document.Annotations.FootnoteNumber(Document.CurrentPage.Id, comment.Id) ?? 0;
         var hovered = _hoveredBadge == comment.Id;
@@ -466,18 +473,27 @@ public sealed class PageEditor : Control
     }
 
     /// <summary>
-    /// Gestrichelter Rahmen um den Absatz, den ein Klick kommentieren würde.
+    /// Gestrichelter Rahmen in der Kommentarfarbe um den Absatz, den ein Klick kommentieren würde.
     /// </summary>
     private void DrawSuggestion(DrawingContext context)
     {
-        if (_gesture is not null || _suggestedParagraph is not { } paragraph)
+        if (_gesture is not null || _suggestedParagraph is not { } paragraph || Options is not { } options)
         {
             return;
         }
 
         var (width, height) = Document!.CurrentPageSize;
         var display = PageTransform.Rotate(paragraph, Document.CurrentPage.Rotation, width, height);
-        context.DrawRectangle(null, new Pen(new SolidColorBrush(Color.Parse("#A5B4FC")), 2, new DashStyle([3, 2], 0)), ToRect(display).Inflate(2), 4, 4);
+        DrawRounded(context, null, new Pen(Brush(DrawingColors.CommentBorder(options.CommentColor)), 2, new DashStyle([3, 2], 0)), ToRect(display));
+    }
+
+    /// <summary>
+    /// Rechteck mit der gemeinsamen Eckenrundung von Rechtecken und Kommentaren (A37).
+    /// </summary>
+    private static void DrawRounded(DrawingContext context, IBrush? fill, IPen pen, Rect rect)
+    {
+        var radius = AnnotationShape.CornerRadiusFor(rect.Width, rect.Height);
+        context.DrawRectangle(fill, pen, rect, radius, radius);
     }
 
     /// <summary>
@@ -523,21 +539,22 @@ public sealed class PageEditor : Control
                 context.FillRectangle(new SolidColorBrush(WithAlpha(options.MarkerColor, MarkerAlpha)), ToRect(MarkerBand()));
                 break;
             case Tool.Rectangle:
-                context.DrawRectangle(null, new Pen(Brush(options.RectangleColor), options.RectangleWidth), ToRect(DragRect()));
+                DrawRounded(context, null, new Pen(Brush(options.RectangleColor), options.RectangleWidth), ToRect(DragRect()));
                 break;
             case Tool.Comment:
-                context.DrawRectangle(new SolidColorBrush(WithAlpha(options.CommentColor, CommentFillAlpha)),
-                    new Pen(Brush(DrawingColors.CommentBorder(options.CommentColor)), CommentBorderWidth, new DashStyle([4, 2], 0)), ToRect(DragRect()), 4, 4);
+                DrawRounded(context, new SolidColorBrush(WithAlpha(options.CommentColor, CommentFillAlpha)),
+                    new Pen(Brush(DrawingColors.CommentBorder(options.CommentColor)), CommentBorderWidth, new DashStyle([4, 2], 0)), ToRect(DragRect()));
                 break;
         }
     }
 
     /// <summary>
-    /// Gestrichelter Kreis in Radiergröße am Mauszeiger.
+    /// Gestrichelter Kreis in Radiergröße am Mauszeiger – auch schon, wenn der Stift über der Seite schwebt, und beim
+    /// Radiererende des Stifts unabhängig vom gewählten Werkzeug.
     /// </summary>
     private void DrawEraserCursor(DrawingContext context)
     {
-        var erasing = _gesture == Tool.Eraser || (_gesture is null && Options?.Tool == Tool.Eraser);
+        var erasing = _gesture == Tool.Eraser || (_gesture is null && (Options?.Tool == Tool.Eraser || _eraserEndHovering));
         if (!erasing || _pointer is not { } pointer)
         {
             return;

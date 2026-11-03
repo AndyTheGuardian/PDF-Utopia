@@ -108,7 +108,7 @@ Linux-Paket wurde erstellt und gestartet (rund 112 MB); die Pakete für Windows 
 | Werkzeugleiste | häufige Befehle, die Werkzeuge, Zoom, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen |
-| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge |
+| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Rechteck) |
 | Seitenansicht | die angezeigte Seite mit Annotationen; darunter die Fußnoten der Kommentare |
 | Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom |
 
@@ -146,7 +146,7 @@ Weitere Regeln:
 
 - **Absatz anklicken:** PDF Utopia erkennt Absätze aus der Textebene der Seite (Zeichen auf gleicher Höhe bilden
   Zeilen, eng aufeinanderfolgende, ähnlich ausgerichtete Zeilen einen Absatz). Beim Darüberfahren wird der
-  erkannte Absatz gestrichelt umrandet. Der Kommentarrahmen hat 8 Punkte Abstand zum Text.
+  erkannte Absatz gestrichelt in der Kommentarfarbe umrandet, genau in der Größe des späteren Kommentars. Der Kommentarrahmen hat 8 Punkte Abstand zum Text.
 - **Bereich aufziehen** geht immer – auch bei gescannten Seiten ohne Textebene oder bei Tabellen und Spalten,
   wo die Erkennung danebenliegen kann.
 - **Darstellung:** Rahmen und Hinterlegung in der Kommentarfarbe, Fußnotenzahl oben rechts. Die Zahl ist hell
@@ -162,6 +162,11 @@ Weitere Regeln:
 - **Umsortieren** per Drag & Drop in der Seitenliste. Verschobene Seiten zeigen zusätzlich ihre ursprüngliche
   Seitennummer, z. B. „2 (Seite 14)“.
 - **Drehen** dreht um 90° im Uhrzeigersinn; Annotationen drehen mit.
+- **Blättern** in der Seitenansicht mit Mausrad oder Tasten (siehe 6). Ist die Seite größer als die Ansicht, scrollt
+  das Mausrad zuerst innerhalb der Seite; erst die nächste Drehung am oberen bzw. unteren Rand wechselt die Seite.
+  Rückwärts landet man am unteren Rand der vorigen Seite. Nach einem Seitenwechsel per Mausrad werden
+  Radbewegungen 0,3 Sekunden lang nicht ausgewertet, damit ein Schwung auf dem Touchpad nicht mehrere Seiten
+  überspringt.
 - **Löschen:** Die letzte verbleibende Seite eines Dokuments kann nicht gelöscht werden. Annotationen einer
   gelöschten Seite bleiben für „Rückgängig“ erhalten.
 
@@ -289,6 +294,12 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 | Strg+F | Suchfeld |
 | Enter (im Suchfeld) | nächste Seite mit Treffern |
 | Esc (im Suchfeld) | Suche beenden |
+| ← / → oder Bild↑ / Bild↓ | vorige / nächste Seite |
+| ↑ / ↓ | scrollen; am oberen bzw. unteren Rand vorige / nächste Seite |
+| Pos1 / Ende | erste / letzte Seite |
+
+Die Blättertasten wirken nicht, solange ein Textfeld (z. B. eine Fußnote oder das Suchfeld), ein Schieberegler,
+eine Auswahlliste oder ein Menü den Fokus hat.
 
 Die Kürzel sind auf allen Systemen mit der Strg-Taste (macOS: control) hinterlegt, nicht mit Cmd.
 

@@ -99,6 +99,36 @@ internal sealed class ContentBuilder
         Op($"{N(x)} {N(y)} {N(width)} {N(height)} re");
 
     /// <summary>
+    /// Rechteck mit abgerundeten Ecken als Pfad (Viertelkreise als Bézier-Kurven).
+    /// </summary>
+    /// <param name="x">Linker Rand.</param>
+    /// <param name="y">Unterer Rand.</param>
+    /// <param name="width">Breite.</param>
+    /// <param name="height">Höhe.</param>
+    /// <param name="radius">Eckenradius; 0 ergibt ein einfaches Rechteck.</param>
+    /// <returns>Dieser Builder.</returns>
+    public ContentBuilder RoundedRectangle(double x, double y, double width, double height, double radius)
+    {
+        if (radius <= 0)
+        {
+            return Rectangle(x, y, width, height);
+        }
+
+        var (right, top) = (x + width, y + height);
+        var k = radius * CircleKappa;
+        MoveTo(x + radius, y);
+        LineTo(right - radius, y);
+        CurveTo(new(right - radius + k, y), new(right, y + radius - k), new(right, y + radius));
+        LineTo(right, top - radius);
+        CurveTo(new(right, top - radius + k), new(right - radius + k, top), new(right - radius, top));
+        LineTo(x + radius, top);
+        CurveTo(new(x + radius - k, top), new(x, top - radius + k), new(x, top - radius));
+        LineTo(x, y + radius);
+        CurveTo(new(x, y + radius - k), new(x + radius - k, y), new(x + radius, y));
+        return Op("h");
+    }
+
+    /// <summary>
     /// Kreis als Pfad aus vier Bézier-Kurven.
     /// </summary>
     /// <param name="centerX">Mittelpunkt X.</param>

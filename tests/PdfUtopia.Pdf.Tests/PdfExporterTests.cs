@@ -175,6 +175,19 @@ public sealed class PdfExporterTests : IDisposable
     }
 
     [Fact]
+    public void Save_Rectangle_HasRoundedCorners()
+    {
+        var saved = SaveWith(document => document.AddAnnotation(document.Pages[1].Id, Rectangle(new PdfRect(100, 100, 300, 200))));
+
+        using var source = PdfSource.Open(saved, importSavedAnnotations: false);
+        var page = source.Render(2, scale: 4);
+        var (r, g, b) = page.PixelAt(400, 400);
+        Assert.True(r > 200 && g > 200 && b > 200, $"Ecke sollte abgerundet (hell) sein, war ({r}, {g}, {b})");
+        AssertBlue(page.PixelAt(400, 600));
+        AssertBlue(page.PixelAt(800, 400));
+    }
+
+    [Fact]
     public void Save_Rectangle_OnPageRotatedInFile_IsRenderedAtDisplayPosition()
     {
         var saved = SaveWith(document =>

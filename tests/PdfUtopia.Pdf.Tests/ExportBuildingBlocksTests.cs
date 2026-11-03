@@ -65,6 +65,19 @@ public sealed class ExportBuildingBlocksTests
     }
 
     [Fact]
+    public void RoundedRectangle_DrawsFourCornerCurves()
+    {
+        var content = new ContentBuilder().RoundedRectangle(0, 0, 100, 50, 4).ToString();
+        Assert.Equal(4, content.Split('\n').Count(line => line.EndsWith(" c", StringComparison.Ordinal)));
+        Assert.Equal(4, content.Split('\n').Count(line => line.EndsWith(" l", StringComparison.Ordinal)));
+        Assert.EndsWith("h", content.TrimEnd());
+    }
+
+    [Fact]
+    public void RoundedRectangle_ZeroRadius_IsPlainRectangle() =>
+        Assert.Equal(new ContentBuilder().Rectangle(1, 2, 3, 4).ToString(), new ContentBuilder().RoundedRectangle(1, 2, 3, 4, 0).ToString());
+
+    [Fact]
     public void QuadPoints_OrderIsTopLeftTopRightBottomLeftBottomRight() =>
         Assert.Equal([10d, 120, 50, 120, 10, 100, 50, 100], Geometry(0).QuadPoints(new PdfRect(0, 0, 40, 20)));
 

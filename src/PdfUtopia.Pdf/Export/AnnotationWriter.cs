@@ -140,7 +140,8 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
     {
         var bounds = Inflate(rectangle.Bounds, rectangle.Width / 2);
         var content = new ContentBuilder().StrokeColor(rectangle.ColorHex).LineWidth(rectangle.Width)
-            .Rectangle(rectangle.Width / 2, rectangle.Width / 2, rectangle.Bounds.Width, rectangle.Bounds.Height).Stroke();
+            .RoundedRectangle(rectangle.Width / 2, rectangle.Width / 2, rectangle.Bounds.Width, rectangle.Bounds.Height,
+                AnnotationShape.CornerRadiusFor(rectangle.Bounds.Width, rectangle.Bounds.Height)).Stroke();
         var annotation = Create("/Square", geometry, bounds, rectangle.ColorHex, Appearance(geometry, bounds, content));
         annotation.Elements["/BS"] = BorderStyle(rectangle.Width);
         annotation.Elements["/RD"] = Numbers(Enumerable.Repeat(rectangle.Width / 2, 4));
@@ -156,9 +157,10 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
         var bounds = Inflate(comment.Bounds, padding);
         var border = DrawingColors.CommentBorder(comment.ColorHex);
         var (width, height) = (comment.Bounds.Width, comment.Bounds.Height);
+        var radius = AnnotationShape.CornerRadiusFor(width, height);
         var content = new ContentBuilder()
-            .Save().GraphicsState("/GSf").FillColor(comment.ColorHex).Rectangle(padding, padding, width, height).Fill().Restore()
-            .StrokeColor(border).LineWidth(CommentBorderWidth).Rectangle(padding, padding, width, height).Stroke();
+            .Save().GraphicsState("/GSf").FillColor(comment.ColorHex).RoundedRectangle(padding, padding, width, height, radius).Fill().Restore()
+            .StrokeColor(border).LineWidth(CommentBorderWidth).RoundedRectangle(padding, padding, width, height, radius).Stroke();
         DrawNumberBadge(content, padding + width, padding + height, BadgeRadius, BadgeFontSize, number, comment.ColorHex, border);
 
         var states = new Dictionary<string, PdfDictionary> { ["/GSf"] = Opacity(CommentFillOpacity) };

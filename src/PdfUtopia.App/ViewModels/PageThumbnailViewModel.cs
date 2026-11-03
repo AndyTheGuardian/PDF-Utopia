@@ -1,6 +1,7 @@
 using Avalonia.Media.Imaging;
 using CommunityToolkit.Mvvm.ComponentModel;
 using PdfUtopia.App.Localization;
+using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Pages;
 
 namespace PdfUtopia.App.ViewModels;
@@ -31,6 +32,34 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     /// <summary>Ob die Seite gerade angezeigt wird.</summary>
     [ObservableProperty]
     public partial bool IsSelected { get; set; }
+
+    /// <summary>Ob die Seite Kommentare enthält (Symbol in der Seitenliste, A39).</summary>
+    [ObservableProperty]
+    public partial bool HasComments { get; set; }
+
+    /// <summary>Ob die Seite Markierungen enthält.</summary>
+    [ObservableProperty]
+    public partial bool HasHighlights { get; set; }
+
+    /// <summary>Ob die Seite Freihandlinien enthält.</summary>
+    [ObservableProperty]
+    public partial bool HasInk { get; set; }
+
+    /// <summary>Ob die Seite Rechtecke enthält.</summary>
+    [ObservableProperty]
+    public partial bool HasRectangles { get; set; }
+
+    /// <summary>
+    /// Übernimmt, welche Arten von Annotationen die Seite enthält.
+    /// </summary>
+    /// <param name="annotations">Annotationen der Seite.</param>
+    public void ShowAnnotationKinds(IReadOnlyCollection<Annotation> annotations)
+    {
+        HasComments = annotations.OfType<CommentAnnotation>().Any();
+        HasHighlights = annotations.OfType<HighlightAnnotation>().Any();
+        HasInk = annotations.OfType<InkAnnotation>().Any();
+        HasRectangles = annotations.OfType<RectangleAnnotation>().Any();
+    }
 }
 
 /// <summary>

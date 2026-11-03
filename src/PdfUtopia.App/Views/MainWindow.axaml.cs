@@ -1,17 +1,21 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
+using Avalonia.Threading;
 using PdfUtopia.App.ViewModels;
 using PdfUtopia.Core.Geometry;
+using PdfUtopia.Core.Pages;
 
 namespace PdfUtopia.App.Views;
 
 /// <summary>
 /// Hauptfenster. Der Code-Behind enthält nur Oberflächenlogik: Dateien per Drag &amp; Drop annehmen, Zoom als
-/// Layout-Transformation anwenden, Fußnotentexte übernehmen, vor dem Schließen nach ungespeicherten Änderungen
-/// fragen. Das Umsortieren der Seiten übernimmt <see cref="ThumbnailDragController"/>.
+/// Layout-Transformation anwenden, mit Mausrad und Tasten blättern, Fußnotentexte übernehmen, vor dem Schließen nach
+/// ungespeicherten Änderungen fragen. Das Umsortieren der Seiten übernimmt <see cref="ThumbnailDragController"/>.
 /// </summary>
 public sealed partial class MainWindow : Window
 {
@@ -21,6 +25,7 @@ public sealed partial class MainWindow : Window
     /// <summary>Platz für die senkrechte Bildlaufleiste.</summary>
     private const double ScrollBarAllowance = 16;
 
+    private readonly PageNavigator _navigator = new();
     private bool _closeConfirmed;
     private DocumentViewModel? _watchedDocument;
 
@@ -32,6 +37,9 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         AddHandler(DragDrop.DragOverEvent, OnFileDragOver);
         AddHandler(DragDrop.DropEvent, OnFileDrop);
+        // Vor der Bildlaufleiste auswerten: am Rand blättern statt (wirkungslos) weiterscrollen
+        PageScroller.AddHandler(PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
+        AddHandler(KeyDownEvent, OnNavigationKeyDown, RoutingStrategies.Tunnel);
         _ = new ThumbnailDragController(ThumbnailList, DragLayer, DragGhost, DropLine,
             index => ViewModel?.ActiveDocument?.Show(index),
             (from, to) => ViewModel?.ActiveDocument?.MovePage(from, to));
@@ -152,6 +160,89 @@ public sealed partial class MainWindow : Window
     /// Skaliert Seite und Fußnoten.
     /// </summary>
     private void ApplyZoom(double zoom) => ZoomHost.LayoutTransform = new ScaleTransform(zoom, zoom);
+
+    /// <summary>
+    /// Mausrad in der Seitenansicht: innerhalb der Seite scrollen, am Rand blättern (A38). Strg und Umschalt bleiben
+    /// der Bildlaufleiste überlassen.
+    /// </summary>
+    private void OnPageWheel(object? sender, PointerWheelEventArgs e)
+    {
+        if (ViewModel?.ActiveDocument is not { } document || e.KeyModifiers != KeyModifiers.None)
+        {
+            return;
+        }
+
+        var step = _navigator.Wheel(e.Delta.Y, CurrentScrollPosition(), document.CurrentIndex, document.Document.Pages.Count,
+            TimeSpan.FromMilliseconds(e.Timestamp));
+        e.Handled = Navigate(document, step);
+    }
+
+    /// <summary>
+    /// Pfeiltasten, Bild auf/ab, Pos1 und Ende blättern (A38) – außer in Bedienelementen, die diese Tasten selbst
+    /// brauchen (Textfelder, Schieberegler, Auswahllisten, Menüs).
+    /// </summary>
+    private void OnNavigationKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (ViewModel?.ActiveDocument is not { } document || e.KeyModifiers != KeyModifiers.None || ToNavigationKey(e.Key) is not { } key
+            || FocusManager?.GetFocusedElement() is TextBox or RangeBase or ComboBox or NumericUpDown or MenuItem)
+        {
+            return;
+        }
+
+        var step = PageNavigator.Key(key, CurrentScrollPosition(), document.CurrentIndex, document.Document.Pages.Count);
+        if (step.Kind == NavigationKind.Scroll)
+        {
+            if (key == NavigationKey.Up)
+            {
+                PageScroller.LineUp();
+            }
+            else
+            {
+                PageScroller.LineDown();
+            }
+        }
+
+        Navigate(document, step);
+        e.Handled = true;
+    }
+
+    /// <summary>Taste zur Navigation oder <c>null</c>.</summary>
+    private static NavigationKey? ToNavigationKey(Key key) => key switch
+    {
+        Key.Up => NavigationKey.Up,
+        Key.Down => NavigationKey.Down,
+        Key.Left => NavigationKey.Left,
+        Key.Right => NavigationKey.Right,
+        Key.PageUp => NavigationKey.PageUp,
+        Key.PageDown => NavigationKey.PageDown,
+        Key.Home => NavigationKey.Home,
+        Key.End => NavigationKey.End,
+        _ => null,
+    };
+
+    /// <summary>Lage der senkrechten Bildlaufleiste der Seitenansicht.</summary>
+    private ScrollPosition CurrentScrollPosition() =>
+        ScrollPosition.From(PageScroller.Offset.Y, PageScroller.Extent.Height, PageScroller.Viewport.Height);
+
+    /// <summary>
+    /// Führt einen Navigationsschritt aus. Die neue Seite wird nach dem Layout oben bzw. unten gezeigt.
+    /// </summary>
+    /// <returns>Ob die Eingabe verbraucht ist (nicht an die Bildlaufleiste weitergeben).</returns>
+    private bool Navigate(DocumentViewModel document, NavigationStep step)
+    {
+        if (step.Kind != NavigationKind.GoTo)
+        {
+            return step.Kind == NavigationKind.Ignore;
+        }
+
+        document.Show(step.TargetIndex);
+        Dispatcher.UIThread.Post(() =>
+        {
+            var bottom = Math.Max(0, PageScroller.Extent.Height - PageScroller.Viewport.Height);
+            PageScroller.Offset = new Vector(PageScroller.Offset.X, step.LandAtBottom ? bottom : 0);
+        }, DispatcherPriority.Loaded);
+        return true;
+    }
 
     /// <summary>
     /// Zeigt beim Ziehen von Dateien das Kopieren-Symbol.

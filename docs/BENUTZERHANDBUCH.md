@@ -65,6 +65,8 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 | Aufgabe | So geht's |
 |---|---|
 | Seite anzeigen | in der Seitenliste links auf die Miniatur klicken |
+| Blättern | **Mausrad** über der Seite, **←** / **→**, **Bild↑** / **Bild↓**; **Pos1** / **Ende** für die erste / letzte Seite |
+| Seiten mit Anmerkungen finden | in der Seitenliste zeigen kleine **Symbole in der Akzentfarbe** oben links, was die Seite enthält: je eines für Kommentare, Markierungen, Freihandlinien und Rechtecke (wie in der Werkzeugleiste) |
 | Ganze Seite sehen | unten rechts **Ganze Seite** wählen (Standard) |
 | Seite so hoch wie möglich | **Volle Höhe** |
 | Seite so breit wie möglich | **Volle Breite** |
@@ -73,13 +75,17 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 Die gewählte Ansicht passt sich automatisch an, wenn Sie das Fenster vergrößern, maximieren oder verkleinern.
 Sobald Sie mit − oder + zoomen, bleibt der Zoom fest, bis Sie wieder eine Ansicht wählen.
 
+Ist die Seite größer als die Ansicht (z. B. bei **Volle Breite**), scrollen Mausrad und **↑** / **↓** zuerst
+innerhalb der Seite. Am unteren Rand blättert die nächste Drehung weiter, am oberen Rand zurück – dann sehen Sie
+das Ende der vorigen Seite. Während Sie in ein Textfeld schreiben, blättern die Pfeiltasten nicht.
+
 ---
 
 ## 4. Kommentieren
 
 ### Einen Absatz kommentieren
 1. Wählen Sie das Werkzeug **Kommentar**.
-2. Fahren Sie mit der Maus über den Text: Der erkannte Absatz wird **gestrichelt** umrandet.
+2. Fahren Sie mit der Maus über den Text: Der erkannte Absatz wird in der Kommentarfarbe **gestrichelt** umrandet – so groß, wie der Kommentar wird.
 3. **Klicken** Sie. Der Absatz wird farbig umrandet und hinterlegt, oben rechts erscheint die **Fußnotenzahl**.
 4. Unter der Seite erscheint die Fußnote mit dem Text „Neuer Kommentar“.
 
@@ -121,7 +127,7 @@ Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt
 
 ### Ein Rechteck aufziehen
 1. Werkzeug **Rechteck** wählen, **Farbe** und **Strichstärke** einstellen.
-2. Von einer Ecke zur gegenüberliegenden ziehen.
+2. Von einer Ecke zur gegenüberliegenden ziehen. Die Ecken sind wie bei Kommentaren leicht abgerundet.
 
 > **Hinweis:** Sehr kurze Striche oder winzige Rechtecke (Klick ohne Ziehen) werden nicht angelegt.
 
@@ -137,7 +143,7 @@ Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt
 
 ### Mit dem Radiererende des Stifts
 Drehen Sie den Stift um und streichen Sie mit dem Radiererende über die Markierung – egal, welches Werkzeug
-gerade gewählt ist.
+gerade gewählt ist. Der gestrichelte Radierkreis erscheint schon, sobald der Stift über der Seite schwebt.
 
 > **Gut zu wissen:** Rechtecke werden nur über ihren Rand erfasst, nicht über ihre Fläche. Kommentare werden
 > nicht radiert; sie entfernen Sie über das × an der Fußnotenzahl. Ein Radierstrich lässt sich mit einem

@@ -309,6 +309,11 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnAnnotationsChanged(int pageId)
     {
+        foreach (var thumbnail in Thumbnails.Where(item => item.Entry.Id == pageId))
+        {
+            thumbnail.ShowAnnotationKinds(Document.Annotations.For(pageId));
+        }
+
         if (pageId != CurrentPage.Id)
         {
             return;
@@ -336,11 +341,13 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         for (var i = 0; i < Document.Pages.Count; i++)
         {
             var entry = Document.Pages[i];
-            Thumbnails.Add(new PageThumbnailViewModel(entry, i + 1)
+            var thumbnail = new PageThumbnailViewModel(entry, i + 1)
             {
                 Thumbnail = _thumbnails.GetValueOrDefault((entry.SourcePageNumber, entry.Rotation)),
                 IsSelected = i == CurrentIndex,
-            });
+            };
+            thumbnail.ShowAnnotationKinds(Document.Annotations.For(entry.Id));
+            Thumbnails.Add(thumbnail);
         }
 
         OnPropertyChanged(nameof(PageStatus));
