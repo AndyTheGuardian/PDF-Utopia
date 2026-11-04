@@ -1,5 +1,7 @@
+using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
 using PdfUtopia.Pdf.Export;
+using PdfUtopia.Pdf.Rendering;
 
 namespace PdfUtopia.App.Services;
 
@@ -17,6 +19,34 @@ public enum UnsavedChangesChoice
     /// <summary>Änderungen verwerfen.</summary>
     Discard,
 }
+
+/// <summary>
+/// Eine Datei, aus der Seiten eingefügt werden können (A41).
+/// </summary>
+/// <param name="Path">Vollständiger Pfad.</param>
+/// <param name="DisplayName">Anzeigename.</param>
+/// <param name="KnownPassword">Bekanntes Passwort (geöffnetes Dokument) oder <c>null</c>.</param>
+/// <param name="HasUnsavedChanges">Ob das geöffnete Dokument ungespeicherte Änderungen hat; eingefügt wird der gespeicherte Stand.</param>
+/// <param name="IsOpenDocument">Ob die Datei in einem Tab geöffnet ist.</param>
+public sealed record InsertSourceOption(string Path, string DisplayName, string? KnownPassword, bool HasUnsavedChanges, bool IsOpenDocument);
+
+/// <summary>
+/// Vorgaben des Einfügen-Dialogs.
+/// </summary>
+/// <param name="Sources">Wählbare Quellen; die erste ist vorgewählt.</param>
+/// <param name="CurrentIndex">Angezeigte Seite des Zieldokuments (0-basiert).</param>
+/// <param name="PageCount">Seitenanzahl des Zieldokuments.</param>
+/// <param name="Position">Vorgewählte Position.</param>
+/// <param name="AfterPage">Seite bei <see cref="InsertPosition.AfterPage"/>.</param>
+public sealed record InsertRequest(IReadOnlyList<InsertSourceOption> Sources, int CurrentIndex, int PageCount, InsertPosition Position, int AfterPage);
+
+/// <summary>
+/// Ergebnis des Einfügen-Dialogs.
+/// </summary>
+/// <param name="Source">Die geöffnete Quelldatei.</param>
+/// <param name="Pages">Seitennummern der Quelle (1-basiert), in Zielreihenfolge.</param>
+/// <param name="Index">Position der ersten neuen Seite im Zieldokument.</param>
+public sealed record InsertChoice(PdfSource Source, IReadOnlyList<int> Pages, int Index);
 
 /// <summary>
 /// Ergebnis des Einstellungsdialogs.
@@ -55,6 +85,20 @@ public interface IDialogService
     /// <param name="pageCount">Seitenanzahl der aktuellen Seitenliste.</param>
     /// <returns>Die Seitenpositionen oder <c>null</c> bei Abbruch.</returns>
     Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount);
+
+    /// <summary>
+    /// Zeigt die Dateiauswahl für eine einzelne PDF-Datei.
+    /// </summary>
+    /// <returns>Der Pfad oder <c>null</c> bei Abbruch.</returns>
+    Task<string?> PickPdfFileAsync();
+
+    /// <summary>
+    /// Fragt nach Quelle, Seiten und Position zum Einfügen von Seiten aus einer anderen Datei (A41). Der Dialog
+    /// öffnet die gewählte Quelle selbst und fragt bei Bedarf nach ihrem Passwort.
+    /// </summary>
+    /// <param name="request">Quellen und Vorgaben.</param>
+    /// <returns>Die Auswahl (die Datei geht an den Aufrufer über) oder <c>null</c> bei Abbruch.</returns>
+    Task<InsertChoice?> AskPagesToInsertAsync(InsertRequest request);
 
     /// <summary>Zeigt die Einstellungen.</summary>
     /// <param name="current">Aktuelle Werte.</param>

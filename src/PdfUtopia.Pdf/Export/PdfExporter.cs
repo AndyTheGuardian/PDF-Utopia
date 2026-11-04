@@ -68,7 +68,17 @@ public static class PdfExporter
     /// <param name="targetPath">Zieldatei; darf die Quelldatei sein.</param>
     /// <param name="options">Exporteinstellungen.</param>
     public static void Save(PdfSource source, EditableDocument document, string targetPath, ExportOptions? options = null) =>
-        Write(source, document, document.Pages.ToList(), targetPath, options ?? new ExportOptions());
+        Save([source], document, targetPath, options);
+
+    /// <summary>
+    /// Speichert alle Seiten in der aktuellen Reihenfolge, auch eingefügte Seiten anderer Dateien (A41).
+    /// </summary>
+    /// <param name="sources">Quelldateien nach <see cref="PageEntry.SourceIndex"/>; die erste ist die geöffnete Datei.</param>
+    /// <param name="document">Das Bearbeitungsmodell.</param>
+    /// <param name="targetPath">Zieldatei; darf die Quelldatei sein.</param>
+    /// <param name="options">Exporteinstellungen; der Passwortschutz richtet sich nach der geöffneten Datei.</param>
+    public static void Save(IReadOnlyList<PdfSource> sources, EditableDocument document, string targetPath, ExportOptions? options = null) =>
+        Write(sources, document, document.Pages.ToList(), targetPath, options ?? new ExportOptions());
 
     /// <summary>
     /// Speichert ausgewählte Seiten in eine neue Datei, z. B. aus <see cref="PageSelectionParser"/>.
@@ -81,7 +91,21 @@ public static class PdfExporter
     /// <exception cref="ArgumentException">Ohne Seiten.</exception>
     /// <exception cref="ArgumentOutOfRangeException">Bei einer Position außerhalb der Seitenliste.</exception>
     public static void Extract(
-        PdfSource source, EditableDocument document, IReadOnlyList<int> positions, string targetPath, ExportOptions? options = null)
+        PdfSource source, EditableDocument document, IReadOnlyList<int> positions, string targetPath, ExportOptions? options = null) =>
+        Extract([source], document, positions, targetPath, options);
+
+    /// <summary>
+    /// Speichert ausgewählte Seiten in eine neue Datei, auch eingefügte Seiten anderer Dateien (A41).
+    /// </summary>
+    /// <param name="sources">Quelldateien nach <see cref="PageEntry.SourceIndex"/>; die erste ist die geöffnete Datei.</param>
+    /// <param name="document">Das Bearbeitungsmodell.</param>
+    /// <param name="positions">Seitenpositionen der aktuellen Seitenliste (1-basiert), in Zielreihenfolge.</param>
+    /// <param name="targetPath">Zieldatei.</param>
+    /// <param name="options">Exporteinstellungen.</param>
+    /// <exception cref="ArgumentException">Ohne Seiten.</exception>
+    /// <exception cref="ArgumentOutOfRangeException">Bei einer Position außerhalb der Seitenliste.</exception>
+    public static void Extract(
+        IReadOnlyList<PdfSource> sources, EditableDocument document, IReadOnlyList<int> positions, string targetPath, ExportOptions? options = null)
     {
         if (positions.Count == 0)
         {
@@ -94,37 +118,59 @@ public static class PdfExporter
             ArgumentOutOfRangeException.ThrowIfGreaterThan(position, document.Pages.Count);
         }
 
-        Write(source, document, positions.Select(position => document.Pages[position - 1]).ToList(), targetPath, options ?? new ExportOptions());
+        Write(sources, document, positions.Select(position => document.Pages[position - 1]).ToList(), targetPath, options ?? new ExportOptions());
     }
 
     /// <summary>
-    /// Baut das Zieldokument und speichert es.
+    /// Baut das Zieldokument und speichert es. Jede benötigte Quelldatei wird einmal zum Import geöffnet.
     /// </summary>
-    private static void Write(PdfSource source, EditableDocument document, IReadOnlyList<PageEntry> entries, string targetPath, ExportOptions options)
+    private static void Write(IReadOnlyList<PdfSource> sources, EditableDocument document, IReadOnlyList<PageEntry> entries, string targetPath, ExportOptions options)
     {
-        var targetPassword = options.TargetPassword(source.Password);
-        using var input = OpenForImport(source);
-        using var output = new PdfDocument();
-        var writer = new AnnotationWriter(output, options);
-        foreach (var entry in entries)
+        if (sources.Count == 0)
         {
-            var page = output.AddPage(input.Pages[entry.SourcePageNumber - 1]);
-            var geometry = GeometryOf(page);
-            var extension = writer.Write(page, geometry, document.Annotations.For(entry.Id), entry.Rotation);
-            if (extension > 0)
-            {
-                Extend(page, geometry, extension);
-            }
-
-            page.Rotate = (geometry.FileRotation + (int)entry.Rotation) % 360;
+            throw new ArgumentException("Es muss mindestens die geöffnete Datei angegeben sein.", nameof(sources));
         }
 
-        Protect(output, targetPassword);
-        SaveAtomically(output, targetPath);
+        var targetPassword = options.TargetPassword(sources[PageEntry.OpenedFile].Password);
+        var inputs = new Dictionary<int, PdfDocument>();
+        try
+        {
+            using var output = new PdfDocument();
+            var writer = new AnnotationWriter(output, options);
+            foreach (var entry in entries)
+            {
+                if (!inputs.TryGetValue(entry.SourceIndex, out var input))
+                {
+                    ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(entry.SourceIndex, sources.Count, nameof(entry.SourceIndex));
+                    input = OpenForImport(sources[entry.SourceIndex]);
+                    inputs[entry.SourceIndex] = input;
+                }
+
+                var page = output.AddPage(input.Pages[entry.SourcePageNumber - 1]);
+                var geometry = GeometryOf(page);
+                var extension = writer.Write(page, geometry, document.Annotations.For(entry.Id), entry.Rotation);
+                if (extension > 0)
+                {
+                    Extend(page, geometry, extension);
+                }
+
+                page.Rotate = (geometry.FileRotation + (int)entry.Rotation) % 360;
+            }
+
+            Protect(output, targetPassword);
+            SaveAtomically(output, targetPath);
+        }
+        finally
+        {
+            foreach (var input in inputs.Values)
+            {
+                input.Dispose();
+            }
+        }
     }
 
     /// <summary>
-    /// Öffnet die Quelldatei aus dem Speicher zum Übernehmen von Seiten.
+    /// Öffnet eine Quelldatei aus dem Speicher zum Übernehmen von Seiten.
     /// </summary>
     private static PdfDocument OpenForImport(PdfSource source)
     {

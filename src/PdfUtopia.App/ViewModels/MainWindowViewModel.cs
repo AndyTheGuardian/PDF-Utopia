@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using PdfUtopia.App.Localization;
 using PdfUtopia.App.Services;
 using PdfUtopia.Core.Geometry;
+using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
 using PdfUtopia.Pdf;
 using PdfUtopia.Pdf.Export;
@@ -78,7 +79,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <summary>Angezeigtes Dokument.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasDocument), nameof(NoDocument))]
-    [NotifyCanExecuteChangedFor(nameof(SaveAsCommand), nameof(ExtractCommand), nameof(PrintCommand), nameof(CloseDocumentCommand),
+    [NotifyCanExecuteChangedFor(nameof(SaveAsCommand), nameof(ExtractCommand), nameof(InsertPagesCommand), nameof(PrintCommand), nameof(CloseDocumentCommand),
         nameof(RotateCurrentPageCommand), nameof(DeleteCurrentPageCommand), nameof(UndoCommand), nameof(RedoCommand))]
     public partial DocumentViewModel? ActiveDocument { get; set; }
 
@@ -158,6 +159,27 @@ public sealed partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Fügt Seiten aus PDF-Dateien ein, die auf die Seitenliste gezogen wurden (A41, F26). Für jede Datei erscheint
+    /// der Einfügen-Dialog; die Seiten mehrerer Dateien folgen in der Reihenfolge der Dateien aufeinander.
+    /// </summary>
+    /// <param name="paths">Die Pfade; andere Dateien als PDF werden übergangen.</param>
+    /// <param name="index">Position, an der die Datei abgelegt wurde (0 bis Seitenanzahl).</param>
+    /// <returns>Ein Task.</returns>
+    public async Task InsertPagesFromFilesAsync(IEnumerable<string> paths, int index)
+    {
+        if (ActiveDocument is not { } document)
+        {
+            return;
+        }
+
+        foreach (var path in paths.Where(path => path.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase)))
+        {
+            var inserted = await InsertPagesAsync(document, Path.GetFullPath(path), InsertPosition.AfterPage, index);
+            index += inserted;
+        }
+    }
+
+    /// <summary>
     /// Fragt vor dem Schließen des Fensters nach ungespeicherten Änderungen aller Dokumente.
     /// </summary>
     /// <returns><c>true</c>, wenn geschlossen werden darf.</returns>
@@ -201,8 +223,63 @@ public sealed partial class MainWindowViewModel : ObservableObject
         var target = await _dialogs.PickSaveFileAsync(SuggestedName(document, "Save.ExtractSuffix"));
         if (target is not null)
         {
-            await RunExportAsync(() => PdfExporter.Extract(document.Source, document.Document, positions, target, options));
+            await RunExportAsync(() => PdfExporter.Extract(document.Sources, document.Document, positions, target, options));
         }
+    }
+
+    /// <summary>Fügt Seiten aus einer anderen PDF-Datei ein (A41).</summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private async Task InsertPagesAsync() => await InsertPagesAsync(ActiveDocument!, null, InsertPosition.AfterCurrent, 0);
+
+    /// <summary>
+    /// Zeigt den Einfügen-Dialog und fügt die gewählten Seiten ein. Als Quellen stehen die übergebene Datei, die
+    /// anderen geöffneten Dokumente (wie gespeichert) und die Dateiauswahl zur Verfügung.
+    /// </summary>
+    /// <param name="document">Zieldokument.</param>
+    /// <param name="presetPath">Vorgewählte Datei (Drag &amp; Drop) oder <c>null</c>.</param>
+    /// <param name="position">Vorgewählte Position.</param>
+    /// <param name="afterPage">Seite bei <see cref="InsertPosition.AfterPage"/>.</param>
+    /// <returns>Anzahl der eingefügten Seiten.</returns>
+    private async Task<int> InsertPagesAsync(DocumentViewModel document, string? presetPath, InsertPosition position, int afterPage)
+    {
+        var sources = new List<InsertSourceOption>();
+        if (presetPath is not null)
+        {
+            sources.Add(OptionFor(presetPath));
+        }
+
+        sources.AddRange(Documents
+            .Where(other => other != document && other.Source.FilePath != presetPath)
+            .Select(other => new InsertSourceOption(other.Source.FilePath, other.FileName, other.Source.Password, other.Document.IsModified, IsOpenDocument: true)));
+
+        if (sources.Count == 0)
+        {
+            // Ohne andere Quellen gleich die Dateiauswahl zeigen
+            if (await _dialogs.PickPdfFileAsync() is not { } picked)
+            {
+                return 0;
+            }
+
+            sources.Add(OptionFor(picked));
+        }
+
+        var request = new InsertRequest(sources, document.CurrentIndex, document.Document.Pages.Count, position, afterPage);
+        if (await _dialogs.AskPagesToInsertAsync(request) is not { } choice)
+        {
+            return 0;
+        }
+
+        document.InsertPages(choice.Source, choice.Pages, choice.Index);
+        return choice.Pages.Count;
+    }
+
+    /// <summary>
+    /// Quelle für eine Datei; ist sie in einem Tab geöffnet, wird dessen Passwort übernommen.
+    /// </summary>
+    private InsertSourceOption OptionFor(string path)
+    {
+        var open = Documents.FirstOrDefault(document => document.Source.FilePath == path);
+        return new InsertSourceOption(path, Path.GetFileName(path), open?.Source.Password, open?.Document.IsModified ?? false, open is not null);
     }
 
     /// <summary>
@@ -214,7 +291,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         var document = ActiveDocument!;
         var path = Path.Combine(Path.GetTempPath(), $"PDF Utopia – {Path.GetFileNameWithoutExtension(document.FileName)}.pdf");
         var options = new ExportOptions { FootnoteHeading = Loc.T("Footnotes.Heading"), PasswordMode = PasswordMode.Remove };
-        if (await RunExportAsync(() => PdfExporter.Save(document.Source, document.Document, path, options), markSaved: false, document))
+        if (await RunExportAsync(() => PdfExporter.Save(document.Sources, document.Document, path, options), markSaved: false, document))
         {
             await _dialogs.ShowMessageAsync(Loc.T("Print.Title"), Loc.T("Print.Message"));
             Process.Start(new ProcessStartInfo(path) { UseShellExecute = true });
@@ -440,7 +517,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
 
         var target = await _dialogs.PickSaveFileAsync(SuggestedName(document, "Save.SuggestedSuffix"));
-        return target is not null && await RunExportAsync(() => PdfExporter.Save(document.Source, document.Document, target, options), true, document);
+        return target is not null && await RunExportAsync(() => PdfExporter.Save(document.Sources, document.Document, target, options), true, document);
     }
 
     /// <summary>
@@ -524,7 +601,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         for (var i = 0; i < document.Document.Pages.Count; i++)
         {
-            yield return (i, PdfSource.CountOccurrences(document.Source.PageText(document.Document.Pages[i].SourcePageNumber), SearchText));
+            yield return (i, PdfSource.CountOccurrences(document.SourceOf(document.Document.Pages[i]).PageText(document.Document.Pages[i].SourcePageNumber), SearchText));
         }
     }
 

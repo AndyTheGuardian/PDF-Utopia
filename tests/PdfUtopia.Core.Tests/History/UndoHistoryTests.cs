@@ -103,4 +103,69 @@ public sealed class UndoHistoryTests
 
     [Fact]
     public void Default_IsFiftySteps() => Assert.Equal(50, new UndoHistory().Limit);
+
+    [Fact]
+    public void State_ReturnsAfterUndoAndRedo()
+    {
+        var counter = new Counter();
+        var history = new UndoHistory();
+        var initial = history.State;
+
+        history.Execute(counter.Increment());
+        var afterFirst = history.State;
+        history.Execute(counter.Increment());
+        Assert.NotEqual(afterFirst, history.State);
+
+        history.Undo();
+        Assert.Equal(afterFirst, history.State);
+        history.Undo();
+        Assert.Equal(initial, history.State);
+        history.Redo();
+        Assert.Equal(afterFirst, history.State);
+    }
+
+    [Fact]
+    public void State_NewStepAfterUndo_IsNew()
+    {
+        var counter = new Counter();
+        var history = new UndoHistory();
+        history.Execute(counter.Increment());
+        var undone = history.State;
+        history.Undo();
+
+        history.Execute(counter.Increment());
+
+        Assert.NotEqual(undone, history.State);
+    }
+
+    [Fact]
+    public void State_TrimmedSteps_DoNotReturnToInitialState()
+    {
+        var counter = new Counter();
+        var history = new UndoHistory(limit: 2);
+        var initial = history.State;
+        for (var i = 0; i < 3; i++)
+        {
+            history.Execute(counter.Increment());
+        }
+
+        while (history.Undo())
+        {
+        }
+
+        Assert.NotEqual(initial, history.State);
+    }
+
+    [Fact]
+    public void State_Clear_KeepsCurrentState()
+    {
+        var counter = new Counter();
+        var history = new UndoHistory();
+        history.Execute(counter.Increment());
+        var current = history.State;
+
+        history.Clear();
+
+        Assert.Equal(current, history.State);
+    }
 }

@@ -98,7 +98,7 @@ dafür wäre ein eigenes Bundle nötig.
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ PDF Utopia   Datei  Bearbeiten  Ansicht  Sprache                  (Menü) │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ Öffnen Speichern Drucken │ ↶ ↷ │ Werkzeuge │ Extrahieren Drehen Löschen  │
+│ Öffnen Speichern Drucken │ ↶ ↷ │ Werkzeuge │ Extrahieren Einfügen Drehen Löschen │
 │ │ − 100 % + │                                 [Suche … ×]  ● Akzentfarbe │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Werkzeug: Farbe, Strichstärke, … (Optionsleiste)                 Hinweis │
@@ -122,8 +122,8 @@ dafür wäre ein eigenes Bundle nötig.
 | Menüleiste | Datei, Bearbeiten, Ansicht (Design, Akzentfarbe, Zoom), Sprache |
 | Werkzeugleiste | häufige Befehle, die Werkzeuge, Zoom, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung |
-| Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen |
-| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Rechteck) |
+| Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
+| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Rechteck); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
 | Seitenansicht | die angezeigte Seite mit Annotationen; darunter die Fußnoten der Kommentare |
 | Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom |
 
@@ -209,6 +209,24 @@ Die Eingabe besteht aus einzelnen Seiten und Bereichen, durch Kommas getrennt, z
 Die Seitennummern beziehen sich auf die **aktuelle Seitenliste** links – also nach Umsortieren und Löschen.
 Extrahierte Seiten übernehmen ihre Drehung und ihre Annotationen. Der Dialog zeigt während der Eingabe eine
 Vorschau der neuen Datei und alle Hinweise.
+
+### 5.5a Seiten aus anderer PDF-Datei einfügen
+
+Das Gegenstück zum Extrahieren: **Einfügen** (Werkzeugleiste), **Datei → Seiten einfügen…** oder **Strg+I**.
+Alternativ eine PDF-Datei aus dem Dateimanager **auf die Seitenliste ziehen**; eine Linie zeigt, wo die Seiten
+hinkommen. Wird die Datei woanders im Fenster abgelegt, öffnet sie sich wie bisher in einem eigenen Tab.
+
+| Einstellung | Bedeutung |
+|---|---|
+| Quelle | eine Datei („Datei wählen…“) oder ein anderes geöffnetes Dokument. Bei einem geöffneten Dokument wird der zuletzt **gespeicherte** Stand eingefügt; hat es ungespeicherte Änderungen, weist der Dialog darauf hin. |
+| Passwort | erscheint nur bei geschützten Dateien. Es wird nur zum Lesen gebraucht. Bei geöffneten Dokumenten ist es schon bekannt. |
+| Seiten der Quelle | Eingabe wie beim Extrahieren (Regeln in 5.5); vorgewählt sind alle Seiten (z. B. `1-13`). Ein Klick auf eine Miniatur nimmt die Seite in die Auswahl auf oder heraus. Die Knöpfe **Alle**, **Keine** und **Umkehren** wählen alle Seiten, heben die Auswahl auf oder kehren sie um. |
+| Einfügen | **nach der aktuellen Seite** (Standard), am Anfang, am Ende oder nach einer bestimmten Seite. Darunter steht, welche Positionen die neuen Seiten bekommen. |
+
+Nach dem Einfügen wird die erste neue Seite angezeigt. Das Einfügen ist **ein** Rückgängig-Schritt. Die Seiten
+bringen ihre Anmerkungen mit: von PDF Utopia gespeicherte sind danach bearbeitbar, die anderer Programme bleiben
+unverändert sichtbar. Eingefügte Seiten lassen sich wie alle anderen umsortieren, drehen, löschen, bearbeiten,
+extrahieren und durchsuchen. Gespeichert wird mit dem Passwortschutz des aktuellen Dokuments.
 
 ### 5.6 Speichern
 
@@ -301,6 +319,7 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 | Strg+O | Öffnen |
 | Strg+Umschalt+S | Speichern unter |
 | Strg+E | Seiten extrahieren |
+| Strg+I | Seiten aus anderer PDF-Datei einfügen |
 | Strg+P | Drucken |
 | Strg+W | Dokument schließen |
 | Strg+Z | Rückgängig |
@@ -358,6 +377,7 @@ Zurücksetzen aller Einstellungen genügt es, die Datei zu löschen, während PD
 | – | Annotationen anderer Programme werden angezeigt, sind aber nicht bearbeitbar. |
 | – | Beim Speichern einer geschützten Fremddatei geht ein abweichendes Besitzerpasswort verloren; es wird durch das eingegebene Passwort ersetzt. |
 | – | Die Absatzerkennung kann bei Spalten, Tabellen oder ungewöhnlichem Satz danebenliegen; dann einen Bereich aufziehen. |
+| – | Beim Einfügen von Seiten werden Lesezeichen, Formularfelder und Verknüpfungen der Quelldatei nicht übernommen. Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 
 ---
 

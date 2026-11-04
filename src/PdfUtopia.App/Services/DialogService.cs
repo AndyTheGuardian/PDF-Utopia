@@ -159,6 +159,22 @@ public sealed class DialogService(Window owner) : IDialogService
     }
 
     /// <inheritdoc />
+    public async Task<string?> PickPdfFileAsync()
+    {
+        var files = await Owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = Loc.T("Insert.Title"),
+            AllowMultiple = false,
+            FileTypeFilter = [PdfFileType()],
+        });
+        return files.Select(file => file.TryGetLocalPath()).OfType<string>().FirstOrDefault();
+    }
+
+    /// <inheritdoc />
+    public async Task<InsertChoice?> AskPagesToInsertAsync(InsertRequest request) =>
+        await new InsertPagesDialog(this, request).ShowAsync();
+
+    /// <inheritdoc />
     public async Task<SettingsChoice?> EditSettingsAsync(SettingsChoice current)
     {
         var theme = new ComboBox
@@ -226,11 +242,13 @@ public sealed class DialogService(Window owner) : IDialogService
     /// <summary>
     /// Text eines Hinweises der Seitenauswahl.
     /// </summary>
-    private static string HintText(PageSelectionHint hint) => hint.Kind switch
+    /// <param name="hint">Der Hinweis.</param>
+    /// <param name="duplicateKey">Text für doppelt angegebene Seiten (extrahieren bzw. einfügen).</param>
+    internal static string HintText(PageSelectionHint hint, string duplicateKey = "Extract.HintDuplicate") => hint.Kind switch
     {
         PageSelectionHintKind.ReversedRange => Loc.F("Extract.HintSwap", hint.Token, hint.RangeStart!, hint.RangeEnd!),
         PageSelectionHintKind.PageClamped => Loc.F("Extract.HintClamp", hint.Token, hint.Page!, hint.RangeEnd!),
-        PageSelectionHintKind.DuplicatePage => Loc.F("Extract.HintDuplicate", hint.Page!),
+        PageSelectionHintKind.DuplicatePage => Loc.F(duplicateKey, hint.Page!),
         _ => Loc.F("Extract.HintInvalid", hint.Token),
     };
 
@@ -242,11 +260,11 @@ public sealed class DialogService(Window owner) : IDialogService
     private static string Clean(string text) => text.Replace("_", string.Empty, StringComparison.Ordinal);
 
     /// <summary>Ressource aus dem aktuellen Theme.</summary>
-    private static IBrush? Resource(string key) =>
+    internal static IBrush? Resource(string key) =>
         Application.Current!.TryGetResource(key, Application.Current.ActualThemeVariant, out var value) ? value as IBrush : null;
 
     /// <summary>Erzeugt das Grundgerüst eines modalen Dialogs.</summary>
-    private static Window CreateDialog(string title, Control content) => new()
+    internal static Window CreateDialog(string title, Control content) => new()
     {
         Title = title,
         SizeToContent = SizeToContent.WidthAndHeight,
@@ -260,10 +278,10 @@ public sealed class DialogService(Window owner) : IDialogService
     };
 
     /// <summary>Umbrechender Meldungstext.</summary>
-    private static TextBlock Message(string message) => new() { Text = message, TextWrapping = TextWrapping.Wrap, MaxWidth = 520 };
+    internal static TextBlock Message(string message) => new() { Text = message, TextWrapping = TextWrapping.Wrap, MaxWidth = 520 };
 
     /// <summary>Hinweis in Warnfarben (Extract).</summary>
-    private static Border Warning(string text) => new()
+    internal static Border Warning(string text) => new()
     {
         Background = Resource("WarnBackgroundBrush"), CornerRadius = new CornerRadius(6), Padding = new Thickness(9, 5),
         Child = new TextBlock { Text = "⚠ " + text, Foreground = Resource("WarnTextBrush"), FontSize = 12, TextWrapping = TextWrapping.Wrap },
@@ -288,10 +306,10 @@ public sealed class DialogService(Window owner) : IDialogService
     }
 
     /// <summary>Zeile für rechtsbündige Schaltflächen.</summary>
-    private static StackPanel ButtonRow() => new() { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
+    internal static StackPanel ButtonRow() => new() { Orientation = Orientation.Horizontal, Spacing = 8, HorizontalAlignment = HorizontalAlignment.Right };
 
     /// <summary>Kennzeichnet die Standardschaltfläche.</summary>
-    private static void MarkPrimary(Button button)
+    internal static void MarkPrimary(Button button)
     {
         button.IsDefault = true;
         button.Classes.Add("accent");

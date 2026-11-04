@@ -6,7 +6,15 @@ namespace PdfUtopia.Core.Pages;
 /// <param name="Id">Feste Kennung; bleibt beim Umsortieren und Drehen gleich und ordnet die Annotationen zu.</param>
 /// <param name="SourcePageNumber">Seitennummer in der geöffneten Datei (1-basiert).</param>
 /// <param name="Rotation">Zusätzliche Drehung gegenüber der Datei.</param>
-public sealed record PageEntry(int Id, int SourcePageNumber, PageRotation Rotation = PageRotation.None);
+/// <param name="SourceIndex">Quelldatei: 0 = die geöffnete Datei, ab 1 eine Datei, aus der Seiten eingefügt wurden (A41).</param>
+public sealed record PageEntry(int Id, int SourcePageNumber, PageRotation Rotation = PageRotation.None, int SourceIndex = 0)
+{
+    /// <summary>Kennung der geöffneten Datei in <see cref="SourceIndex"/>.</summary>
+    public const int OpenedFile = 0;
+
+    /// <summary>Ob die Seite aus einer anderen Datei eingefügt wurde.</summary>
+    public bool IsInserted => SourceIndex != OpenedFile;
+}
 
 /// <summary>
 /// Reihenfolge, Drehung und Bestand der Seiten eines Dokuments. Ein Dokument behält immer mindestens eine Seite.
@@ -14,6 +22,7 @@ public sealed record PageEntry(int Id, int SourcePageNumber, PageRotation Rotati
 public sealed class PageList : IReadOnlyList<PageEntry>
 {
     private readonly List<PageEntry> _pages;
+    private int _nextId;
 
     /// <summary>
     /// Erzeugt die Seitenliste einer geöffneten Datei mit den Seiten 1 bis <paramref name="sourcePageCount"/>.
@@ -24,6 +33,7 @@ public sealed class PageList : IReadOnlyList<PageEntry>
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(sourcePageCount, 1);
         _pages = Enumerable.Range(1, sourcePageCount).Select(number => new PageEntry(number, number)).ToList();
+        _nextId = sourcePageCount + 1;
     }
 
     /// <summary>Wird nach jeder Änderung ausgelöst.</summary>
@@ -115,6 +125,56 @@ public sealed class PageList : IReadOnlyList<PageEntry>
         }
 
         _pages.Insert(index, page);
+        OnChanged();
+    }
+
+    /// <summary>
+    /// Erzeugt neue Seiten mit bisher nicht vergebenen Kennungen, ohne sie einzufügen (Seiten einfügen, A41).
+    /// </summary>
+    /// <param name="sourceIndex">Quelldatei der Seiten.</param>
+    /// <param name="sourcePageNumbers">Seitennummern in der Quelldatei (1-basiert), in Zielreihenfolge.</param>
+    /// <returns>Die neuen Seiten.</returns>
+    public IReadOnlyList<PageEntry> CreateEntries(int sourceIndex, IEnumerable<int> sourcePageNumbers) =>
+        sourcePageNumbers.Select(number => new PageEntry(_nextId++, number, SourceIndex: sourceIndex)).ToList();
+
+    /// <summary>
+    /// Fügt mehrere Seiten an einer Position ein.
+    /// </summary>
+    /// <param name="index">Position (0 bis <see cref="Count"/>).</param>
+    /// <param name="pages">Die Seiten.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Bei einer Position außerhalb der Liste.</exception>
+    /// <exception cref="InvalidOperationException">Wenn eine Seite mit derselben Kennung schon enthalten ist.</exception>
+    public void InsertRange(int index, IReadOnlyList<PageEntry> pages)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, _pages.Count);
+        if (pages.FirstOrDefault(page => IndexOf(page.Id) >= 0) is { } duplicate)
+        {
+            throw new InvalidOperationException($"Seite {duplicate.Id} ist bereits enthalten.");
+        }
+
+        _pages.InsertRange(index, pages);
+        OnChanged();
+    }
+
+    /// <summary>
+    /// Entfernt mehrere aufeinanderfolgende Seiten; mindestens eine Seite bleibt erhalten.
+    /// </summary>
+    /// <param name="index">Position der ersten Seite.</param>
+    /// <param name="count">Anzahl.</param>
+    /// <exception cref="ArgumentOutOfRangeException">Bei einem Bereich außerhalb der Liste.</exception>
+    /// <exception cref="InvalidOperationException">Wenn keine Seite übrig bliebe.</exception>
+    public void RemoveRange(int index, int count)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfNegative(count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index + count, _pages.Count);
+        if (count >= _pages.Count)
+        {
+            throw new InvalidOperationException("Ein Dokument behält immer mindestens eine Seite.");
+        }
+
+        _pages.RemoveRange(index, count);
         OnChanged();
     }
 

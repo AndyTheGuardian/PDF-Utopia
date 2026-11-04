@@ -15,7 +15,8 @@ public interface IUndoableCommand
 /// <summary>
 /// Verlauf für Rückgängig/Wiederholen mit einstellbarer Höchstzahl an Schritten (1–500, Standard 50).
 /// Wird die Höchstzahl überschritten, fällt der älteste Schritt weg. Ein neuer Schritt verwirft alle
-/// wiederholbaren Schritte.
+/// wiederholbaren Schritte. Jeder Stand des Verlaufs hat eine Kennung (<see cref="State"/>), damit sich erkennen
+/// lässt, ob Rückgängig/Wiederholen zu einem gespeicherten Stand zurückgeführt hat.
 /// </summary>
 public sealed class UndoHistory
 {
@@ -28,9 +29,11 @@ public sealed class UndoHistory
     /// <summary>Standard-Schrittzahl.</summary>
     public const int DefaultLimit = 50;
 
-    private readonly LinkedList<IUndoableCommand> _undo = new();
-    private readonly Stack<IUndoableCommand> _redo = new();
+    private readonly LinkedList<Step> _undo = new();
+    private readonly Stack<Step> _redo = new();
     private int _limit;
+    private long _nextState = 1;
+    private long _baseState;
 
     /// <summary>
     /// Erzeugt einen leeren Verlauf.
@@ -56,6 +59,12 @@ public sealed class UndoHistory
             }
         }
     }
+
+    /// <summary>
+    /// Kennung des aktuellen Stands. Sie ist nach Rückgängig und Wiederholen dieselbe wie vorher bei diesem Stand;
+    /// ein neuer Schritt ergibt immer eine neue Kennung.
+    /// </summary>
+    public long State => _undo.Last?.Value.State ?? _baseState;
 
     /// <summary>Anzahl rückgängig machbarer Schritte.</summary>
     public int UndoCount => _undo.Count;
@@ -83,7 +92,7 @@ public sealed class UndoHistory
     public void Execute(IUndoableCommand command)
     {
         command.Execute();
-        _undo.AddLast(command);
+        _undo.AddLast(new Step(command, _nextState++));
         _redo.Clear();
         Trim();
         OnChanged();
@@ -101,7 +110,7 @@ public sealed class UndoHistory
         }
 
         _undo.RemoveLast();
-        last.Value.Undo();
+        last.Value.Command.Undo();
         _redo.Push(last.Value);
         OnChanged();
         return true;
@@ -113,13 +122,13 @@ public sealed class UndoHistory
     /// <returns><c>true</c>, wenn ein Schritt wiederholt wurde.</returns>
     public bool Redo()
     {
-        if (!_redo.TryPop(out var command))
+        if (!_redo.TryPop(out var step))
         {
             return false;
         }
 
-        command.Execute();
-        _undo.AddLast(command);
+        step.Command.Execute();
+        _undo.AddLast(step);
         OnChanged();
         return true;
     }
@@ -129,6 +138,8 @@ public sealed class UndoHistory
     /// </summary>
     public void Clear()
     {
+        // Der aktuelle Stand bleibt derselbe, er ist nur nicht mehr verlassbar
+        _baseState = State;
         _undo.Clear();
         _redo.Clear();
         OnChanged();
@@ -141,8 +152,10 @@ public sealed class UndoHistory
     private bool Trim()
     {
         var trimmed = false;
-        while (_undo.Count > _limit)
+        while (_undo.Count > _limit && _undo.First is { } oldest)
         {
+            // Der Stand nach dem ältesten Schritt wird zum frühesten erreichbaren Stand
+            _baseState = oldest.Value.State;
             _undo.RemoveFirst();
             trimmed = true;
         }
@@ -154,4 +167,9 @@ public sealed class UndoHistory
     /// Meldet eine Änderung.
     /// </summary>
     private void OnChanged() => Changed?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>
+    /// Ein Schritt im Verlauf mit der Kennung des Stands nach diesem Schritt.
+    /// </summary>
+    private readonly record struct Step(IUndoableCommand Command, long State);
 }

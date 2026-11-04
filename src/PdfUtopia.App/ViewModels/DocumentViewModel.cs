@@ -20,9 +20,10 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     private const double ThumbnailWidth = 106;
 
     private readonly PageRenderer _renderer;
-    private readonly Dictionary<(int Page, PageRotation Rotation), Bitmap> _thumbnails = [];
-    private readonly Dictionary<int, IReadOnlyList<PdfRect>> _textBlocks = [];
-    private readonly Dictionary<int, IReadOnlyList<PdfRect>> _searchHits = [];
+    private readonly List<PdfSource> _sources = [];
+    private readonly Dictionary<(int Source, int Page, PageRotation Rotation), Bitmap> _thumbnails = [];
+    private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _textBlocks = [];
+    private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _searchHits = [];
     private string _searchTerm = string.Empty;
 
     /// <summary>
@@ -33,8 +34,9 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public DocumentViewModel(PdfSource source, int undoLimit)
     {
         Source = source;
+        _sources.Add(source);
         Document = source.CreateDocument(undoLimit);
-        _renderer = new PageRenderer(source);
+        _renderer = new PageRenderer(SourceOf);
         Document.Pages.Changed += (_, _) => OnPagesChanged();
         Document.Annotations.Changed += (_, pageId) => OnAnnotationsChanged(pageId);
         Document.History.Changed += (_, _) => OnHistoryChanged();
@@ -47,6 +49,12 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 
     /// <summary>Die geöffnete Datei.</summary>
     public PdfSource Source { get; }
+
+    /// <summary>
+    /// Alle Quelldateien nach <see cref="PageEntry.SourceIndex"/>: zuerst die geöffnete Datei, dann die Dateien,
+    /// aus denen Seiten eingefügt wurden (A41).
+    /// </summary>
+    public IReadOnlyList<PdfSource> Sources => _sources;
 
     /// <summary>Das Bearbeitungsmodell.</summary>
     public EditableDocument Document { get; }
@@ -96,7 +104,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public PageEntry CurrentPage => Document.Pages[Math.Clamp(CurrentIndex, 0, Document.Pages.Count - 1)];
 
     /// <summary>Größe der ungedrehten Seite in Punkten (wie die Datei sie anzeigt).</summary>
-    public (double Width, double Height) CurrentPageSize => Source.PageSize(CurrentPage.SourcePageNumber);
+    public (double Width, double Height) CurrentPageSize => SourceOf(CurrentPage).PageSize(CurrentPage.SourcePageNumber);
 
     /// <summary>Größe der angezeigten, ggf. gedrehten Seite in Punkten.</summary>
     public (double Width, double Height) CurrentDisplaySize
@@ -138,11 +146,33 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public async Task RenderCurrentAsync(double scale)
     {
         var page = CurrentPage;
-        var bitmap = await _renderer.RenderAsync(page.SourcePageNumber, page.Rotation, scale);
+        var bitmap = await _renderer.RenderAsync(page, scale);
         if (page == CurrentPage)
         {
             CurrentBitmap = bitmap;
         }
+    }
+
+    /// <summary>
+    /// Quelldatei einer Seite.
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <returns>Die Datei.</returns>
+    public PdfSource SourceOf(PageEntry page) => SourceOf(page.SourceIndex);
+
+    /// <summary>
+    /// Fügt Seiten einer anderen Datei als einen Rückgängig-Schritt ein und zeigt die erste davon an (A41).
+    /// Ihre gespeicherten Annotationen kommen mit (F25). Das Dokument übernimmt die Datei und gibt sie beim
+    /// Schließen frei.
+    /// </summary>
+    /// <param name="source">Die Datei.</param>
+    /// <param name="sourcePageNumbers">Seitennummern in der Datei (1-basiert), in Zielreihenfolge.</param>
+    /// <param name="index">Position der ersten neuen Seite.</param>
+    public void InsertPages(PdfSource source, IReadOnlyList<int> sourcePageNumbers, int index)
+    {
+        _sources.Add(source);
+        Document.InsertPages(index, _sources.Count - 1, sourcePageNumbers, page => source.SavedAnnotations.GetValueOrDefault(page) ?? []);
+        Show(index);
     }
 
     /// <summary>
@@ -199,10 +229,10 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     {
         get
         {
-            var page = CurrentPage.SourcePageNumber;
+            var page = (CurrentPage.SourceIndex, CurrentPage.SourcePageNumber);
             if (!_textBlocks.TryGetValue(page, out var blocks))
             {
-                blocks = Source.TextBlocks(page);
+                blocks = SourceOf(CurrentPage).TextBlocks(page.SourcePageNumber);
                 _textBlocks[page] = blocks;
             }
 
@@ -241,10 +271,10 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
                 return [];
             }
 
-            var page = CurrentPage.SourcePageNumber;
+            var page = (CurrentPage.SourceIndex, CurrentPage.SourcePageNumber);
             if (!_searchHits.TryGetValue(page, out var hits))
             {
-                hits = Source.FindText(page, _searchTerm);
+                hits = SourceOf(CurrentPage).FindText(page.SourcePageNumber, _searchTerm);
                 _searchHits[page] = hits;
             }
 
@@ -264,8 +294,16 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
             bitmap.Dispose();
         }
 
-        Source.Dispose();
+        foreach (var source in _sources)
+        {
+            source.Dispose();
+        }
     }
+
+    /// <summary>
+    /// Quelldatei zu einer Kennung aus <see cref="PageEntry.SourceIndex"/>.
+    /// </summary>
+    private PdfSource SourceOf(int sourceIndex) => _sources[sourceIndex];
 
     /// <summary>
     /// Übernimmt einen geänderten Fußnotentext (nur wenn er sich wirklich geändert hat).
@@ -341,9 +379,10 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         for (var i = 0; i < Document.Pages.Count; i++)
         {
             var entry = Document.Pages[i];
-            var thumbnail = new PageThumbnailViewModel(entry, i + 1)
+            var sourceName = entry.IsInserted ? Path.GetFileName(SourceOf(entry).FilePath) : null;
+            var thumbnail = new PageThumbnailViewModel(entry, i + 1, sourceName)
             {
-                Thumbnail = _thumbnails.GetValueOrDefault((entry.SourcePageNumber, entry.Rotation)),
+                Thumbnail = _thumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation)),
                 IsSelected = i == CurrentIndex,
             };
             thumbnail.ShowAnnotationKinds(Document.Annotations.For(entry.Id));
@@ -360,13 +399,15 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     {
         foreach (var thumbnail in Thumbnails.ToList().Where(item => item.Thumbnail is null))
         {
-            var key = (thumbnail.Entry.SourcePageNumber, thumbnail.Entry.Rotation);
+            var entry = thumbnail.Entry;
+            var key = (entry.SourceIndex, entry.SourcePageNumber, entry.Rotation);
             if (!_thumbnails.TryGetValue(key, out var bitmap))
             {
-                var (width, height) = PageTransform.RotatedSize(
-                    Source.PageSize(key.SourcePageNumber).Width, Source.PageSize(key.SourcePageNumber).Height, key.Rotation);
+                var source = SourceOf(entry);
+                var (pageWidth, pageHeight) = source.PageSize(entry.SourcePageNumber);
+                var (width, height) = PageTransform.RotatedSize(pageWidth, pageHeight, entry.Rotation);
                 var scale = ThumbnailWidth / Math.Max(width, height / 1.414);
-                var rendered = await Task.Run(() => Source.Render(key.SourcePageNumber, scale, key.Rotation));
+                var rendered = await Task.Run(() => source.Render(entry.SourcePageNumber, scale, entry.Rotation));
                 bitmap = PageRenderer.ToBitmap(rendered);
                 _thumbnails[key] = bitmap;
             }

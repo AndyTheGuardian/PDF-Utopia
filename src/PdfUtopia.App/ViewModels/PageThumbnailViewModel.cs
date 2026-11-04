@@ -7,11 +7,13 @@ using PdfUtopia.Core.Pages;
 namespace PdfUtopia.App.ViewModels;
 
 /// <summary>
-/// Eintrag der Seitenliste links: Miniatur, Position und – nach dem Umsortieren – die ursprüngliche Seitennummer.
+/// Eintrag der Seitenliste links: Miniatur, Position und – nach dem Umsortieren – die ursprüngliche Seitennummer;
+/// bei eingefügten Seiten deren Herkunft (A41).
 /// </summary>
 /// <param name="entry">Die Seite.</param>
 /// <param name="position">Position in der Liste (1-basiert).</param>
-public sealed partial class PageThumbnailViewModel(PageEntry entry, int position) : ObservableObject
+/// <param name="sourceName">Dateiname der Quelle bei eingefügten Seiten, sonst <c>null</c>.</param>
+public sealed partial class PageThumbnailViewModel(PageEntry entry, int position, string? sourceName = null) : ObservableObject
 {
     /// <summary>Die Seite.</summary>
     public PageEntry Entry { get; } = entry;
@@ -22,8 +24,17 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     /// <summary>Beschriftung unter der Miniatur.</summary>
     public string Label => Position.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
-    /// <summary>Ursprüngliche Seitennummer, falls die Seite verschoben wurde, sonst leer.</summary>
-    public string OriginalHint => Entry.SourcePageNumber == Position ? string.Empty : $"({Loc.F("Pages.Original", Entry.SourcePageNumber)})";
+    /// <summary>
+    /// Herkunft: bei eingefügten Seiten Datei und Seite (z. B. „anhang.pdf S. 2“), sonst die ursprüngliche
+    /// Seitennummer, falls die Seite verschoben wurde; sonst leer.
+    /// </summary>
+    public string OriginalHint =>
+        sourceName is not null ? $"({Loc.F("Pages.InsertedFrom", sourceName, Entry.SourcePageNumber)})"
+        : Entry.SourcePageNumber == Position ? string.Empty
+        : $"({Loc.F("Pages.Original", Entry.SourcePageNumber)})";
+
+    /// <summary>Ob die Seite aus einer anderen Datei eingefügt wurde (Rahmen in der Akzentfarbe).</summary>
+    public bool IsInserted => Entry.IsInserted;
 
     /// <summary>Miniatur; wird im Hintergrund gerendert.</summary>
     [ObservableProperty]

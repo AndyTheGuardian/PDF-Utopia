@@ -10,6 +10,8 @@ namespace PdfUtopia.Core;
 /// </summary>
 public sealed class EditableDocument
 {
+    private long _savedState;
+
     /// <summary>
     /// Erzeugt das Bearbeitungsmodell einer geöffneten Datei.
     /// </summary>
@@ -19,7 +21,7 @@ public sealed class EditableDocument
     {
         Pages = new PageList(sourcePageCount);
         History = new UndoHistory(undoLimit);
-        History.Changed += (_, _) => IsModified = true;
+        _savedState = History.State;
     }
 
     /// <summary>Seiten in aktueller Reihenfolge.</summary>
@@ -31,8 +33,11 @@ public sealed class EditableDocument
     /// <summary>Verlauf für Rückgängig/Wiederholen.</summary>
     public UndoHistory History { get; }
 
-    /// <summary>Ob es seit dem Öffnen bzw. letzten Speichern Änderungen gab.</summary>
-    public bool IsModified { get; private set; }
+    /// <summary>
+    /// Ob sich das Dokument vom geöffneten bzw. zuletzt gespeicherten Stand unterscheidet. Führen Rückgängig oder
+    /// Wiederholen genau zu diesem Stand zurück, gilt es wieder als unverändert.
+    /// </summary>
+    public bool IsModified => History.State != _savedState;
 
     /// <summary>Ob die Seite gelöscht werden darf (nicht die letzte).</summary>
     public bool CanDeletePage => Pages.Count > 1;
@@ -40,7 +45,7 @@ public sealed class EditableDocument
     /// <summary>
     /// Merkt sich, dass der aktuelle Stand gespeichert ist.
     /// </summary>
-    public void MarkSaved() => IsModified = false;
+    public void MarkSaved() => _savedState = History.State;
 
     /// <summary>
     /// Übernimmt beim Öffnen die in der Datei gespeicherten Annotationen einer Seite – ohne Verlaufsschritt
@@ -155,6 +160,46 @@ public sealed class EditableDocument
     /// <param name="clockwise"><c>true</c> im, <c>false</c> gegen den Uhrzeigersinn.</param>
     public void RotatePage(int index, bool clockwise = true) =>
         History.Execute(new DelegateCommand(() => Pages.Rotate(index, clockwise), () => Pages.Rotate(index, !clockwise)));
+
+    /// <summary>
+    /// Fügt Seiten aus einer anderen Datei als einen Rückgängig-Schritt ein (A41). Ihre Annotationen werden mit
+    /// neuen Kennungen übernommen und sind danach wie alle anderen bearbeitbar.
+    /// </summary>
+    /// <param name="index">Position der ersten neuen Seite (0 bis Seitenanzahl).</param>
+    /// <param name="sourceIndex">Quelldatei der Seiten (ab 1, siehe <see cref="PageEntry.SourceIndex"/>).</param>
+    /// <param name="sourcePageNumbers">Seitennummern in der Quelldatei (1-basiert), in Zielreihenfolge.</param>
+    /// <param name="annotationsOf">Gespeicherte Annotationen einer Quellseite oder <c>null</c> für keine.</param>
+    /// <returns>Die eingefügten Seiten.</returns>
+    /// <exception cref="ArgumentException">Ohne Seiten oder mit der geöffneten Datei als Quelle.</exception>
+    public IReadOnlyList<PageEntry> InsertPages(
+        int index, int sourceIndex, IReadOnlyList<int> sourcePageNumbers, Func<int, IEnumerable<Annotation>>? annotationsOf = null)
+    {
+        if (sourcePageNumbers.Count == 0)
+        {
+            throw new ArgumentException("Es muss mindestens eine Seite eingefügt werden.", nameof(sourcePageNumbers));
+        }
+
+        if (sourceIndex == PageEntry.OpenedFile)
+        {
+            throw new ArgumentException("Eingefügte Seiten brauchen eine eigene Quelldatei.", nameof(sourceIndex));
+        }
+
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Pages.Count);
+
+        var entries = Pages.CreateEntries(sourceIndex, sourcePageNumbers);
+        foreach (var entry in entries)
+        {
+            // Die Seiten sind erst nach dem Einfügen sichtbar; Rückgängig lässt die Annotationen wie beim Löschen liegen
+            foreach (var annotation in annotationsOf?.Invoke(entry.SourcePageNumber) ?? [])
+            {
+                Annotations.Add(entry.Id, annotation with { Id = Guid.NewGuid() });
+            }
+        }
+
+        History.Execute(new DelegateCommand(() => Pages.InsertRange(index, entries), () => Pages.RemoveRange(index, entries.Count)));
+        return entries;
+    }
 
     /// <summary>
     /// Löscht eine Seite; ihre Annotationen bleiben für Rückgängig erhalten.

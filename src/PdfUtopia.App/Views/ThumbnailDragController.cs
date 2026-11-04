@@ -191,6 +191,50 @@ public sealed class ThumbnailDragController
     }
 
     /// <summary>
+    /// Zeigt beim Ziehen einer Datei auf die Seitenliste die Einfügelinie (A41, F26).
+    /// </summary>
+    /// <param name="y">Senkrechte Position relativ zur Liste.</param>
+    /// <returns>Position, an der eingefügt würde (0 bis Anzahl der Einträge).</returns>
+    public int ShowInsertLine(double y)
+    {
+        var count = _list.ItemCount;
+        var index = count;
+        Control? anchor = null;
+        for (var i = 0; i < count; i++)
+        {
+            if (_list.ContainerFromIndex(i) is not { } container || container.TranslatePoint(default, _list) is not { } origin)
+            {
+                continue;
+            }
+
+            anchor = container;
+            if (y < origin.Y + container.Bounds.Height / 2)
+            {
+                index = i;
+                break;
+            }
+        }
+
+        if (anchor is null || anchor.TranslatePoint(default, _layer) is not { } position)
+        {
+            _dropLine.IsVisible = false;
+            return index;
+        }
+
+        var lineY = index < count ? position.Y - 4 : position.Y + anchor.Bounds.Height - 4;
+        Canvas.SetLeft(_dropLine, position.X + 8);
+        Canvas.SetTop(_dropLine, lineY);
+        _dropLine.Width = Math.Max(0, anchor.Bounds.Width - 16);
+        _dropLine.IsVisible = true;
+        return index;
+    }
+
+    /// <summary>
+    /// Blendet die Einfügelinie aus.
+    /// </summary>
+    public void HideInsertLine() => _dropLine.IsVisible = false;
+
+    /// <summary>
     /// Index des Eintrags an einer vertikalen Position (begrenzt auf erste/letzte Position).
     /// </summary>
     private int FindIndexAt(double y)

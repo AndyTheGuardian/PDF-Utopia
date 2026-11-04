@@ -18,11 +18,12 @@ Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokum
 9. [Suchen](#9-suchen)
 10. [Speichern](#10-speichern)
 11. [Seiten extrahieren](#11-seiten-extrahieren)
-12. [Drucken](#12-drucken)
-13. [Farben, Design und Sprache](#13-farben-design-und-sprache)
-14. [Einstellungen](#14-einstellungen)
-15. [Arbeiten mit dem Stift](#15-arbeiten-mit-dem-stift)
-16. [Häufige Fragen und Lösungen](#16-häufige-fragen-und-lösungen)
+12. [Seiten aus anderer PDF-Datei einfügen](#12-seiten-aus-anderer-pdf-datei-einfügen)
+13. [Drucken](#13-drucken)
+14. [Farben, Design und Sprache](#14-farben-design-und-sprache)
+15. [Einstellungen](#15-einstellungen)
+16. [Arbeiten mit dem Stift](#16-arbeiten-mit-dem-stift)
+17. [Häufige Fragen und Lösungen](#17-häufige-fragen-und-lösungen)
 
 ---
 
@@ -57,6 +58,7 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 - Klicken Sie auf einen **Tab**, um das Dokument anzuzeigen.
 - Das **×** im Tab (oder **Strg+W** für das angezeigte Dokument) schließt es. Ein Punkt hinter dem Dateinamen
   zeigt ungespeicherte Änderungen; dann fragt PDF Utopia: **Speichern**, **Verwerfen** oder **Abbrechen**.
+  Machen Sie alle Änderungen rückgängig, verschwindet der Punkt wieder.
 
 ---
 
@@ -65,7 +67,7 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 | Aufgabe | So geht's |
 |---|---|
 | Seite anzeigen | in der Seitenliste links auf die Miniatur klicken |
-| Blättern | **Mausrad** über der Seite, **←** / **→**, **Bild↑** / **Bild↓**; **Pos1** / **Ende** für die erste / letzte Seite |
+| Blättern | **Mausrad** über der Seite, **←** / **→**, **Bild↑** / **Bild↓**; **Pos1** / **Ende** für die erste / letzte Seite. Die Seitenliste scrollt mit, die aktuelle Seite bleibt dort sichtbar |
 | Seiten mit Anmerkungen finden | in der Seitenliste zeigen kleine **Symbole in der Akzentfarbe** oben links, was die Seite enthält: je eines für Kommentare, Markierungen, Freihandlinien und Rechtecke (wie in der Werkzeugleiste) |
 | Ganze Seite sehen | unten rechts **Ganze Seite** wählen (Standard) |
 | Seite so hoch wie möglich | **Volle Höhe** |
@@ -104,7 +106,7 @@ darauf. Kommentar und Fußnote verschwinden; die übrigen Kommentare werden neu 
 
 ### Die Kommentarfarbe ändern
 Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt** und wählen Sie eine Farbe
-(siehe [Farben](#13-farben-design-und-sprache)). Die Farbe gilt für neue Kommentare.
+(siehe [Farben](#14-farben-design-und-sprache)). Die Farbe gilt für neue Kommentare.
 
 ---
 
@@ -180,7 +182,7 @@ Die letzte Seite eines Dokuments lässt sich nicht löschen.
 Rückgängig machen lässt sich alles, was Sie am Dokument ändern: Kommentare, Fußnotentexte, Markierungen,
 Zeichnungen, Rechtecke, Radieren sowie Verschieben, Drehen und Löschen von Seiten. Die Statusleiste zeigt, wie
 viele Schritte verfügbar sind (z. B. „Rückgängig: 4 / 50 Schritte“). Die Höchstzahl stellen Sie in den
-[Einstellungen](#14-einstellungen) ein.
+[Einstellungen](#15-einstellungen) ein.
 
 ---
 
@@ -227,7 +229,35 @@ bearbeiten.
 
 ---
 
-## 12. Drucken
+## 12. Seiten aus anderer PDF-Datei einfügen
+
+So holen Sie Seiten einer anderen Datei in das angezeigte Dokument:
+
+1. **Einfügen** (Schaltfläche, **Datei → Seiten einfügen…** oder **Strg+I**).
+2. Unter **Quelle** eine Datei wählen („Datei wählen…“) oder ein anderes geöffnetes Dokument. Ist die Datei
+   geschützt, geben Sie zuerst ihr Passwort ein und klicken **Entsperren**.
+3. Die **Seiten** wählen: Vorgewählt sind alle Seiten. Geben Sie wie beim Extrahieren andere ein (`2`, `4-8`,
+   `2,4,8,13-15`) oder klicken Sie auf die Miniaturen – gewählte Seiten sind farbig umrandet. Die Knöpfe
+   **Alle**, **Keine** und **Umkehren** wählen alle Seiten, heben die Auswahl auf oder kehren sie um.
+4. Unter **Einfügen** die Position wählen: **nach der aktuellen Seite** (vorgewählt), am Anfang, am Ende oder
+   nach einer bestimmten Seite. Darunter sehen Sie, welche Nummern die neuen Seiten bekommen.
+5. **… Seiten einfügen** klicken.
+
+**Schneller per Drag & Drop:** Ziehen Sie eine PDF-Datei aus dem Dateimanager auf die **Seitenliste** links.
+Eine Linie zeigt, wo die Seiten hinkommen; beim Loslassen öffnet sich derselbe Dialog mit dieser Position.
+Legen Sie die Datei dagegen auf der Seite ab, öffnet sie sich wie gewohnt in einem eigenen Tab.
+
+Eingefügte Seiten haben in der Seitenliste einen Rahmen in der Akzentfarbe und darunter ihre Herkunft, z. B.
+„(anhang.pdf S. 2)“. Kommentare, Markierungen und Zeichnungen der Quelle kommen mit und lassen sich bearbeiten.
+**Rückgängig** (Strg+Z) entfernt alle eingefügten Seiten auf einmal.
+
+> **Gut zu wissen:** Aus einem geöffneten Dokument wird der zuletzt **gespeicherte** Stand eingefügt – der
+> Dialog weist auf ungespeicherte Änderungen hin. Lesezeichen und Formularfelder der Quelle werden nicht
+> übernommen.
+
+---
+
+## 13. Drucken
 
 1. **Drucken** (Schaltfläche, **Datei → Drucken…** oder **Strg+P**).
 2. PDF Utopia öffnet das Dokument mit allen Änderungen im **PDF-Betrachter Ihres Systems**.
@@ -235,7 +265,7 @@ bearbeiten.
 
 ---
 
-## 13. Farben, Design und Sprache
+## 14. Farben, Design und Sprache
 
 ### Design
 **Ansicht → System / Hell / Dunkel**. „System“ folgt der Einstellung Ihres Betriebssystems.
@@ -265,7 +295,7 @@ ist. Ihre Auswahl wird gespeichert.
 
 ---
 
-## 14. Einstellungen
+## 15. Einstellungen
 
 **Bearbeiten → Einstellungen…**
 
@@ -280,7 +310,7 @@ in der Optionsleiste ein; auch sie werden gespeichert.
 
 ---
 
-## 15. Arbeiten mit dem Stift
+## 16. Arbeiten mit dem Stift
 
 - **Zeichnen**: Freihand, Marker und Rechteck funktionieren mit dem Stift wie mit der Maus. Gezeichnet wird nur,
   solange der Stift aufliegt. Während Sie zeichnen, verschiebt der Stift die Seite nicht.
@@ -295,7 +325,7 @@ in der Optionsleiste ein; auch sie werden gespeichert.
 
 ---
 
-## 16. Häufige Fragen und Lösungen
+## 17. Häufige Fragen und Lösungen
 
 **Der Klick mit dem Kommentar-Werkzeug macht nichts.**
 Unter dem Mauszeiger wurde kein Absatz erkannt (z. B. bei gescannten Seiten) oder der Absatz ist schon
@@ -305,7 +335,7 @@ kommentiert. Ziehen Sie stattdessen einen Bereich auf.
 Bei Spalten, Tabellen oder ungewöhnlichem Satz kann das vorkommen. Ziehen Sie den gewünschten Bereich auf.
 
 **Meine Linie ist trotz „Druckempfindlich“ gleich dick.**
-Ihr Stift meldet keinen Andruck – siehe [Arbeiten mit dem Stift](#15-arbeiten-mit-dem-stift). Mit der Maus
+Ihr Stift meldet keinen Andruck – siehe [Arbeiten mit dem Stift](#16-arbeiten-mit-dem-stift). Mit der Maus
 wirkt die Einstellung grundsätzlich nicht.
 
 **Der Radierer entfernt meinen Kommentar nicht.**

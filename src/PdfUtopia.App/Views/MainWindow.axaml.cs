@@ -28,6 +28,7 @@ public sealed partial class MainWindow : Window
     private readonly PageNavigator _navigator = new();
     private bool _closeConfirmed;
     private DocumentViewModel? _watchedDocument;
+    private readonly ThumbnailDragController _thumbnailDrag;
 
     /// <summary>
     /// Initialisiert das Fenster.
@@ -40,9 +41,10 @@ public sealed partial class MainWindow : Window
         // Vor der Bildlaufleiste auswerten: am Rand blättern statt (wirkungslos) weiterscrollen
         PageScroller.AddHandler(PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, OnNavigationKeyDown, RoutingStrategies.Tunnel);
-        _ = new ThumbnailDragController(ThumbnailList, DragLayer, DragGhost, DropLine,
+        _thumbnailDrag = new ThumbnailDragController(ThumbnailList, DragLayer, DragGhost, DropLine,
             index => ViewModel?.ActiveDocument?.Show(index),
             (from, to) => ViewModel?.ActiveDocument?.MovePage(from, to));
+        AddHandler(DragDrop.DragLeaveEvent, (_, _) => _thumbnailDrag.HideInsertLine());
         DataContextChanged += (_, _) => OnViewModelChanged();
     }
 
@@ -95,6 +97,7 @@ public sealed partial class MainWindow : Window
                 case nameof(MainWindowViewModel.ActiveDocument):
                     WatchDocument(viewModel.ActiveDocument);
                     Refit();
+                    RevealCurrentThumbnail();
                     break;
             }
         };
@@ -121,15 +124,28 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Neue Seite: neu anpassen.
+    /// Neue Seite: neu anpassen und in der Seitenliste sichtbar machen.
     /// </summary>
     private void OnWatchedDocumentPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(DocumentViewModel.CurrentIndex))
         {
             Refit();
+            RevealCurrentThumbnail();
         }
     }
+
+    /// <summary>
+    /// Scrollt die Seitenliste so weit, dass die angezeigte Seite ganz sichtbar ist (A40). Ist sie schon sichtbar,
+    /// bewegt sich die Liste nicht. Erst nach dem Layout, damit neu erzeugte Einträge ihre Position kennen.
+    /// </summary>
+    private void RevealCurrentThumbnail() => Dispatcher.UIThread.Post(() =>
+    {
+        if (_watchedDocument is { } document && ThumbnailList.ContainerFromIndex(document.CurrentIndex) is { } container)
+        {
+            container.BringIntoView();
+        }
+    }, DispatcherPriority.Loaded);
 
     /// <summary>
     /// Seite gedreht oder neu angezeigt: neu anpassen.
@@ -245,22 +261,52 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Zeigt beim Ziehen von Dateien das Kopieren-Symbol.
+    /// Zeigt beim Ziehen von Dateien das Kopieren-Symbol; über der Seitenliste zusätzlich die Einfügelinie.
     /// </summary>
-    private void OnFileDragOver(object? sender, DragEventArgs e) =>
-        e.DragEffects = e.DataTransfer.Contains(DataFormat.File) ? DragDropEffects.Copy : DragDropEffects.None;
+    private void OnFileDragOver(object? sender, DragEventArgs e)
+    {
+        var isFile = e.DataTransfer.Contains(DataFormat.File);
+        e.DragEffects = isFile ? DragDropEffects.Copy : DragDropEffects.None;
+        if (isFile && IsOverPageList(e))
+        {
+            _thumbnailDrag.ShowInsertLine(e.GetPosition(ThumbnailList).Y);
+        }
+        else
+        {
+            _thumbnailDrag.HideInsertLine();
+        }
+    }
 
     /// <summary>
-    /// Öffnet abgelegte PDF-Dateien.
+    /// Öffnet abgelegte PDF-Dateien; auf der Seitenliste abgelegt, werden ihre Seiten an dieser Stelle
+    /// eingefügt (A41, F26).
     /// </summary>
     private async void OnFileDrop(object? sender, DragEventArgs e)
     {
+        _thumbnailDrag.HideInsertLine();
         var paths = e.DataTransfer.TryGetFiles()?.Select(item => item.TryGetLocalPath()).OfType<string>().ToList();
-        if (paths is { Count: > 0 } && ViewModel is { } viewModel)
+        if (paths is not { Count: > 0 } || ViewModel is not { } viewModel)
+        {
+            return;
+        }
+
+        if (IsOverPageList(e))
+        {
+            await viewModel.InsertPagesFromFilesAsync(paths, _thumbnailDrag.ShowInsertLine(e.GetPosition(ThumbnailList).Y));
+            _thumbnailDrag.HideInsertLine();
+        }
+        else
         {
             await viewModel.OpenFilesAsync(paths);
         }
     }
+
+    /// <summary>
+    /// Ob sich der Mauszeiger über der Seitenliste eines geöffneten Dokuments befindet.
+    /// </summary>
+    private bool IsOverPageList(DragEventArgs e) =>
+        ViewModel?.ActiveDocument is not null && PageListScroller.IsVisible &&
+        new Rect(PageListScroller.Bounds.Size).Contains(e.GetPosition(PageListScroller));
 
     /// <summary>
     /// Übernimmt einen bearbeiteten Fußnotentext beim Verlassen des Felds (rückgängig machbar).

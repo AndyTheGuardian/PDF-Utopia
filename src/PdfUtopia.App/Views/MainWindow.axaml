@@ -17,6 +17,7 @@
     <KeyBinding Gesture="Ctrl+O" Command="{Binding OpenCommand}" />
     <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
     <KeyBinding Gesture="Ctrl+E" Command="{Binding ExtractCommand}" />
+    <KeyBinding Gesture="Ctrl+I" Command="{Binding InsertPagesCommand}" />
     <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintCommand}" />
     <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
     <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
@@ -71,6 +72,14 @@
       <Setter Property="Background" Value="{DynamicResource SurfaceBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
       <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <!-- Aus einer anderen Datei eingefügte Seiten (A41): Rahmen in der Akzentfarbe um die Miniatur -->
+    <Style Selector="Border.insertedFrame">
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.insertedFrame.inserted">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     </Style>
     <Style Selector="Button.thumbAction">
       <Setter Property="Width" Value="26" />
@@ -131,6 +140,7 @@
             <MenuItem Header="{loc:T Menu.SaveAs}" Command="{Binding SaveAsCommand}" InputGesture="Ctrl+Shift+S" />
             <Separator />
             <MenuItem Header="{loc:T Menu.Extract}" Command="{Binding ExtractCommand}" InputGesture="Ctrl+E" />
+            <MenuItem Header="{loc:T Menu.InsertPages}" Command="{Binding InsertPagesCommand}" InputGesture="Ctrl+I" />
             <MenuItem Header="{loc:T Menu.Print}" Command="{Binding PrintCommand}" InputGesture="Ctrl+P" />
             <Separator />
             <MenuItem Header="{loc:T Menu.CloseDocument}" Command="{Binding CloseDocumentCommand}" InputGesture="Ctrl+W" />
@@ -205,6 +215,7 @@
             </RadioButton>
             <Border Classes="divider" />
             <Button Classes="tb" Command="{Binding ExtractCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconExtract}" /><TextBlock Text="{loc:T Toolbar.Extract}" /></StackPanel></Button>
+            <Button Classes="tb" Command="{Binding InsertPagesCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconInsertPages}" /><TextBlock Text="{loc:T Toolbar.InsertPages}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding RotateCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconRotate}" /><TextBlock Text="{loc:T Toolbar.Rotate}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding DeleteCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconTrash}" /><TextBlock Text="{loc:T Toolbar.Delete}" /></StackPanel></Button>
             <Border Classes="divider" />
@@ -373,7 +384,7 @@
                 <TextBlock Grid.Column="1" Classes="hint" Text="{Binding ActiveDocument.Thumbnails.Count, FallbackValue=''}" />
               </Grid>
             </Border>
-            <ScrollViewer>
+            <ScrollViewer x:Name="PageListScroller">
               <Panel>
                 <ItemsControl x:Name="ThumbnailList" ItemsSource="{Binding ActiveDocument.Thumbnails, FallbackValue={x:Null}}" Margin="12">
                   <ItemsControl.ItemTemplate>
@@ -382,9 +393,11 @@
                         <Panel>
                           <StackPanel Spacing="6" HorizontalAlignment="Center">
                             <Border Width="112" Height="158">
+                              <Border Classes="insertedFrame" Classes.inserted="{Binding IsInserted}" HorizontalAlignment="Center" VerticalAlignment="Center">
                               <Image Source="{Binding Thumbnail}" Stretch="Uniform" MaxWidth="106" MaxHeight="150">
                                 <Image.Effect><DropShadowEffect BlurRadius="4" OffsetX="0" OffsetY="1" Opacity="0.3" /></Image.Effect>
                               </Image>
+                              </Border>
                             </Border>
                             <StackPanel Orientation="Horizontal" Spacing="4" HorizontalAlignment="Center">
                               <TextBlock Text="{Binding Label}" Classes="hint" />

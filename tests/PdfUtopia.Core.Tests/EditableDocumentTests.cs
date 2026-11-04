@@ -170,6 +170,62 @@ public sealed class EditableDocumentTests
     }
 
     [Fact]
+    public void IsModified_UndoBackToOpenedState_IsUnmodified()
+    {
+        var document = new EditableDocument(2);
+        document.RotatePage(0);
+        document.DeletePage(1);
+
+        document.History.Undo();
+        Assert.True(document.IsModified);
+
+        document.History.Undo();
+        Assert.False(document.IsModified);
+
+        document.History.Redo();
+        Assert.True(document.IsModified);
+    }
+
+    [Fact]
+    public void IsModified_UndoBackToSavedState_IsUnmodified()
+    {
+        var document = new EditableDocument(2);
+        document.RotatePage(0);
+        document.MarkSaved();
+
+        document.History.Undo();
+        Assert.True(document.IsModified);
+
+        document.History.Redo();
+        Assert.False(document.IsModified);
+    }
+
+    [Fact]
+    public void IsModified_NewStepAfterUndo_StaysModified()
+    {
+        var document = new EditableDocument(2);
+        document.RotatePage(0);
+        document.MarkSaved();
+        document.History.Undo();
+
+        // Gleiche Änderung wie gespeichert, aber ein neuer Schritt: der gespeicherte Stand ist nicht mehr erreichbar
+        document.RotatePage(1);
+        Assert.True(document.IsModified);
+    }
+
+    [Fact]
+    public void IsModified_SavedStateDroppedFromHistory_StaysModified()
+    {
+        var document = new EditableDocument(2, undoLimit: 1);
+        document.RotatePage(0);
+        document.RotatePage(0);
+
+        document.History.Undo();
+        Assert.True(document.IsModified);
+        Assert.False(document.History.CanUndo);
+    }
+
+    [Fact]
     public void LoadAnnotations_AddsWithoutHistoryAndModification()
     {
         var document = new EditableDocument(2);
@@ -188,5 +244,63 @@ public sealed class EditableDocumentTests
         document.RotatePage(0);
 
         Assert.Throws<InvalidOperationException>(() => document.LoadAnnotations(1, [Comment()]));
+    }
+
+    [Fact]
+    public void InsertPages_IsOneUndoStep()
+    {
+        var document = new EditableDocument(3);
+
+        var inserted = document.InsertPages(1, 1, [2, 4]);
+
+        Assert.Equal([1, 2, 4, 2, 3], Order(document));
+        Assert.Equal([0, 1, 1, 0, 0], document.Pages.Select(page => page.SourceIndex));
+        Assert.All(inserted, page => Assert.True(page.IsInserted));
+        Assert.Equal(1, document.History.UndoCount);
+
+        document.History.Undo();
+        Assert.Equal([1, 2, 3], Order(document));
+
+        document.History.Redo();
+        Assert.Equal([1, 2, 4, 2, 3], Order(document));
+    }
+
+    [Fact]
+    public void InsertPages_GetsNewIds_EvenAfterDelete()
+    {
+        var document = new EditableDocument(2);
+        document.DeletePage(1);
+
+        var first = document.InsertPages(1, 1, [1]);
+        var second = document.InsertPages(0, 2, [1]);
+
+        var ids = document.Pages.Select(page => page.Id).ToList();
+        Assert.Equal(ids.Count, ids.Distinct().Count());
+        Assert.DoesNotContain(2, ids.Skip(1));
+        Assert.NotEqual(first[0].Id, second[0].Id);
+    }
+
+    [Fact]
+    public void InsertPages_CopiesAnnotations_WithNewIds()
+    {
+        var document = new EditableDocument(1);
+        var comment = Comment();
+
+        var inserted = document.InsertPages(1, 1, [3, 3], page => page == 3 ? [comment] : []);
+
+        var copies = inserted.Select(page => Assert.Single(document.Annotations.For(page.Id))).ToList();
+        Assert.All(copies, copy => Assert.Equal(comment with { Id = copy.Id }, copy));
+        Assert.All(copies, copy => Assert.NotEqual(comment.Id, copy.Id));
+        Assert.NotEqual(copies[0].Id, copies[1].Id);
+    }
+
+    [Fact]
+    public void InsertPages_InvalidArguments_Throw()
+    {
+        var document = new EditableDocument(2);
+        Assert.Throws<ArgumentException>(() => document.InsertPages(0, 1, []));
+        Assert.Throws<ArgumentException>(() => document.InsertPages(0, PageEntry.OpenedFile, [1]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => document.InsertPages(3, 1, [1]));
+        Assert.False(document.History.CanUndo);
     }
 }
