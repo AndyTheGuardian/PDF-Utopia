@@ -7,4 +7,9 @@
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <Authors>PDF Utopia</Authors>
   </PropertyGroup>
+
+  <!-- Einzeldatei: Debug-Informationen aller Projekte in die Programmdatei, statt .pdb-Dateien daneben -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <DebugType>embedded</DebugType>
+  </PropertyGroup>
 </Project>

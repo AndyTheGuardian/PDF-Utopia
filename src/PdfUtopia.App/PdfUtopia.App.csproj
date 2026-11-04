@@ -9,6 +9,14 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <!-- Dokumentationsdateien werden nur beim Entwickeln gebraucht, nicht im Programmpaket -->
+    <PublishDocumentationFiles>false</PublishDocumentationFiles>
+  </PropertyGroup>
+
+  <!-- Einzeldatei (dotnet publish … -p:PublishSingleFile=true): native Bibliotheken (PDFium, Skia, HarfBuzz) mit
+       einpacken; sie werden beim ersten Start entpackt. -->
+  <PropertyGroup Condition="'$(PublishSingleFile)' == 'true'">
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
   </PropertyGroup>
 
   <ItemGroup>

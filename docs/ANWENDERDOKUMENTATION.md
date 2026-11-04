@@ -69,6 +69,21 @@ Das Paket enthält die .NET-Laufzeit und alle Bibliotheken; auf dem Zielrechner 
 Gestartet wird anschließend die Datei `PdfUtopia` (unter Windows `PdfUtopia.exe`) im Ausgabeordner. Das
 Linux-Paket wurde erstellt und gestartet (rund 112 MB); die Pakete für Windows und macOS sind nicht getestet.
 
+**Als einzelne Datei:** Mit `-p:PublishSingleFile=true` entsteht statt eines Ordners eine einzige ausführbare
+Datei, zum Beispiel für Linux:
+
+```bash
+dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o publish/single-linux-x64
+```
+
+Für die anderen Systeme wird `-r` wie in der Tabelle oben angepasst. Die Datei ist rund 103 MB groß und kann an
+einen beliebigen Ort kopiert werden. Die drei nativen Bibliotheken (PDFium, Skia, HarfBuzz, zusammen rund 21 MB)
+stecken mit in der Datei. Beim ersten Start entpackt .NET sie in einen Zwischenspeicher, unter Linux nach
+`~/.cache/dotnet_bundle_extract/PdfUtopia`. Ein anderer Ort lässt sich über die Umgebungsvariable
+`DOTNET_BUNDLE_EXTRACT_BASE_DIR` festlegen. Die Linux-Datei wurde erstellt und aus einem anderen Ordner gestartet;
+Windows und macOS sind nicht getestet. Unter macOS ist eine einzelne Datei kein gewohntes Programmpaket (`.app`);
+dafür wäre ein eigenes Bundle nötig.
+
 ### 3.3 Weitere Wege, Dateien zu öffnen
 
 - über **Datei → Öffnen…** (Strg+O) oder die Schaltfläche **Öffnen**,

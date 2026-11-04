@@ -1,6 +1,6 @@
 # PDF Utopia – Offene Punkte
 
-Stand: 2026-11-03
+Stand: 2026-11-04
 
 Legende IDs: **F** = offene Frage, **P** = Problem/Widerspruch, **A** = Annahme, **E** = bekannte Einschränkung, **M** = Mockup-Abnahme
 
@@ -114,4 +114,5 @@ Legende IDs: **F** = offene Frage, **P** = Problem/Widerspruch, **A** = Annahme,
 | D1 | 2026-11-03 | Anwenderdokumentation (`docs/ANWENDERDOKUMENTATION.md`: Voraussetzungen, Installation inkl. geprüftem Linux-Paket, Funktionsumfang und Regeln, Tastenkürzel, Einstellungen, Datenschutz, Einschränkungen, Lizenzen) und Benutzerhandbuch (`docs/BENUTZERHANDBUCH.md`: alle Aufgaben Schritt für Schritt, Arbeiten mit dem Stift, häufige Fragen) erstellt. |
 | D2 | 2026-11-03 | `README.md` für Git (Funktionen, Voraussetzungen, Bauen/Starten/Testen, Programmpaket, Projektstruktur, Dokumentation, Bibliotheken) und `.gitignore` (bin, obj, publish, TestResults, IDE-Dateien) erstellt. Der Testbefehl aus dem README ist geprüft: 303 Tests bestanden, 1 expliziter Generator-Test übersprungen. Ein Git-Repository ist noch nicht angelegt. |
 | D3 | 2026-11-03 | Chatverlauf als PDF erstellt (`Chatverlauf-PDF-Utopia.pdf`, 33 Seiten, 127 Nachrichten): nur Nachrichten, ohne Werkzeugaufrufe; Rückfragen mit den gewählten Antworten. |
+| D4 | 2026-11-04 | Programm als einzelne Datei (Wunsch des Anwenders): `dotnet publish … -p:PublishSingleFile=true`. Das App-Projekt packt dann die nativen Bibliotheken mit ein (`IncludeNativeLibrariesForSelfExtract`), `Directory.Build.props` bettet die Debug-Informationen ein, und Dokumentationsdateien werden nicht mehr veröffentlicht. Ergebnis für Linux: eine Datei mit rund 103 MB. Aus einem anderen Ordner gestartet, öffnet und rendert sie PDFs. Die nativen Bibliotheken (rund 21 MB) werden beim ersten Start nach `~/.cache/dotnet_bundle_extract/PdfUtopia` entpackt. Windows und macOS sind ungetestet. In Anwenderdokumentation (3.2) und README beschrieben. |
 | E7 | 2026-11-02 | Suchtreffer werden auf Wunsch des Anwenders jetzt auf der Seite in der Akzentfarbe hinterlegt (→ A30). |

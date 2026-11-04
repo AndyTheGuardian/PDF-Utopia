@@ -69,6 +69,12 @@ Für andere Plattformen `-r win-x64`, `-r osx-arm64` oder `-r osx-x64` angeben. 
 (unter Windows `PdfUtopia.exe`) im Ausgabeordner. Das Linux-Paket ist getestet (rund 112 MB), die Pakete für
 Windows und macOS noch nicht.
 
+Als **einzelne Datei** (rund 103 MB, native Bibliotheken werden beim ersten Start entpackt):
+
+```bash
+dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o publish/single-linux-x64
+```
+
 ## Projektstruktur
 
 | Pfad | Inhalt |
