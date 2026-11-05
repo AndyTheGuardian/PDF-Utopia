@@ -62,6 +62,7 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
                 HighlightAnnotation highlight => Highlight(geometry, highlight),
                 RectangleAnnotation rectangle => Rectangle(geometry, rectangle),
                 CommentAnnotation comment => Comment(geometry, comment, comments.IndexOf(comment) + 1),
+                TextAnnotation text => Text(geometry, text),
                 _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
             };
             dictionary.Elements.SetString("/NM", annotation.Id.ToString());
@@ -169,6 +170,34 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
         annotation.Elements["/BS"] = BorderStyle(CommentBorderWidth);
         annotation.Elements["/RD"] = Numbers(Enumerable.Repeat(padding, 4));
         annotation.Elements["/Contents"] = new PdfString(comment.Text, PdfStringEncoding.Unicode);
+        return annotation;
+    }
+
+    /// <summary>
+    /// Freier Text (A43) als Standard-Annotation „FreeText“ mit Erscheinungsbild in Helvetica. Steht der Text nicht
+    /// aufrecht zur Seite, dreht eine Transformation die Zeilen in die Leserichtung.
+    /// </summary>
+    private RawAnnotation Text(PageGeometry geometry, TextAnnotation text)
+    {
+        var bounds = text.Bounds;
+        var (across, along) = TextAnnotation.Axes(text.Orientation);
+        var origin = Local(bounds, text.Anchor);
+        // Textraum: x in Leserichtung, y nach oben (gegen die Zeilenfolge); lokal ist y nach oben gerichtet
+        var content = new ContentBuilder().Save()
+            .Transform(across.X, -across.Y, -along.X, along.Y, origin.X, origin.Y)
+            .FillColor(text.ColorHex);
+        var lines = text.Lines;
+        for (var i = 0; i < lines.Count; i++)
+        {
+            content.Text(0, -text.Baseline(i), lines[i], text.FontSize);
+        }
+
+        content.Restore();
+        var annotation = Create("/FreeText", geometry, bounds, text.ColorHex, Appearance(geometry, bounds, content, withFonts: true));
+        var (r, g, b) = ContentBuilder.Components(text.ColorHex);
+        annotation.Elements.SetString("/DA", $"/Helv {ContentBuilder.N(text.FontSize)} Tf {ContentBuilder.N(r)} {ContentBuilder.N(g)} {ContentBuilder.N(b)} rg");
+        annotation.Elements["/Contents"] = new PdfString(text.Text, PdfStringEncoding.Unicode);
+        annotation.Elements["/BS"] = BorderStyle(0);
         return annotation;
     }
 

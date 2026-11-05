@@ -90,6 +90,11 @@ public static class PageTransform
             HighlightAnnotation highlight => highlight with { Bounds = Rotate(highlight.Bounds, rotation, width, height) },
             RectangleAnnotation rectangle => rectangle with { Bounds = Rotate(rectangle.Bounds, rotation, width, height) },
             CommentAnnotation comment => comment with { Bounds = Rotate(comment.Bounds, rotation, width, height) },
+            TextAnnotation text => text with
+            {
+                Anchor = Rotate(text.Anchor, rotation, width, height),
+                Orientation = (PageRotation)(((int)text.Orientation - (int)rotation + 360) % 360),
+            },
             _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
         };
     }

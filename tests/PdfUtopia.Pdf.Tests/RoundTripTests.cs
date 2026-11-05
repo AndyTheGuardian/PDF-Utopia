@@ -29,6 +29,8 @@ public sealed class RoundTripTests : IDisposable
         new RectangleAnnotation(Guid.NewGuid(), "#2F6FDF", 2, new PdfRect(100, 300, 300, 200)),
         new CommentAnnotation(Guid.NewGuid(), "#4F46E5", new PdfRect(50, 100, 400, 60), "Erster Hinweis"),
         new CommentAnnotation(Guid.NewGuid(), "#FFECB3", new PdfRect(50, 180, 400, 40), "Zweiter Hinweis – Größe"),
+        new TextAnnotation(Guid.NewGuid(), "#1F2328", new PdfPoint(80, 560), 220, 14, "Freier Text\nzweite Zeile – Größe"),
+        new TextAnnotation(Guid.NewGuid(), "#C93434", new PdfPoint(500, 700), 150, 10, "Gedreht", PageRotation.Clockwise90),
     ];
 
     [Fact]

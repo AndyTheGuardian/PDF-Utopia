@@ -63,11 +63,13 @@ public static class Strings
         ["Tool.Marker"] = ("Marker", "Highlighter"),
         ["Tool.Freehand"] = ("Freihand", "Freehand"),
         ["Tool.Rectangle"] = ("Rechteck", "Rectangle"),
+        ["Tool.Text"] = ("Text", "Text"),
         ["Tool.Eraser"] = ("Radierer", "Eraser"),
 
         // Werkzeugoptionen und Hinweise
         ["Options.Color"] = ("Farbe", "Color"),
         ["Options.Width"] = ("Strichstärke", "Stroke width"),
+        ["Options.FontSize"] = ("Schriftgröße", "Font size"),
         ["Options.Smoothing"] = ("Glättung", "Smoothing"),
         ["Options.Pressure"] = ("Druckempfindlich (Stylus)", "Pressure-sensitive (stylus)"),
         ["Options.NoPressure"] = ("Der Stift meldet keinen Andruck – die Linie bleibt gleich dick", "The stylus reports no pressure – line width stays constant"),
@@ -77,8 +79,10 @@ public static class Strings
         ["Hint.Marker"] = ("Mit Maus oder Stift über den Text ziehen", "Drag across the text with mouse or stylus"),
         ["Hint.Freehand"] = ("Mit Maus oder Stift auf der Seite zeichnen", "Draw on the page with mouse or stylus"),
         ["Hint.Rectangle"] = ("Rechteck aufziehen", "Drag to draw a rectangle"),
-        ["Hint.Eraser"] = ("Über Marker, Freihand oder Rechtecke streichen – auch mit dem Radierer-Ende des Stifts",
-                           "Stroke over highlights, freehand lines or rectangles – also with the stylus eraser end"),
+        ["Hint.Text"] = ("Klicken oder Breite aufziehen und schreiben · Text anklicken zum Bearbeiten, ziehen zum Verschieben",
+            "Click or drag a width and type · click text to edit, drag to move"),
+        ["Hint.Eraser"] = ("Über Marker, Freihand, Rechtecke oder Text streichen – auch mit dem Radierer-Ende des Stifts",
+                           "Stroke over highlights, freehand lines, rectangles or text – also with the stylus eraser end"),
 
         // Seitenliste, Ansicht, Statusleiste
         ["Pages.Title"] = ("Seiten", "Pages"),
@@ -88,6 +92,7 @@ public static class Strings
         ["Pages.HasHighlights"] = ("Seite enthält Markierungen", "Page has highlights"),
         ["Pages.HasInk"] = ("Seite enthält Freihandlinien", "Page has freehand drawings"),
         ["Pages.HasRectangles"] = ("Seite enthält Rechtecke", "Page has rectangles"),
+        ["Pages.HasText"] = ("Seite enthält Text", "Page has text"),
         ["Pages.Original"] = ("Seite {0}", "Page {0}"),
         ["Pages.InsertedFrom"] = ("{0} S. {1}", "{0} p. {1}"),
         ["Empty.Title"] = ("Keine PDF geöffnet", "No PDF open"),

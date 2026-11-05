@@ -28,6 +28,7 @@
       <StreamGeometry x:Key="IconPen">M3 17c3-5 5 3 8-2s4-8 7-6 1 6-2 8</StreamGeometry>
       <StreamGeometry x:Key="IconRect">M4 6h16v12H4z</StreamGeometry>
       <StreamGeometry x:Key="IconEraser">M15.5 4.5L20 9a1.5 1.5 0 0 1 0 2.1L12 19H7l-3-3a1.5 1.5 0 0 1 0-2.1l9.4-9.4a1.5 1.5 0 0 1 2.1 0z M9 10.5L14 15.5 M7 19h13</StreamGeometry>
+      <StreamGeometry x:Key="IconText">M5 7V4h14v3 M12 4v16 M9 20h6</StreamGeometry>
       <StreamGeometry x:Key="IconInsertPages">M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9 M14 3v5h5 M14 3l5 5 M9 14h7 M13 11l3 3-3 3</StreamGeometry>
       <StreamGeometry x:Key="IconExtract">M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5 M14 3v5h5 M14 3l5 5v4 M15 18h6 M18 15l3 3-3 3</StreamGeometry>
       <StreamGeometry x:Key="IconRotate">M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7</StreamGeometry>

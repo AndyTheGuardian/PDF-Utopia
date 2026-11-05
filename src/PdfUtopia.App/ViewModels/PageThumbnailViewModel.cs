@@ -60,6 +60,10 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     [ObservableProperty]
     public partial bool HasRectangles { get; set; }
 
+    /// <summary>Ob die Seite freien Text enthält (Text-Werkzeug, A43).</summary>
+    [ObservableProperty]
+    public partial bool HasText { get; set; }
+
     /// <summary>
     /// Übernimmt, welche Arten von Annotationen die Seite enthält.
     /// </summary>
@@ -70,6 +74,7 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
         HasHighlights = annotations.OfType<HighlightAnnotation>().Any();
         HasInk = annotations.OfType<InkAnnotation>().Any();
         HasRectangles = annotations.OfType<RectangleAnnotation>().Any();
+        HasText = annotations.OfType<TextAnnotation>().Any();
     }
 }
 

@@ -218,6 +218,34 @@ public sealed class PdfExporterTests : IDisposable
     }
 
     [Fact]
+    public void Save_Text_IsRenderedAsFreeTextAtItsPosition()
+    {
+        var text = new TextAnnotation(Guid.NewGuid(), "#000000", new PdfPoint(100, 300), 300, 36, "MMMMMM");
+        var saved = SaveWith(document => document.AddAnnotation(document.Pages[1].Id, text));
+
+        using var source = PdfSource.Open(saved, importSavedAnnotations: false);
+        var page = source.Render(2, scale: 1);
+        Assert.True(DarkPixels(page, new PdfRect(100, 300, 160, text.Height)) > 200, "Text im Textfeld erwartet");
+        Assert.Equal(0, DarkPixels(page, new PdfRect(100, 300 + text.Height + 5, 300, 40)));
+        var annotation = Assert.Single(AnnotationsOf(saved, 1));
+        Assert.Equal("/FreeText", annotation.Elements.GetName("/Subtype"));
+        Assert.Equal("MMMMMM", annotation.Elements.GetString("/Contents"));
+    }
+
+    [Fact]
+    public void Save_TurnedText_RunsUpwards()
+    {
+        // Ausrichtung 90°: Leserichtung auf der ungedrehten Seite von unten nach oben
+        var text = new TextAnnotation(Guid.NewGuid(), "#000000", new PdfPoint(100, 500), 300, 36, "MMMMMM", PageRotation.Clockwise90);
+        var saved = SaveWith(document => document.AddAnnotation(document.Pages[1].Id, text));
+
+        using var source = PdfSource.Open(saved, importSavedAnnotations: false);
+        var page = source.Render(2, scale: 1);
+        Assert.True(DarkPixels(page, new PdfRect(100, 340, text.Height, 160)) > 200, "Senkrechter Text erwartet");
+        Assert.Equal(0, DarkPixels(page, new PdfRect(100, 510, 300, 40)));
+    }
+
+    [Fact]
     public void Save_Comment_IsRenderedWithBorderAndBadge()
     {
         var saved = SaveWith(document => document.AddAnnotation(document.Pages[0].Id, Comment("Hinweis")));
@@ -293,6 +321,27 @@ public sealed class PdfExporterTests : IDisposable
             .Select(page => System.Text.RegularExpressions.Regex.Match(source.PageText(page), @"Seite (\d+)"))
             .Select(match => int.Parse(match.Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture))
             .ToList();
+    }
+
+    /// <summary>
+    /// Anzahl dunkler Pixel in einem Bereich.
+    /// </summary>
+    private static int DarkPixels(RenderedPage page, PdfRect area)
+    {
+        var count = 0;
+        for (var y = (int)area.Y; y < (int)area.Bottom; y++)
+        {
+            for (var x = (int)area.X; x < (int)area.Right; x++)
+            {
+                var (r, g, b) = page.PixelAt(x, y);
+                if (r + g + b < 200)
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
     }
 
     /// <summary>

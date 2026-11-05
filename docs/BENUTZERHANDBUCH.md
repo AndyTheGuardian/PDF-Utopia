@@ -11,7 +11,7 @@ Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokum
 2. [Dokumente öffnen](#2-dokumente-öffnen)
 3. [Durch das Dokument bewegen](#3-durch-das-dokument-bewegen)
 4. [Kommentieren](#4-kommentieren)
-5. [Markieren, Zeichnen, Rechtecke](#5-markieren-zeichnen-rechtecke)
+5. [Markieren, Zeichnen, Rechtecke, Text](#5-markieren-zeichnen-rechtecke-text)
 6. [Radieren](#6-radieren)
 7. [Seiten umsortieren, drehen, löschen](#7-seiten-umsortieren-drehen-löschen)
 8. [Rückgängig und Wiederholen](#8-rückgängig-und-wiederholen)
@@ -110,7 +110,7 @@ Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt
 
 ---
 
-## 5. Markieren, Zeichnen, Rechtecke
+## 5. Markieren, Zeichnen, Rechtecke, Text
 
 ### Text markieren (Marker)
 1. Werkzeug **Marker** wählen.
@@ -131,6 +131,18 @@ Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt
 1. Werkzeug **Rechteck** wählen, **Farbe** und **Strichstärke** einstellen.
 2. Von einer Ecke zur gegenüberliegenden ziehen. Die Ecken sind wie bei Kommentaren leicht abgerundet.
 
+### Text schreiben
+1. Werkzeug **Text** wählen; in der Optionsleiste **Farbe** und **Schriftgröße** einstellen.
+2. Auf die Seite **klicken** – es erscheint ein Textfeld mit Standardbreite. Oder mit gedrückter Maustaste
+   **waagerecht ziehen**, um die Breite selbst festzulegen.
+3. Schreiben. Lange Zeilen brechen automatisch um, **Enter** beginnt eine neue Zeile.
+4. **Esc** drücken oder neben das Textfeld klicken – fertig.
+
+So ändern Sie einen Text später (Werkzeug **Text** gewählt):
+- **Bearbeiten:** auf den Text klicken.
+- **Verschieben:** den Text mit gedrückter Maustaste an die neue Stelle ziehen.
+- **Löschen:** den ganzen Text entfernen und die Eingabe abschließen – oder mit dem **Radierer** darüberstreichen.
+
 > **Hinweis:** Sehr kurze Striche oder winzige Rechtecke (Klick ohne Ziehen) werden nicht angelegt.
 
 ---
@@ -140,7 +152,7 @@ Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt
 ### Mit dem Radierer-Werkzeug
 1. Werkzeug **Radierer** wählen; in der Optionsleiste die **Größe** einstellen. Ein gestrichelter Kreis zeigt
    sie am Mauszeiger.
-2. Über Marker, Freihandlinien oder Rechtecke streichen. Was getroffen ist, wird **blass**.
+2. Über Marker, Freihandlinien, Rechtecke oder Texte streichen. Was getroffen ist, wird **blass**.
 3. Loslassen – die getroffenen Markierungen werden **vollständig** entfernt.
 
 ### Mit dem Radiererende des Stifts

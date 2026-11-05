@@ -10,7 +10,7 @@ weiterbearbeiten.
 
 - **Kommentare mit Fußnoten:** Ein Klick auf einen Absatz oder ein aufgezogener Bereich erzeugt einen nummerierten
   Kommentar. Der Text steht als Fußnote auf einer nach unten verlängerten Seite.
-- **Marker, Freihand und Rechteck:** mit Maus oder Stift, Freihand wahlweise druckempfindlich und mit einstellbarer
+- **Marker, Freihand, Rechteck und Text:** mit Maus oder Stift, Freihand wahlweise druckempfindlich und mit einstellbarer
   Glättung.
 - **Radierer:** als Werkzeug oder über das Radiererende des Stifts.
 - **Seiten:** per Drag & Drop umsortieren, drehen, löschen.

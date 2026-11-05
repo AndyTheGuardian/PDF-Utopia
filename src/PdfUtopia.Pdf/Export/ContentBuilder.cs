@@ -60,6 +60,19 @@ internal sealed class ContentBuilder
     /// <returns>Dieser Builder.</returns>
     public ContentBuilder Save() => Op("q");
 
+    /// <summary>
+    /// Verändert das Koordinatensystem (Operator <c>cm</c>).
+    /// </summary>
+    /// <param name="a">Matrixwert a.</param>
+    /// <param name="b">Matrixwert b.</param>
+    /// <param name="c">Matrixwert c.</param>
+    /// <param name="d">Matrixwert d.</param>
+    /// <param name="e">Verschiebung x.</param>
+    /// <param name="f">Verschiebung y.</param>
+    /// <returns>Dieser Builder.</returns>
+    public ContentBuilder Transform(double a, double b, double c, double d, double e, double f) =>
+        Op($"{N(a)} {N(b)} {N(c)} {N(d)} {N(e)} {N(f)} cm");
+
     /// <summary>Stellt den Grafikzustand wieder her.</summary>
     /// <returns>Dieser Builder.</returns>
     public ContentBuilder Restore() => Op("Q");

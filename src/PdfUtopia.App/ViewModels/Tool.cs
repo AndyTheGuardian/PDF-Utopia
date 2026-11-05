@@ -20,6 +20,9 @@ public enum Tool
     /// <summary>Rechteck.</summary>
     Rectangle,
 
+    /// <summary>Freier Text (A43).</summary>
+    Text,
+
     /// <summary>Radierer (Objekt-Radierer).</summary>
     Eraser,
 }
@@ -40,4 +43,7 @@ public enum ColorTarget
 
     /// <summary>Kommentar.</summary>
     Comment,
+
+    /// <summary>Text-Werkzeug.</summary>
+    Text,
 }

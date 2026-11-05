@@ -1,3 +1,4 @@
+using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Drawing;
 using PdfUtopia.Core.History;
 using PdfUtopia.Core.Theming;
@@ -64,6 +65,12 @@ public sealed record AppSettings
     /// <summary>Farbe für Kommentare.</summary>
     public string CommentColor { get; init; } = DrawingColors.CommentDefault;
 
+    /// <summary>Farbe des Text-Werkzeugs.</summary>
+    public string TextColor { get; init; } = DrawingColors.TextDefault;
+
+    /// <summary>Schriftgröße des Text-Werkzeugs (8–36).</summary>
+    public double TextSize { get; init; } = TextAnnotation.DefaultFontSize;
+
     /// <summary>Farbe des Markers.</summary>
     public string MarkerColor { get; init; } = DrawingColors.MarkerColors[0];
 
@@ -101,6 +108,8 @@ public sealed record AppSettings
         FreehandColor = ValidColor(FreehandColor, DrawingColors.FreehandDefault),
         RectangleColor = ValidColor(RectangleColor, DrawingColors.RectangleDefault),
         CommentColor = ValidColor(CommentColor, DrawingColors.CommentDefault),
+        TextColor = ValidColor(TextColor, DrawingColors.TextDefault),
+        TextSize = TextAnnotation.ClampFontSize(TextSize),
         MarkerColor = DrawingColors.MarkerColors.Contains(MarkerColor) ? MarkerColor : DrawingColors.MarkerColors[0],
         FreehandWidth = Math.Clamp(FreehandWidth, 1, 12),
         RectangleWidth = Math.Clamp(RectangleWidth, 1, 12),

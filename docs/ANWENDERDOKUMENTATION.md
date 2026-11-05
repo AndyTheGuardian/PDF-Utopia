@@ -123,7 +123,7 @@ dafür wäre ein eigenes Bundle nötig.
 | Werkzeugleiste | häufige Befehle, die Werkzeuge, Zoom, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
-| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Rechteck); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
+| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Rechteck, Text); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
 | Seitenansicht | die angezeigte Seite mit Annotationen; darunter die Fußnoten der Kommentare |
 | Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom |
 
@@ -140,7 +140,8 @@ dafür wäre ein eigenes Bundle nötig.
 | **Marker** | waagerechter, halbtransparenter Balken wie ein Textmarker | 5 Textmarker-Farben, Höhe 8–30 |
 | **Freihand** | freie Linie mit Maus oder Stift | Farbe (Farbwahl), Stärke 1–12, Glättung 0–100 %, druckempfindlich |
 | **Rechteck** | Rechteck aufziehen | Farbe (Farbwahl), Stärke 1–12 |
-| **Radierer** | entfernt berührte Marker, Freihandlinien und Rechtecke vollständig | Größe 2–40 |
+| **Text** | freien Text auf die Seite schreiben; klicken (Standardbreite 200 pt) oder die Breite aufziehen | Farbe (Farbwahl, Standard fast Schwarz), Schriftgröße 8–36 pt (Standard 12) |
+| **Radierer** | entfernt berührte Marker, Freihandlinien, Rechtecke und Texte vollständig | Größe 2–40 |
 
 Weitere Regeln:
 
@@ -153,9 +154,16 @@ Weitere Regeln:
 - **Glättung** verbindet die Punkte einer Freihandlinie mit Kurven statt geraden Stücken. Punkte, die näher als
   1,5 Punkte beieinanderliegen, werden verworfen (gegen Zittern).
 - **Radierer:** Er entfernt immer ganze Markierungen. Rechtecke werden nur über ihren Rand erfasst, nicht über
-  ihre Fläche. Kommentare radiert er nicht – sie werden über ihre Fußnotenzahl entfernt. Das **Radiererende des
+  ihre Fläche; Texte über ihre ganze Fläche. Kommentare radiert er nicht – sie werden über ihre Fußnotenzahl entfernt. Das **Radiererende des
   Stifts** radiert unabhängig vom gewählten Werkzeug. Ein Radierstrich ist ein Rückgängig-Schritt.
 - **Sehr kleine Striche** (unter 4 Punkte Ausdehnung) gelten als versehentlicher Klick und werden verworfen.
+- **Text:** Zeilen brechen an der Breite des Textfelds um, die Höhe wächst mit; Enter beginnt eine neue Zeile,
+  Esc oder ein Klick daneben schließt die Eingabe ab. Mit dem Text-Werkzeug öffnet ein Klick auf einen Text die
+  Bearbeitung, Ziehen verschiebt ihn. Ein geleerter Text wird gelöscht. Anlegen, Ändern, Verschieben und Löschen
+  sind je ein Rückgängig-Schritt. Farbe und Größe in der Optionsleiste gelten für neue Texte und den gerade
+  bearbeiteten. Geschrieben wird in Helvetica; Zeichen außerhalb des westeuropäischen Zeichensatzes erscheinen
+  in der gespeicherten Datei als „?“ (E5). Auf einer gedrehten Seite steht neuer Text aufrecht und dreht sich
+  danach mit der Seite. Gespeichert wird der Text als Standard-Annotation „FreeText“.
 
 ### 5.2 Kommentare
 
