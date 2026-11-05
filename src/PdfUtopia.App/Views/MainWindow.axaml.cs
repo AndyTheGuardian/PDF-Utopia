@@ -41,8 +41,19 @@ public sealed partial class MainWindow : Window
         // Vor der Bildlaufleiste auswerten: am Rand blättern statt (wirkungslos) weiterscrollen
         PageScroller.AddHandler(PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, OnNavigationKeyDown, RoutingStrategies.Tunnel);
+        // Strg-Zustand für „Drehen gegen den Uhrzeigersinn“ (auch wenn ein Textfeld die Taste verarbeitet)
+        AddHandler(KeyDownEvent, (_, e) => TrackControlKey(e.Key, e.KeyModifiers, pressed: true), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(KeyUpEvent, (_, e) => TrackControlKey(e.Key, e.KeyModifiers, pressed: false), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerMovedEvent, (_, e) => SetReverseRotation(e.KeyModifiers.HasFlag(KeyModifiers.Control)), RoutingStrategies.Tunnel, handledEventsToo: true);
+        Deactivated += (_, _) => SetReverseRotation(false);
         _thumbnailDrag = new ThumbnailDragController(ThumbnailList, DragLayer, DragGhost, DropLine,
-            index => ViewModel?.ActiveDocument?.Show(index),
+            (index, modifiers) =>
+            {
+                ViewModel?.ActiveDocument?.ClickPage(index, modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta),
+                    modifiers.HasFlag(KeyModifiers.Shift));
+                // Tasten der Seitenliste (Strg+A, Entf, Esc) wirken, sobald sie angeklickt wurde
+                PageListScroller.Focus();
+            },
             (from, to) => ViewModel?.ActiveDocument?.MovePage(from, to));
         AddHandler(DragDrop.DragLeaveEvent, (_, _) => _thumbnailDrag.HideInsertLine());
         DataContextChanged += (_, _) => OnViewModelChanged();
@@ -322,6 +333,23 @@ public sealed partial class MainWindow : Window
     /// Linke Leiste per Ziehen verbreitert oder verschmälert: Breite merken (F30).
     /// </summary>
     private void OnSidebarResized(object? sender, VectorEventArgs e) => ViewModel?.SaveSidebarWidth(SidebarColumn.ActualWidth);
+
+    /// <summary>
+    /// Merkt sich, ob Strg gedrückt ist: beim Drücken/Loslassen der Strg-Taste selbst und bei jeder anderen Taste.
+    /// </summary>
+    private void TrackControlKey(Key key, KeyModifiers modifiers, bool pressed) =>
+        SetReverseRotation(key is Key.LeftCtrl or Key.RightCtrl ? pressed : modifiers.HasFlag(KeyModifiers.Control));
+
+    /// <summary>
+    /// Setzt die Drehrichtung der Drehen-Knöpfe (nur bei Änderung, damit Bindungen nicht unnötig auslösen).
+    /// </summary>
+    private void SetReverseRotation(bool reverse)
+    {
+        if (ViewModel is { } viewModel && viewModel.ReverseRotation != reverse)
+        {
+            viewModel.ReverseRotation = reverse;
+        }
+    }
 
     /// <summary>
     /// Zoom-Eingabe verlassen, ohne Enter zu drücken: aktuellen Zoom wieder anzeigen.

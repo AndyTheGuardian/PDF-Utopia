@@ -162,6 +162,85 @@ public sealed class EditableDocument
         History.Execute(new DelegateCommand(() => Pages.Rotate(index, clockwise), () => Pages.Rotate(index, !clockwise)));
 
     /// <summary>
+    /// Dreht mehrere Seiten als einen Rückgängig-Schritt (Mehrfachauswahl, A48).
+    /// </summary>
+    /// <param name="indices">Positionen der Seiten.</param>
+    /// <param name="clockwise"><c>true</c> im, <c>false</c> gegen den Uhrzeigersinn (Strg+Klick).</param>
+    public void RotatePages(IReadOnlyCollection<int> indices, bool clockwise = true)
+    {
+        var targets = indices.Distinct().Order().ToList();
+        if (targets.Count == 0)
+        {
+            return;
+        }
+
+        History.Execute(new DelegateCommand(
+            () => targets.ForEach(index => Pages.Rotate(index, clockwise)),
+            () => targets.ForEach(index => Pages.Rotate(index, !clockwise))));
+    }
+
+    /// <summary>
+    /// Löscht mehrere Seiten als einen Rückgängig-Schritt; mindestens eine Seite bleibt (A48).
+    /// </summary>
+    /// <param name="indices">Positionen der Seiten.</param>
+    /// <returns><c>false</c>, wenn dabei alle Seiten gelöscht würden (dann geschieht nichts).</returns>
+    public bool DeletePages(IReadOnlyCollection<int> indices)
+    {
+        var targets = indices.Distinct().Order().ToList();
+        if (targets.Count == 0 || targets.Count >= Pages.Count)
+        {
+            return false;
+        }
+
+        var removed = targets.Select(index => (Index: index, Page: Pages[index])).ToList();
+        History.Execute(new DelegateCommand(
+            () =>
+            {
+                // Von hinten löschen, damit die übrigen Positionen gültig bleiben
+                foreach (var (index, _) in Enumerable.Reverse(removed))
+                {
+                    Pages.RemoveAt(index);
+                }
+            },
+            () =>
+            {
+                foreach (var (index, page) in removed)
+                {
+                    Pages.Insert(index, page);
+                }
+            }));
+        return true;
+    }
+
+    /// <summary>
+    /// Verschiebt mehrere Seiten als Block vor oder hinter eine Zielseite; ihre Reihenfolge untereinander bleibt
+    /// (A48). Liegt das Ziel selbst in der Auswahl, geschieht nichts.
+    /// </summary>
+    /// <param name="indices">Positionen der verschobenen Seiten.</param>
+    /// <param name="targetIndex">Position der Zielseite.</param>
+    /// <param name="after"><c>true</c>: hinter die Zielseite, sonst davor.</param>
+    public void MovePages(IReadOnlyCollection<int> indices, int targetIndex, bool after)
+    {
+        var moving = indices.Distinct().Order().ToList();
+        if (moving.Count == 0 || moving.Contains(targetIndex) || targetIndex < 0 || targetIndex >= Pages.Count)
+        {
+            return;
+        }
+
+        var before = Pages.ToList();
+        var block = moving.Select(index => before[index]).ToList();
+        var rest = before.Where((_, index) => !moving.Contains(index)).ToList();
+        var insertAt = rest.IndexOf(before[targetIndex]) + (after ? 1 : 0);
+        var order = rest.Take(insertAt).Concat(block).Concat(rest.Skip(insertAt)).ToList();
+        if (order.SequenceEqual(before))
+        {
+            return;
+        }
+
+        History.Execute(new DelegateCommand(() => Pages.Reorder(order), () => Pages.Reorder(before)));
+    }
+
+    /// <summary>
     /// Fügt Seiten aus einer anderen Datei als einen Rückgängig-Schritt ein (A41). Ihre Annotationen werden mit
     /// neuen Kennungen übernommen und sind danach wie alle anderen bearbeitbar.
     /// </summary>

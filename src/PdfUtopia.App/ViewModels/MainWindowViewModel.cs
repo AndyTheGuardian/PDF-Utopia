@@ -94,7 +94,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasDocument), nameof(NoDocument))]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand), nameof(ExtractCommand), nameof(InsertPagesCommand), nameof(PrintCommand), nameof(CloseDocumentCommand),
-        nameof(RotateCurrentPageCommand), nameof(DeleteCurrentPageCommand), nameof(UndoCommand), nameof(RedoCommand))]
+        nameof(RotateCurrentPageCommand), nameof(RotateCurrentPageClockwiseCommand), nameof(RotateCurrentPageCounterclockwiseCommand), nameof(DeleteCurrentPageCommand), nameof(InsertBlankPageCommand), nameof(UndoCommand), nameof(RedoCommand))]
     public partial DocumentViewModel? ActiveDocument { get; set; }
 
     /// <summary>Zoom (1 = 100 %).</summary>
@@ -113,6 +113,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     public partial FitMode FitMode { get; set; } = FitMode.Page;
+
+    /// <summary>
+    /// Ob Strg gedrückt ist: Drehen-Knöpfe drehen dann gegen den Uhrzeigersinn und zeigen ein gespiegeltes Symbol.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool ReverseRotation { get; set; }
 
     /// <summary>Was die linke Leiste zeigt: Seiten, Anmerkungen (A45) oder Lesezeichen (A46).</summary>
     [ObservableProperty]
@@ -275,10 +281,19 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Extrahiert Seiten in eine neue Datei.</summary>
     [RelayCommand(CanExecute = nameof(HasDocument))]
-    private async Task ExtractAsync()
+    private async Task ExtractAsync() => await ExtractAsync(null);
+
+    /// <summary>
+    /// Extrahiert Seiten; bei Mehrfachauswahl ist sie im Dialog vorbelegt (A48).
+    /// </summary>
+    /// <param name="clickedIndex">Angeklickte Miniatur oder <c>null</c>.</param>
+    private async Task ExtractAsync(int? clickedIndex)
     {
         var document = ActiveDocument!;
-        var positions = await _dialogs.AskPagesToExtractAsync(document.Document.Pages.Count);
+        var preset = document.Selection.IsMultiple || clickedIndex is not null
+            ? InsertPlacement.FormatSelection(document.TargetIndices(clickedIndex).Select(index => index + 1))
+            : null;
+        var positions = await _dialogs.AskPagesToExtractAsync(document.Document.Pages.Count, preset);
         if (positions is null || await AskSaveOptionsAsync(document) is not { } options)
         {
             return;
@@ -386,7 +401,47 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Dreht die angezeigte Seite.</summary>
     [RelayCommand(CanExecute = nameof(HasDocument))]
-    private void RotateCurrentPage() => ActiveDocument?.RotatePage(ActiveDocument.CurrentIndex);
+    private void RotateCurrentPage() => ActiveDocument?.RotatePage(ActiveDocument.CurrentIndex, clockwise: !ReverseRotation);
+
+    /// <summary>Dreht die angezeigte bzw. gewählten Seiten im Uhrzeigersinn (Menü, unabhängig von Strg).</summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private void RotateCurrentPageClockwise() => ActiveDocument?.RotatePage(ActiveDocument.CurrentIndex, clockwise: true);
+
+    /// <summary>Dreht eine Seite bzw. die Auswahl im Uhrzeigersinn (Kontextmenü der Seitenliste, unabhängig von Strg).</summary>
+    /// <param name="page">Die angeklickte Seite.</param>
+    [RelayCommand]
+    private void RotatePageClockwise(PageThumbnailViewModel page) => ActiveDocument?.RotatePage(page.Position - 1, clockwise: true);
+
+    /// <summary>Dreht die angezeigte bzw. gewählten Seiten gegen den Uhrzeigersinn (Menü).</summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private void RotateCurrentPageCounterclockwise() => ActiveDocument?.RotatePage(ActiveDocument.CurrentIndex, clockwise: false);
+
+    /// <summary>Dreht eine Seite bzw. die Auswahl gegen den Uhrzeigersinn (Kontextmenü der Seitenliste).</summary>
+    /// <param name="page">Die angeklickte Seite.</param>
+    [RelayCommand]
+    private void RotatePageCounterclockwise(PageThumbnailViewModel page) => ActiveDocument?.RotatePage(page.Position - 1, clockwise: false);
+
+    /// <summary>Fügt nach der angezeigten Seite eine leere Seite ein (A48).</summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private void InsertBlankPage() => ActiveDocument?.InsertBlankPage(ActiveDocument.CurrentIndex);
+
+    /// <summary>Fügt nach einer Seite der Seitenliste eine leere Seite ein (Kontextmenü).</summary>
+    /// <param name="page">Die Seite davor.</param>
+    [RelayCommand]
+    private void InsertBlankPageAfter(PageThumbnailViewModel page) => ActiveDocument?.InsertBlankPage(page.Position - 1);
+
+    /// <summary>Extrahiert die Seite bzw. die gewählten Seiten (Kontextmenü der Seitenliste).</summary>
+    /// <param name="page">Die angeklickte Seite.</param>
+    [RelayCommand]
+    private async Task ExtractPageAsync(PageThumbnailViewModel page) => await ExtractAsync(page.Position - 1);
+
+    /// <summary>Wählt alle Seiten der Seitenliste (Strg+A, A48).</summary>
+    [RelayCommand]
+    private void SelectAllPages() => ActiveDocument?.SelectAllPages();
+
+    /// <summary>Hebt die Mehrfachauswahl auf (Esc).</summary>
+    [RelayCommand]
+    private void ClearPageSelection() => ActiveDocument?.ClearSelection();
 
     /// <summary>Löscht die angezeigte Seite.</summary>
     [RelayCommand(CanExecute = nameof(HasDocument))]
@@ -395,7 +450,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <summary>Dreht eine Seite aus der Seitenliste.</summary>
     /// <param name="page">Die Seite.</param>
     [RelayCommand]
-    private void RotatePage(PageThumbnailViewModel page) => ActiveDocument?.RotatePage(page.Position - 1);
+    private void RotatePage(PageThumbnailViewModel page) => ActiveDocument?.RotatePage(page.Position - 1, clockwise: !ReverseRotation);
 
     /// <summary>Löscht eine Seite aus der Seitenliste.</summary>
     /// <param name="page">Die Seite.</param>

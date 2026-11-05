@@ -44,8 +44,11 @@ public sealed class PdfSource : IDisposable
         SavedAnnotations = savedAnnotations;
     }
 
-    /// <summary>Pfad der Datei.</summary>
+    /// <summary>Pfad der Datei (bei erzeugten Seiten leer).</summary>
     public string FilePath { get; }
+
+    /// <summary>Ob die Datei im Speicher erzeugt wurde (leere Seite, A48) statt von einem Datenträger zu stammen.</summary>
+    public bool IsGenerated => FilePath.Length == 0;
 
     /// <summary>Verwendetes Passwort oder <c>null</c>.</summary>
     public string? Password { get; }
@@ -109,6 +112,26 @@ public sealed class PdfSource : IDisposable
 
         loaded.Close();
         return new PdfSource(path, password, Load(import.Data, password, path), import.Annotations);
+    }
+
+    /// <summary>
+    /// Erzeugt eine leere Seite als eigene, nur im Speicher vorhandene Datei (A48).
+    /// </summary>
+    /// <param name="width">Breite in Punkten.</param>
+    /// <param name="height">Höhe in Punkten.</param>
+    /// <returns>Die Datei mit einer leeren Seite.</returns>
+    public static PdfSource CreateBlankPage(double width, double height)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        using var document = new PdfSharp.Pdf.PdfDocument();
+        var page = document.AddPage();
+        page.Width = PdfSharp.Drawing.XUnit.FromPoint(width);
+        page.Height = PdfSharp.Drawing.XUnit.FromPoint(height);
+        using var stream = new MemoryStream();
+        document.Save(stream);
+        var data = stream.ToArray();
+        return new PdfSource(string.Empty, null, Load(data, null, string.Empty), new Dictionary<int, IReadOnlyList<Annotation>>());
     }
 
     /// <summary>

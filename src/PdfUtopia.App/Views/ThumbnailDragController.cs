@@ -21,7 +21,7 @@ public sealed class ThumbnailDragController
     private readonly Visual _layer;
     private readonly Control _ghost;
     private readonly Control _dropLine;
-    private readonly Action<int> _show;
+    private readonly Action<int, KeyModifiers> _show;
     private readonly Action<int, int> _move;
 
     private Control? _container;
@@ -30,6 +30,7 @@ public sealed class ThumbnailDragController
     private int _fromIndex = -1;
     private int _targetIndex = -1;
     private bool _dragging;
+    private KeyModifiers _modifiers;
 
     /// <summary>
     /// Erzeugt den Controller und registriert die Zeigerereignisse an der Liste.
@@ -38,9 +39,9 @@ public sealed class ThumbnailDragController
     /// <param name="layer">Ebene für Abbild und Einfügelinie (Canvas über der Liste).</param>
     /// <param name="ghost">Abbild der gezogenen Seite.</param>
     /// <param name="dropLine">Die Einfügelinie.</param>
-    /// <param name="show">Zeigt die Seite mit diesem Index an.</param>
+    /// <param name="show">Klick auf die Seite mit diesem Index (mit Strg/Umschalt für die Mehrfachauswahl).</param>
     /// <param name="move">Verschiebt eine Seite von Index 1 nach Index 2.</param>
-    public ThumbnailDragController(ItemsControl list, Visual layer, Control ghost, Control dropLine, Action<int> show, Action<int, int> move)
+    public ThumbnailDragController(ItemsControl list, Visual layer, Control ghost, Control dropLine, Action<int, KeyModifiers> show, Action<int, int> move)
     {
         _list = list;
         _layer = layer;
@@ -72,6 +73,7 @@ public sealed class ThumbnailDragController
         _container = container;
         _fromIndex = _targetIndex = _list.IndexFromContainer(container);
         _pressPosition = e.GetPosition(_list);
+        _modifiers = e.KeyModifiers;
         _grabOffset = e.GetPosition(container);
         e.Pointer.Capture(_list);
         e.Handled = true;
@@ -127,7 +129,7 @@ public sealed class ThumbnailDragController
         }
         else
         {
-            _show(from);
+            _show(from, _modifiers);
         }
 
         e.Handled = true;

@@ -46,6 +46,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         _renderer = new PageRenderer(SourceOf);
         AnnotationList = new AnnotationListViewModel(Document, HighlightedText);
         BookmarkList = new BookmarkListViewModel(Document, source.Bookmarks);
+        Selection.Changed += (_, _) => OnSelectionChanged();
         Document.Pages.Changed += (_, _) => OnPagesChanged();
         Document.Annotations.Changed += (_, pageId) => OnAnnotationsChanged(pageId);
         Document.History.Changed += (_, _) => OnHistoryChanged();
@@ -64,6 +65,12 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 
     /// <summary>Lesezeichen der geöffneten Datei (A46).</summary>
     public BookmarkListViewModel BookmarkList { get; }
+
+    /// <summary>Mehrfachauswahl in der Seitenliste (A48).</summary>
+    public PageListSelection Selection { get; } = new();
+
+    /// <summary>Hinweis in der Statusleiste, z. B. „3 Seiten ausgewählt“; leer ohne Mehrfachauswahl.</summary>
+    public string SelectionStatus => Selection.IsMultiple ? Loc.F("Status.Selected", Selection.Count) : string.Empty;
 
     /// <summary>Die geöffnete Datei.</summary>
     public PdfSource Source { get; }
@@ -144,9 +151,62 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// Zeigt eine Seite an.
     /// </summary>
     /// <param name="index">Position (0-basiert).</param>
-    public void Show(int index)
+    public void Show(int index) => Show(index, resetSelection: true);
+
+    /// <summary>
+    /// Klick auf eine Miniatur (A48): Seite anzeigen; mit Strg hinzunehmen oder herausnehmen, mit Umschalt einen
+    /// Bereich wählen.
+    /// </summary>
+    /// <param name="index">Position der Seite.</param>
+    /// <param name="toggle">Strg gedrückt.</param>
+    /// <param name="range">Umschalt gedrückt.</param>
+    public void ClickPage(int index, bool toggle, bool range)
+    {
+        Selection.Click(Document.Pages.ToList(), index, toggle, range);
+        Show(index, resetSelection: false);
+    }
+
+    /// <summary>Wählt alle Seiten (A48).</summary>
+    public void SelectAllPages() => Selection.SelectAll(Document.Pages.ToList());
+
+    /// <summary>Hebt die Mehrfachauswahl auf; gewählt bleibt nur die angezeigte Seite.</summary>
+    public void ClearSelection() => Selection.Reset(CurrentPage.Id);
+
+    /// <summary>
+    /// Seiten, auf die ein Befehl wirkt: bei Mehrfachauswahl alle gewählten (sofern die angeklickte Seite dazugehört),
+    /// sonst die angeklickte bzw. angezeigte Seite.
+    /// </summary>
+    /// <param name="clickedIndex">Position einer angeklickten Miniatur oder <c>null</c> für die angezeigte Seite.</param>
+    /// <returns>Positionen, aufsteigend.</returns>
+    public IReadOnlyList<int> TargetIndices(int? clickedIndex = null)
+    {
+        var index = clickedIndex ?? CurrentIndex;
+        return Selection.IsMultiple && Selection.Contains(Document.Pages[index].Id) ? Selection.Indices(Document.Pages.ToList()) : [index];
+    }
+
+    /// <summary>
+    /// Fügt nach einer Seite eine leere Seite in deren angezeigter Größe ein und zeigt sie an (A48).
+    /// </summary>
+    /// <param name="afterIndex">Position der Seite davor.</param>
+    public void InsertBlankPage(int afterIndex)
+    {
+        var page = Document.Pages[afterIndex];
+        var (width, height) = SourceOf(page).PageSize(page.SourcePageNumber);
+        var (displayWidth, displayHeight) = PageTransform.RotatedSize(width, height, page.Rotation);
+        InsertPages(PdfSource.CreateBlankPage(displayWidth, displayHeight), [1], afterIndex + 1);
+    }
+
+    /// <summary>
+    /// Zeigt eine Seite an; auf Wunsch wird die Mehrfachauswahl auf diese Seite zurückgesetzt.
+    /// </summary>
+    private void Show(int index, bool resetSelection)
     {
         CurrentIndex = Math.Clamp(index, 0, Document.Pages.Count - 1);
+        if (resetSelection)
+        {
+            Selection.Reset(CurrentPage.Id);
+        }
+
         foreach (var thumbnail in Thumbnails)
         {
             thumbnail.IsSelected = thumbnail.Position == CurrentIndex + 1;
@@ -241,27 +301,31 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public void MovePage(int fromIndex, int toIndex)
     {
         var shown = CurrentPage.Id;
-        Document.MovePage(fromIndex, toIndex);
-        Show(Document.Pages.IndexOf(shown));
+        if (Selection.IsMultiple && Selection.Contains(Document.Pages[fromIndex].Id))
+        {
+            // Mehrere gewählte Seiten als Block vor bzw. hinter die Zielseite (A48)
+            Document.MovePages(Selection.Indices(Document.Pages.ToList()), toIndex, after: toIndex > fromIndex);
+        }
+        else
+        {
+            Document.MovePage(fromIndex, toIndex);
+        }
+
+        Show(Document.Pages.IndexOf(shown), resetSelection: false);
     }
 
     /// <summary>
     /// Dreht eine Seite um 90° im Uhrzeigersinn (A19).
     /// </summary>
     /// <param name="index">Position.</param>
-    public void RotatePage(int index) => Document.RotatePage(index);
+    /// <param name="clockwise"><c>true</c> im, <c>false</c> gegen den Uhrzeigersinn.</param>
+    public void RotatePage(int index, bool clockwise = true) => Document.RotatePages(TargetIndices(index), clockwise);
 
     /// <summary>
     /// Löscht eine Seite, sofern es nicht die letzte ist.
     /// </summary>
     /// <param name="index">Position.</param>
-    public void DeletePage(int index)
-    {
-        if (Document.CanDeletePage)
-        {
-            Document.DeletePage(index);
-        }
-    }
+    public void DeletePage(int index) => Document.DeletePages(TargetIndices(index));
 
     /// <summary>
     /// Fügt der angezeigten Seite eine Annotation hinzu.
@@ -413,9 +477,10 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     {
         AnnotationList.RequestRefresh();
         BookmarkList.Refresh(CurrentIndex);
+        Selection.Prune(Document.Pages.ToList());
         RebuildThumbnails();
         _ = RenderThumbnailsAsync();
-        Show(CurrentIndex);
+        Show(CurrentIndex, resetSelection: false);
     }
 
     /// <summary>
@@ -456,18 +521,32 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         for (var i = 0; i < Document.Pages.Count; i++)
         {
             var entry = Document.Pages[i];
-            var sourceName = entry.IsInserted ? Path.GetFileName(SourceOf(entry).FilePath) : null;
-            var thumbnail = new PageThumbnailViewModel(entry, i + 1, sourceName)
+            var sourceName = entry.IsInserted && !SourceOf(entry).IsGenerated ? Path.GetFileName(SourceOf(entry).FilePath) : null;
+            var thumbnail = new PageThumbnailViewModel(entry, i + 1, sourceName, isBlank: entry.IsInserted && SourceOf(entry).IsGenerated)
             {
                 Thumbnail = _thumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation))
                     ?? _staleThumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation)),
                 IsSelected = i == CurrentIndex,
+                IsMarked = Selection.IsMultiple && Selection.Contains(entry.Id),
             };
             thumbnail.ShowAnnotationKinds(Document.Annotations.For(entry.Id));
             Thumbnails.Add(thumbnail);
         }
 
         OnPropertyChanged(nameof(PageStatus));
+    }
+
+    /// <summary>
+    /// Mehrfachauswahl geändert: Miniaturen markieren, Statusleiste aktualisieren.
+    /// </summary>
+    private void OnSelectionChanged()
+    {
+        foreach (var thumbnail in Thumbnails)
+        {
+            thumbnail.IsMarked = Selection.IsMultiple && Selection.Contains(thumbnail.Entry.Id);
+        }
+
+        OnPropertyChanged(nameof(SelectionStatus));
     }
 
     /// <summary>

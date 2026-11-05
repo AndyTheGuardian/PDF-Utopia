@@ -13,7 +13,8 @@ namespace PdfUtopia.App.ViewModels;
 /// <param name="entry">Die Seite.</param>
 /// <param name="position">Position in der Liste (1-basiert).</param>
 /// <param name="sourceName">Dateiname der Quelle bei eingefügten Seiten, sonst <c>null</c>.</param>
-public sealed partial class PageThumbnailViewModel(PageEntry entry, int position, string? sourceName = null) : ObservableObject
+/// <param name="isBlank">Ob es eine eingefügte leere Seite ist (A48).</param>
+public sealed partial class PageThumbnailViewModel(PageEntry entry, int position, string? sourceName = null, bool isBlank = false) : ObservableObject
 {
     /// <summary>Die Seite.</summary>
     public PageEntry Entry { get; } = entry;
@@ -25,16 +26,17 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     public string Label => Position.ToString(System.Globalization.CultureInfo.CurrentCulture);
 
     /// <summary>
-    /// Herkunft: bei eingefügten Seiten Datei und Seite (z. B. „anhang.pdf S. 2“), sonst die ursprüngliche
+    /// Herkunft: bei leeren Seiten „(leer)“, bei eingefügten Seiten Datei und Seite (z. B. „anhang.pdf S. 2“), sonst die ursprüngliche
     /// Seitennummer, falls die Seite verschoben wurde; sonst leer.
     /// </summary>
     public string OriginalHint =>
-        sourceName is not null ? $"({Loc.F("Pages.InsertedFrom", sourceName, Entry.SourcePageNumber)})"
+        isBlank ? $"({Loc.T("Pages.Blank")})"
+        : sourceName is not null ? $"({Loc.F("Pages.InsertedFrom", sourceName, Entry.SourcePageNumber)})"
         : Entry.SourcePageNumber == Position ? string.Empty
         : $"({Loc.F("Pages.Original", Entry.SourcePageNumber)})";
 
-    /// <summary>Ob die Seite aus einer anderen Datei eingefügt wurde (Rahmen in der Akzentfarbe).</summary>
-    public bool IsInserted => Entry.IsInserted;
+    /// <summary>Ob die Seite aus einer anderen Datei eingefügt wurde (Rahmen in der Akzentfarbe); leere Seiten nicht.</summary>
+    public bool IsInserted => sourceName is not null;
 
     /// <summary>Miniatur; wird im Hintergrund gerendert.</summary>
     [ObservableProperty]
@@ -43,6 +45,10 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     /// <summary>Ob die Seite gerade angezeigt wird.</summary>
     [ObservableProperty]
     public partial bool IsSelected { get; set; }
+
+    /// <summary>Ob die Seite zur Mehrfachauswahl gehört (A48).</summary>
+    [ObservableProperty]
+    public partial bool IsMarked { get; set; }
 
     /// <summary>Ob die Seite Kommentare enthält (Symbol in der Seitenliste, A39).</summary>
     [ObservableProperty]

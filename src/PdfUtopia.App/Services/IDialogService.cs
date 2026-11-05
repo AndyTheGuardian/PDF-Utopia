@@ -83,8 +83,9 @@ public interface IDialogService
 
     /// <summary>Zeigt den Extract-Dialog mit Live-Vorschau.</summary>
     /// <param name="pageCount">Seitenanzahl der aktuellen Seitenliste.</param>
+    /// <param name="preset">Vorbelegte Eingabe (z. B. die Mehrfachauswahl) oder <c>null</c> für alle Seiten.</param>
     /// <returns>Die Seitenpositionen oder <c>null</c> bei Abbruch.</returns>
-    Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount);
+    Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount, string? preset = null);
 
     /// <summary>
     /// Zeigt die Dateiauswahl für eine einzelne PDF-Datei.

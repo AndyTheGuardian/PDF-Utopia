@@ -184,7 +184,10 @@ Weitere Regeln:
 
 - **Umsortieren** per Drag & Drop in der Seitenliste. Verschobene Seiten zeigen zusätzlich ihre ursprüngliche
   Seitennummer, z. B. „2 (Seite 14)“.
-- **Drehen** dreht um 90° im Uhrzeigersinn; Annotationen drehen mit.
+- **Drehen** dreht um 90° im Uhrzeigersinn; Annotationen drehen mit. Mit **Strg+Klick** auf einen Drehen-Knopf
+  (Werkzeugleiste oder Miniatur) dreht es gegen den Uhrzeigersinn; solange Strg gedrückt ist, zeigen diese Knöpfe
+  ein gespiegeltes Symbol. Im Menü **Bearbeiten** und im Kontextmenü der Seitenliste gibt es dafür einen eigenen
+  Eintrag „gegen den Uhrzeigersinn“.
 - **Blättern** in der Seitenansicht mit Mausrad oder Tasten (siehe 6). Ist die Seite größer als die Ansicht, scrollt
   das Mausrad zuerst innerhalb der Seite; erst die nächste Drehung am oberen bzw. unteren Rand wechselt die Seite.
   Rückwärts landet man am unteren Rand der vorigen Seite. Nach einem Seitenwechsel per Mausrad werden
@@ -192,6 +195,20 @@ Weitere Regeln:
   überspringt.
 - **Löschen:** Die letzte verbleibende Seite eines Dokuments kann nicht gelöscht werden. Annotationen einer
   gelöschten Seite bleiben für „Rückgängig“ erhalten.
+- **Leere Seite:** **Bearbeiten → Leere Seite einfügen** (Strg+Umschalt+N) oder Rechtsklick auf eine Miniatur →
+  „Leere Seite danach einfügen“. Die Seite kommt hinter die angezeigte bzw. angeklickte Seite, in deren
+  angezeigter Größe und Ausrichtung, und wird angezeigt. In der Seitenliste steht „(leer)“. Ein Rückgängig-Schritt;
+  beim Speichern entsteht eine echte leere Seite.
+- **Mehrfachauswahl** in der Seitenliste: **Strg+Klick** nimmt eine Seite hinzu oder heraus, **Umschalt+Klick**
+  wählt den Bereich ab der zuletzt angeklickten Seite, **Strg+A** alle Seiten (wenn die Seitenliste angeklickt
+  wurde), **Esc** oder ein einfacher Klick hebt die Auswahl auf. Gewählte Seiten haben einen Rahmen in der
+  Akzentfarbe, die Statusleiste zeigt „3 Seiten ausgewählt“. **Drehen** und **Löschen** (Werkzeugleiste, Menü,
+  Knöpfe an der Miniatur, **Entf** in der Seitenliste) wirken auf alle gewählten Seiten – je ein Rückgängig-Schritt,
+  mindestens eine Seite bleibt. **Ziehen** einer gewählten Seite verschiebt alle gewählten als Block vor bzw.
+  hinter die Zielseite. **Extrahieren** ist mit der Auswahl vorbelegt (z. B. „2-4,7“). Gehört die angeklickte bzw.
+  angezeigte Seite nicht zur Auswahl, wirken die Befehle nur auf sie.
+- **Kontextmenü:** Rechtsklick auf eine Miniatur bietet Drehen, Löschen, Extrahieren und „Leere Seite danach
+  einfügen“.
 
 ### 5.4 Rückgängig und Wiederholen
 
@@ -366,6 +383,9 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 | Strg+Umschalt+S | Speichern unter |
 | Strg+E | Seiten extrahieren |
 | Strg+I | Seiten aus anderer PDF-Datei einfügen |
+| Strg+Umschalt+N | Leere Seite nach der angezeigten Seite einfügen |
+| Strg+Klick / Umschalt+Klick (Seitenliste) | Seite zur Auswahl hinzunehmen / Bereich wählen |
+| Strg+A / Entf / Esc (Seitenliste) | alle Seiten wählen / gewählte Seiten löschen / Auswahl aufheben |
 | Strg+P | Drucken |
 | Strg+W | Dokument schließen |
 | Strg+Z | Rückgängig |

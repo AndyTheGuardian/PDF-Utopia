@@ -13,7 +13,7 @@ Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokum
 4. [Kommentieren](#4-kommentieren)
 5. [Markieren, Zeichnen, Formen, Text](#5-markieren-zeichnen-formen-text)
 6. [Radieren](#6-radieren)
-7. [Seiten umsortieren, drehen, löschen](#7-seiten-umsortieren-drehen-löschen)
+7. [Seiten umsortieren, drehen, löschen, einfügen](#7-seiten-umsortieren-drehen-löschen-einfügen)
 8. [Rückgängig und Wiederholen](#8-rückgängig-und-wiederholen)
 9. [Suchen](#9-suchen)
 10. [Speichern](#10-speichern)
@@ -195,7 +195,7 @@ gerade gewählt ist. Der gestrichelte Radierkreis erscheint schon, sobald der St
 
 ---
 
-## 7. Seiten umsortieren, drehen, löschen
+## 7. Seiten umsortieren, drehen, löschen, einfügen
 
 ### Umsortieren
 1. In der Seitenliste eine Miniatur mit der Maus **greifen und ziehen**.
@@ -204,15 +204,34 @@ gerade gewählt ist. Der gestrichelte Radierkreis erscheint schon, sobald der St
 
 ### Drehen
 - Mit der Maus über eine Miniatur fahren und auf **⟳** klicken, oder
-- die angezeigte Seite mit **Drehen** in der Werkzeugleiste (bzw. **Bearbeiten → Seite drehen**) drehen.
+- die angezeigte Seite mit **Drehen** in der Werkzeugleiste (bzw. **Bearbeiten → Seite im Uhrzeigersinn drehen**) drehen.
 
-Jeder Klick dreht um 90° im Uhrzeigersinn. Kommentare und Zeichnungen drehen mit.
+Jeder Klick dreht um 90° im Uhrzeigersinn. Mit gedrückter **Strg**-Taste dreht der Klick gegen den Uhrzeigersinn –
+das Symbol auf dem Knopf zeigt dann in die andere Richtung. Alternativ: **Bearbeiten → Seite gegen den
+Uhrzeigersinn drehen** oder Rechtsklick auf die Miniatur. Kommentare und Zeichnungen drehen mit.
 
 ### Löschen
 - Mit der Maus über eine Miniatur fahren und auf den **Papierkorb** klicken, oder
 - die angezeigte Seite mit **Löschen** in der Werkzeugleiste löschen.
 
 Die letzte Seite eines Dokuments lässt sich nicht löschen.
+
+### Mehrere Seiten auf einmal
+1. In der Seitenliste eine Seite anklicken.
+2. Weitere Seiten mit gedrückter **Strg**-Taste anklicken – oder mit gedrückter **Umschalttaste** die letzte Seite
+   eines Bereichs. **Strg+A** wählt alle Seiten.
+3. Die gewählten Seiten sind farbig umrandet, unten steht z. B. „3 Seiten ausgewählt“.
+4. Jetzt wirken **Drehen**, **Löschen** (auch die Taste **Entf**) und **Extrahieren** auf alle gewählten Seiten.
+   Ziehen Sie eine der gewählten Seiten, wandern alle zusammen an die neue Stelle.
+5. **Esc** oder ein einfacher Klick auf eine Seite hebt die Auswahl auf.
+
+Ein **Rechtsklick** auf eine Miniatur öffnet ein Menü mit Drehen, Löschen, Extrahieren und „Leere Seite danach
+einfügen“.
+
+### Leere Seite einfügen
+**Bearbeiten → Leere Seite einfügen** (**Strg+Umschalt+N**) fügt hinter der angezeigten Seite eine leere Seite
+in derselben Größe und Ausrichtung ein – praktisch für Notizen. Über den Rechtsklick auf eine Miniatur geht es
+auch hinter jeder anderen Seite.
 
 ---
 

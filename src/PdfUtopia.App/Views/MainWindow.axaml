@@ -18,6 +18,7 @@
     <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
     <KeyBinding Gesture="Ctrl+E" Command="{Binding ExtractCommand}" />
     <KeyBinding Gesture="Ctrl+I" Command="{Binding InsertPagesCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding InsertBlankPageCommand}" />
     <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintCommand}" />
     <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
     <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
@@ -49,6 +50,19 @@
     </Style>
     <Style Selector="Border.thumb.selected">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <!-- Mehrfachauswahl (A48): Rahmen in der Akzentfarbe; die angezeigte Seite ist zusätzlich hinterlegt -->
+    <!-- Strg gedrückt: Drehen-Symbol gespiegelt (gegen den Uhrzeigersinn) -->
+    <!-- Spiegelung um die Mitte mit derselben Verkleinerung wie Path.icon bzw. Path.icon.small (App.axaml),
+         damit gespiegeltes und normales Symbol exakt gleich groß sind -->
+    <Style Selector="Path.icon.mirrored">
+      <Setter Property="RenderTransform" Value="scale(-0.75, 0.75)" />
+    </Style>
+    <Style Selector="Path.icon.small.mirrored">
+      <Setter Property="RenderTransform" Value="scale(-0.55, 0.55)" />
+    </Style>
+    <Style Selector="Border.thumb.marked">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     </Style>
     <Style Selector="Border.thumb.dragging">
@@ -211,8 +225,10 @@
             <MenuItem Header="{loc:T Menu.Undo}" Command="{Binding UndoCommand}" InputGesture="Ctrl+Z" />
             <MenuItem Header="{loc:T Menu.Redo}" Command="{Binding RedoCommand}" InputGesture="Ctrl+Y" />
             <Separator />
-            <MenuItem Header="{loc:T Menu.RotatePage}" Command="{Binding RotateCurrentPageCommand}" />
+            <MenuItem Header="{loc:T Menu.RotatePage}" Command="{Binding RotateCurrentPageClockwiseCommand}" />
+            <MenuItem Header="{loc:T Menu.RotatePageCounterclockwise}" Command="{Binding RotateCurrentPageCounterclockwiseCommand}" />
             <MenuItem Header="{loc:T Menu.DeletePage}" Command="{Binding DeleteCurrentPageCommand}" />
+            <MenuItem Header="{loc:T Menu.InsertBlankPage}" Command="{Binding InsertBlankPageCommand}" InputGesture="Ctrl+Shift+N" />
             <Separator />
             <MenuItem Header="{loc:T Menu.Find}" Click="OnFindClick" InputGesture="Ctrl+F" />
             <MenuItem Header="{loc:T Menu.Settings}" Command="{Binding OpenSettingsCommand}" />
@@ -280,7 +296,7 @@
             <Border Classes="divider" />
             <Button Classes="tb" Command="{Binding ExtractCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconExtract}" /><TextBlock Text="{loc:T Toolbar.Extract}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding InsertPagesCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconInsertPages}" /><TextBlock Text="{loc:T Toolbar.InsertPages}" /></StackPanel></Button>
-            <Button Classes="tb" Command="{Binding RotateCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconRotate}" /><TextBlock Text="{loc:T Toolbar.Rotate}" /></StackPanel></Button>
+            <Button Classes="tb" Command="{Binding RotateCurrentPageCommand}" ToolTip.Tip="{loc:T Toolbar.RotateTip}"><StackPanel Spacing="2"><Path Classes="icon" Classes.mirrored="{Binding ReverseRotation}" Data="{StaticResource IconRotate}" /><TextBlock Text="{loc:T Toolbar.Rotate}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding DeleteCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconTrash}" /><TextBlock Text="{loc:T Toolbar.Delete}" /></StackPanel></Button>
         </WrapPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top" Margin="8,6,0,0">
@@ -409,7 +425,10 @@
     <!-- Statusleiste -->
     <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="12,4">
       <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
-        <TextBlock Classes="hint" Text="{Binding PageStatus}" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Classes="hint" Text="{Binding PageStatus}" />
+          <TextBlock Classes="hint" Text="{Binding ActiveDocument.SelectionStatus, FallbackValue=''}" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold" />
+        </StackPanel>
         <TextBlock Grid.Column="1" Classes="hint" Margin="18,0,0,0" Text="{Binding UndoStatus}" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="18,0,0,0" IsVisible="{Binding HasDocument}">
           <TextBlock Classes="hint" Text="{Binding ActiveDocument.FileName, FallbackValue=''}" />
@@ -583,12 +602,27 @@
               </Panel>
             </DockPanel>
             </Panel>
-            <ScrollViewer x:Name="PageListScroller" IsVisible="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Pages}">
+            <ScrollViewer x:Name="PageListScroller" Focusable="True" IsVisible="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Pages}">
+              <ScrollViewer.KeyBindings>
+                <KeyBinding Gesture="Ctrl+A" Command="{Binding SelectAllPagesCommand}" />
+                <KeyBinding Gesture="Escape" Command="{Binding ClearPageSelectionCommand}" />
+                <KeyBinding Gesture="Delete" Command="{Binding DeleteCurrentPageCommand}" />
+              </ScrollViewer.KeyBindings>
               <Panel>
                 <ItemsControl x:Name="ThumbnailList" ItemsSource="{Binding ActiveDocument.Thumbnails, FallbackValue={x:Null}}" Margin="12">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:PageThumbnailViewModel">
-                      <Border Classes="thumb" Classes.selected="{Binding IsSelected}">
+                      <Border Classes="thumb" Classes.selected="{Binding IsSelected}" Classes.marked="{Binding IsMarked}">
+                        <Border.ContextMenu>
+                          <ContextMenu>
+                            <MenuItem Header="{loc:T Pages.Rotate}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RotatePageClockwiseCommand}" CommandParameter="{Binding}" />
+                            <MenuItem Header="{loc:T Pages.RotateCounterclockwise}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RotatePageCounterclockwiseCommand}" CommandParameter="{Binding}" />
+                            <MenuItem Header="{loc:T Pages.Delete}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeletePageCommand}" CommandParameter="{Binding}" />
+                            <MenuItem Header="{loc:T Pages.Extract}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ExtractPageCommand}" CommandParameter="{Binding}" />
+                            <Separator />
+                            <MenuItem Header="{loc:T Pages.InsertBlankAfter}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).InsertBlankPageAfterCommand}" CommandParameter="{Binding}" />
+                          </ContextMenu>
+                        </Border.ContextMenu>
                         <Panel>
                           <StackPanel Spacing="6" HorizontalAlignment="Center">
                             <Border Width="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailBoxWidth}"
@@ -624,9 +658,10 @@
                             </Border>
                           </StackPanel>
                           <StackPanel Classes="thumbActions" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0">
-                            <Button Classes="thumbAction" ToolTip.Tip="{loc:T Pages.Rotate}"
+                            <Button Classes="thumbAction" ToolTip.Tip="{loc:T Toolbar.RotateTip}"
                                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RotatePageCommand}" CommandParameter="{Binding}">
-                              <Path Classes="icon small" Data="{StaticResource IconRotate}" />
+                              <Path Classes="icon small" Classes.mirrored="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ReverseRotation}"
+                                    Data="{StaticResource IconRotate}" />
                             </Button>
                             <Button Classes="thumbAction" ToolTip.Tip="{loc:T Pages.Delete}"
                                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeletePageCommand}" CommandParameter="{Binding}">

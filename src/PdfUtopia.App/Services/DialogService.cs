@@ -104,9 +104,9 @@ public sealed class DialogService(Window owner) : IDialogService
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount)
+    public async Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount, string? preset = null)
     {
-        var input = new TextBox { Text = pageCount > 1 ? $"1-{pageCount}" : "1", MinWidth = 380 };
+        var input = new TextBox { Text = preset ?? (pageCount > 1 ? $"1-{pageCount}" : "1"), MinWidth = 380 };
         var chips = new WrapPanel();
         var hints = new StackPanel { Spacing = 4 };
         var selection = PageSelectionParser.Parse(input.Text, pageCount);

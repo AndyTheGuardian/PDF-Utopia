@@ -178,6 +178,23 @@ public sealed class PageList : IReadOnlyList<PageEntry>
         OnChanged();
     }
 
+    /// <summary>
+    /// Ersetzt die Reihenfolge durch eine Umstellung derselben Seiten (Verschieben mehrerer Seiten, A48).
+    /// </summary>
+    /// <param name="order">Alle Seiten in neuer Reihenfolge.</param>
+    /// <exception cref="ArgumentException">Wenn nicht genau dieselben Seiten enthalten sind.</exception>
+    public void Reorder(IReadOnlyList<PageEntry> order)
+    {
+        if (order.Count != _pages.Count || !order.Select(page => page.Id).ToHashSet().SetEquals(_pages.Select(page => page.Id)))
+        {
+            throw new ArgumentException("Die neue Reihenfolge muss genau dieselben Seiten enthalten.", nameof(order));
+        }
+
+        _pages.Clear();
+        _pages.AddRange(order);
+        OnChanged();
+    }
+
     /// <inheritdoc />
     public IEnumerator<PageEntry> GetEnumerator() => _pages.GetEnumerator();
 
