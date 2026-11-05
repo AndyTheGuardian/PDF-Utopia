@@ -39,6 +39,9 @@ public sealed class PageEditor : Control
     private const byte CommentFillAlpha = 36;
     private const byte MarkerAlpha = 115;
     private const double TextHitMargin = 3;
+    private const double FlashPadding = 6;
+    private static readonly TimeSpan FlashDuration = TimeSpan.FromSeconds(1.6);
+    private static readonly TimeSpan FlashFadeStart = TimeSpan.FromSeconds(1.1);
 
     /// <summary>Schrift mit denselben Zeichenbreiten wie Helvetica, damit Anzeige und PDF gleich umbrechen.</summary>
     private static readonly FontFamily TextFont = new("Liberation Sans, Arial, Helvetica, sans-serif");
@@ -58,6 +61,9 @@ public sealed class PageEditor : Control
     private ToolOptionsViewModel? _subscribedOptions;
     private TextAnnotation? _movingText;
     private bool _constrain;
+    private Guid? _flashId;
+    private DateTime _flashStart;
+    private DispatcherTimer? _flashTimer;
     private Guid? _hoveredText;
     private TextBox? _textEditor;
     private TextAnnotation? _editing;
@@ -199,6 +205,7 @@ public sealed class PageEditor : Control
 
         DrawSuggestion(context);
         DrawTextFrames(context);
+        DrawFlash(context);
         DrawGesture(context);
         DrawEraserCursor(context);
     }
@@ -972,6 +979,7 @@ public sealed class PageEditor : Control
         {
             _subscribed.PropertyChanged -= OnDocumentPropertyChanged;
             _subscribed.CurrentPageAnnotationsChanged -= OnAnnotationsChanged;
+            _subscribed.AnnotationFocusRequested -= OnAnnotationFocusRequested;
         }
 
         _subscribed = document;
@@ -979,7 +987,54 @@ public sealed class PageEditor : Control
         {
             document.PropertyChanged += OnDocumentPropertyChanged;
             document.CurrentPageAnnotationsChanged += OnAnnotationsChanged;
+            document.AnnotationFocusRequested += OnAnnotationFocusRequested;
         }
+    }
+
+    /// <summary>
+    /// Anmerkung aus der Übersicht angesprungen (A45): nach dem Seitenwechsel in den sichtbaren Bereich holen und
+    /// kurz mit einem gestrichelten Rahmen in der Akzentfarbe hervorheben.
+    /// </summary>
+    private void OnAnnotationFocusRequested(object? sender, Guid id) => Dispatcher.UIThread.Post(() =>
+    {
+        if (Document?.CurrentAnnotations.FirstOrDefault(annotation => annotation.Id == id) is not { } annotation)
+        {
+            return;
+        }
+
+        var bounds = AnnotationBounds.Of(ToDisplay(annotation));
+        this.BringIntoView(ToRect(Inflate(bounds, FlashPadding * 4)));
+        _flashId = id;
+        _flashStart = DateTime.UtcNow;
+        _flashTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(40), DispatcherPriority.Render, (_, _) => InvalidateVisual());
+        _flashTimer.Start();
+        InvalidateVisual();
+    }, DispatcherPriority.Background);
+
+    /// <summary>
+    /// Rahmen um die angesprungene Anmerkung; blendet nach kurzer Zeit aus.
+    /// </summary>
+    private void DrawFlash(DrawingContext context)
+    {
+        if (_flashId is not { } id)
+        {
+            return;
+        }
+
+        var elapsed = DateTime.UtcNow - _flashStart;
+        if (elapsed >= FlashDuration || Document?.CurrentAnnotations.FirstOrDefault(annotation => annotation.Id == id) is not { } annotation)
+        {
+            _flashId = null;
+            _flashTimer?.Stop();
+            return;
+        }
+
+        var opacity = elapsed < FlashFadeStart ? 1 : 1 - (elapsed - FlashFadeStart) / (FlashDuration - FlashFadeStart);
+        var accent = this.TryFindResource("AccentBorderBrush", ActualThemeVariant, out var resource) && resource is ISolidColorBrush brush
+            ? brush.Color
+            : Color.Parse(AccentPalette.DefaultAccent);
+        var pen = new Pen(new SolidColorBrush(accent, opacity), 3, new DashStyle([2, 1.3], 0));
+        context.DrawRectangle(null, pen, ToRect(Inflate(AnnotationBounds.Of(ToDisplay(annotation)), FlashPadding)), 6, 6);
     }
 
     /// <summary>

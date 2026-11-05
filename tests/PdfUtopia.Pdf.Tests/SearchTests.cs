@@ -1,3 +1,4 @@
+using PdfUtopia.Core.Geometry;
 using PdfUtopia.Pdf.Rendering;
 
 namespace PdfUtopia.Pdf.Tests;
@@ -17,6 +18,27 @@ public sealed class SearchTests : IDisposable
         _source.Dispose();
         _temp.Dispose();
     }
+
+    [Fact]
+    public void TextInArea_ReturnsTextUnderHighlight()
+    {
+        var heading = Assert.Single(_source.FindText(1, "Seite 1"));
+
+        Assert.Equal("Seite 1", _source.TextInArea(1, heading));
+    }
+
+    [Fact]
+    public void TextInArea_PartOfLine_ReturnsOnlyCoveredCharacters()
+    {
+        var heading = Assert.Single(_source.FindText(1, "Seite 1"));
+        var leftPart = new PdfRect(heading.X, heading.Y, heading.Width * 0.8, heading.Height);
+
+        Assert.Equal("Seite", _source.TextInArea(1, leftPart));
+    }
+
+    [Fact]
+    public void TextInArea_EmptyArea_ReturnsEmpty() =>
+        Assert.Equal(string.Empty, _source.TextInArea(1, new PdfRect(400, 600, 20, 10)));
 
     [Fact]
     public void FindText_Heading_IsFoundAtItsPosition()

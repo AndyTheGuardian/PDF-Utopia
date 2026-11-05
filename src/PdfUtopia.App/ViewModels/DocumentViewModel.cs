@@ -24,6 +24,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     private readonly Dictionary<(int Source, int Page, PageRotation Rotation), Bitmap> _thumbnails = [];
     private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _textBlocks = [];
     private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _searchHits = [];
+    private readonly Dictionary<(int Source, int Page, PdfRect Area), string> _highlightedTexts = [];
     private string _searchTerm = string.Empty;
 
     /// <summary>
@@ -37,6 +38,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         _sources.Add(source);
         Document = source.CreateDocument(undoLimit);
         _renderer = new PageRenderer(SourceOf);
+        AnnotationList = new AnnotationListViewModel(Document, HighlightedText);
         Document.Pages.Changed += (_, _) => OnPagesChanged();
         Document.Annotations.Changed += (_, pageId) => OnAnnotationsChanged(pageId);
         Document.History.Changed += (_, _) => OnHistoryChanged();
@@ -46,6 +48,12 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 
     /// <summary>Wird ausgelöst, wenn sich die Annotationen der angezeigten Seite ändern.</summary>
     public event EventHandler? CurrentPageAnnotationsChanged;
+
+    /// <summary>Wird ausgelöst, wenn eine Anmerkung der angezeigten Seite sichtbar gemacht und hervorgehoben werden soll.</summary>
+    public event EventHandler<Guid>? AnnotationFocusRequested;
+
+    /// <summary>Anmerkungsübersicht (A45).</summary>
+    public AnnotationListViewModel AnnotationList { get; }
 
     /// <summary>Die geöffnete Datei.</summary>
     public PdfSource Source { get; }
@@ -176,6 +184,23 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Springt zu einer Anmerkung der Übersicht: zeigt ihre Seite und lässt sie hervorheben (A45).
+    /// </summary>
+    /// <param name="entry">Der Eintrag.</param>
+    public void ShowAnnotation(AnnotationEntry entry)
+    {
+        var index = Document.Pages.IndexOf(entry.Page.Id);
+        if (index < 0)
+        {
+            return;
+        }
+
+        AnnotationList.Select(entry.Annotation.Id);
+        Show(index);
+        AnnotationFocusRequested?.Invoke(this, entry.Annotation.Id);
+    }
+
+    /// <summary>
     /// Verschiebt eine Seite und behält die angezeigte Seite bei.
     /// </summary>
     /// <param name="fromIndex">Bisherige Position.</param>
@@ -301,6 +326,21 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Text unter einer Markierung (zwischengespeichert, da das Lesen der Textebene Zeit kostet).
+    /// </summary>
+    private string HighlightedText(PageEntry page, PdfRect area)
+    {
+        var key = (page.SourceIndex, page.SourcePageNumber, area);
+        if (!_highlightedTexts.TryGetValue(key, out var text))
+        {
+            text = SourceOf(page).TextInArea(page.SourcePageNumber, area);
+            _highlightedTexts[key] = text;
+        }
+
+        return text;
+    }
+
+    /// <summary>
     /// Quelldatei zu einer Kennung aus <see cref="PageEntry.SourceIndex"/>.
     /// </summary>
     private PdfSource SourceOf(int sourceIndex) => _sources[sourceIndex];
@@ -337,6 +377,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnPagesChanged()
     {
+        AnnotationList.RequestRefresh();
         RebuildThumbnails();
         _ = RenderThumbnailsAsync();
         Show(CurrentIndex);
@@ -347,6 +388,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnAnnotationsChanged(int pageId)
     {
+        AnnotationList.RequestRefresh();
         foreach (var thumbnail in Thumbnails.Where(item => item.Entry.Id == pageId))
         {
             thumbnail.ShowAnnotationKinds(Document.Annotations.For(pageId));

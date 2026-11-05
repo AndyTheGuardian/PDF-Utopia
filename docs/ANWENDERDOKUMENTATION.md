@@ -123,7 +123,7 @@ dafür wäre ein eigenes Bundle nötig.
 | Werkzeugleiste | häufige Befehle, die Werkzeuge, Zoom, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
-| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
+| Linke Leiste | Sobald das Dokument Anmerkungen hat, Reiter **Seiten** und **Anmerkungen** (mit Anzahl); sonst nur die Seitenliste. **Seiten:** Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
 | Seitenansicht | die angezeigte Seite mit Annotationen; darunter die Fußnoten der Kommentare |
 | Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom |
 
@@ -291,6 +291,28 @@ Textebene liefern keine Treffer.
 Die gewählte Ansicht wird bei jeder Größenänderung des Fensters – auch beim Maximieren –, beim Seitenwechsel
 und beim Drehen neu angewandt. Zoomen mit + oder − (Schritte von 10 %, 30–400 %) schaltet die Ansicht ab, bis
 wieder eine gewählt wird.
+
+### 5.10a Anmerkungsübersicht
+
+Der Reiter **Anmerkungen** in der linken Leiste erscheint, sobald das Dokument Anmerkungen hat; ohne Anmerkungen
+zeigt die Leiste nur die Seitenliste, und nach dem Entfernen der letzten Anmerkung kehrt sie dorthin zurück. Er
+listet alle Anmerkungen des Dokuments, nach Seiten gruppiert in
+der aktuellen Seitenreihenfolge. Je Seite stehen zuerst die Kommentare in Fußnotenreihenfolge, dann alle übrigen
+in der Reihenfolge, in der sie gezeichnet wurden.
+
+| Art | Eintrag |
+|---|---|
+| Kommentar | Fußnotenzahl und Kommentartext |
+| Markierung | „Markierung:“ und der markierte Text der Seite; bei Seiten ohne Textebene (Scans) nur „Markierung“ |
+| Text | der Text |
+| Freihand, Rechteck, Ellipse, Linie, Pfeil | die Art (gedämpft) |
+
+Jeder Eintrag zeigt das Symbol der Art in der Akzentfarbe und einen Punkt in der Farbe der Anmerkung. Lange Texte
+werden nach zwei Zeilen gekürzt. Oben lässt sich nach Art filtern (Alle Arten, Kommentare, Markierungen,
+Freihand, Formen, Text). Ein Klick zeigt die Seite, holt die Anmerkung in den sichtbaren Bereich und hebt sie
+1,6 Sekunden lang mit einem gestrichelten Rahmen in der Akzentfarbe hervor; der Eintrag bleibt markiert. Die
+Übersicht folgt jeder Änderung, auch Rückgängig, Umsortieren und eingefügten Seiten. Anmerkungen anderer
+Programme erscheinen nicht, weil sie nicht bearbeitbar sind.
 
 ### 5.11 Mehrere Dokumente
 

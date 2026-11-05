@@ -14,6 +14,7 @@ weiterbearbeiten.
   Glättung.
 - **Radierer:** als Werkzeug oder über das Radiererende des Stifts.
 - **Seiten:** per Drag & Drop umsortieren, drehen, löschen.
+- **Anmerkungsübersicht:** alle Anmerkungen nach Seiten, mit Filter; ein Klick springt hin.
 - **Extrahieren:** Seitenauswahl wie `2`, `4-8` oder `2,4,8,13-15`, mit Vorschau.
 - **Einfügen:** Seiten aus einer anderen PDF-Datei übernehmen, per Dialog oder Drag & Drop auf die Seitenliste; Anmerkungen kommen mit.
 - **Rückgängig/Wiederholen:** mit einstellbarer Anzahl von Schritten (Standard 50).

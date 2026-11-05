@@ -69,6 +69,7 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 | Seite anzeigen | in der Seitenliste links auf die Miniatur klicken |
 | Blättern | **Mausrad** über der Seite, **←** / **→**, **Bild↑** / **Bild↓**; **Pos1** / **Ende** für die erste / letzte Seite. Die Seitenliste scrollt mit, die aktuelle Seite bleibt dort sichtbar |
 | Seiten mit Anmerkungen finden | in der Seitenliste zeigen kleine **Symbole in der Akzentfarbe** oben links, was die Seite enthält: je eines für Kommentare, Markierungen, Freihandlinien, Formen und Texte (wie in der Werkzeugleiste) |
+| Alle Anmerkungen im Überblick | oben in der linken Leiste den Reiter **Anmerkungen** wählen (siehe unten) |
 | Ganze Seite sehen | unten rechts **Ganze Seite** wählen (Standard) |
 | Seite so hoch wie möglich | **Volle Höhe** |
 | Seite so breit wie möglich | **Volle Breite** |
@@ -80,6 +81,16 @@ Sobald Sie mit − oder + zoomen, bleibt der Zoom fest, bis Sie wieder eine Ansi
 Ist die Seite größer als die Ansicht (z. B. bei **Volle Breite**), scrollen Mausrad und **↑** / **↓** zuerst
 innerhalb der Seite. Am unteren Rand blättert die nächste Drehung weiter, am oberen Rand zurück – dann sehen Sie
 das Ende der vorigen Seite. Während Sie in ein Textfeld schreiben, blättern die Pfeiltasten nicht.
+
+### Alle Anmerkungen im Überblick
+1. Oben in der linken Leiste auf **Anmerkungen** klicken. Die Zahl daneben zeigt, wie viele es gibt. Der Reiter
+   erscheint erst, wenn das Dokument mindestens eine Anmerkung hat.
+2. Die Liste zeigt alle Anmerkungen nach Seiten geordnet: Kommentare mit Fußnotenzahl und Text, Markierungen mit
+   dem markierten Text, Texte mit ihrem Inhalt, Zeichnungen und Formen mit ihrer Art.
+3. Über das Auswahlfeld darüber zeigen Sie nur eine Art an, z. B. nur **Kommentare**.
+4. Ein **Klick** auf einen Eintrag springt zur Seite; die Anmerkung wird kurz farbig umrahmt.
+
+Mit **Seiten** kehren Sie zur Seitenliste zurück.
 
 ---
 

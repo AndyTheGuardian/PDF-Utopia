@@ -100,6 +100,10 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     public partial FitMode FitMode { get; set; } = FitMode.Page;
 
+    /// <summary>Ob die linke Leiste die Anmerkungsübersicht statt der Seitenliste zeigt (A45).</summary>
+    [ObservableProperty]
+    public partial bool ShowAnnotations { get; set; }
+
     /// <summary>Ob ein Suchbegriff eingegeben ist (× zum Leeren sichtbar).</summary>
     public bool HasSearchText => SearchText.Length > 0;
 
@@ -337,6 +341,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <param name="page">Die Seite.</param>
     [RelayCommand]
     private void DeletePage(PageThumbnailViewModel page) => ActiveDocument?.DeletePage(page.Position - 1);
+
+    /// <summary>Springt zu einer Anmerkung aus der Übersicht (A45).</summary>
+    /// <param name="item">Die Zeile.</param>
+    [RelayCommand]
+    private void ShowAnnotation(AnnotationListItem item)
+    {
+        if (item.Entry is { } entry)
+        {
+            ActiveDocument?.ShowAnnotation(entry);
+        }
+    }
 
     /// <summary>Zeigt eine Seite aus der Seitenliste an.</summary>
     /// <param name="page">Die Seite.</param>
@@ -657,6 +672,46 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (ActiveDocument is { } document)
         {
             document.SearchTerm = value;
+        }
+    }
+
+    /// <summary>
+    /// Beobachtet die Anmerkungsübersicht des angezeigten Dokuments.
+    /// </summary>
+    partial void OnActiveDocumentChanged(DocumentViewModel? oldValue, DocumentViewModel? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.AnnotationList.PropertyChanged -= OnAnnotationListPropertyChanged;
+        }
+
+        if (newValue is not null)
+        {
+            newValue.AnnotationList.PropertyChanged += OnAnnotationListPropertyChanged;
+        }
+
+        LeaveEmptyAnnotationList();
+    }
+
+    /// <summary>
+    /// Letzte Anmerkung entfernt: zurück zur Seitenliste.
+    /// </summary>
+    private void OnAnnotationListPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AnnotationListViewModel.HasAny))
+        {
+            LeaveEmptyAnnotationList();
+        }
+    }
+
+    /// <summary>
+    /// Ohne Anmerkungen gibt es keine Reiter (A45); die linke Leiste zeigt dann die Seitenliste.
+    /// </summary>
+    private void LeaveEmptyAnnotationList()
+    {
+        if (ActiveDocument?.AnnotationList.HasAny != true)
+        {
+            ShowAnnotations = false;
         }
     }
 

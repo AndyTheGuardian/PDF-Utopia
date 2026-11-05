@@ -210,6 +210,28 @@ public sealed class PdfSource : IDisposable
     });
 
     /// <summary>
+    /// Text in einem Bereich der Seite, z. B. unter einer Markierung (Anmerkungsübersicht, A45). Ein Zeichen zählt,
+    /// wenn seine Mitte im Bereich liegt; Leerraum wird zu einzelnen Leerzeichen zusammengefasst.
+    /// </summary>
+    /// <param name="sourcePageNumber">Seitennummer in der Datei (1-basiert).</param>
+    /// <param name="area">Bereich in Anzeige-Koordinaten (wie die Annotationen).</param>
+    /// <returns>Der Text; leer, wenn dort kein Text steht (z. B. bei Scans).</returns>
+    public string TextInArea(int sourcePageNumber, PdfRect area) => WithTextPage(sourcePageNumber, (textPage, toDisplay) =>
+    {
+        var text = ReadText(textPage);
+        var inside = Enumerable.Range(0, text.Length)
+            .Where(i => CharBox(textPage, i) is { } box && Contains(area, Center(toDisplay(box))))
+            .ToList();
+        if (inside.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var span = text[inside[0]..(inside[^1] + 1)];
+        return string.Join(' ', span.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+    });
+
+    /// <summary>
     /// Fundstellen eines Suchbegriffs auf einer Seite (ohne Groß-/Kleinschreibung) zum Hinterlegen in der
     /// Akzentfarbe. Eine Fundstelle über einen Zeilenumbruch ergibt ein Rechteck je Zeile.
     /// </summary>
@@ -263,6 +285,13 @@ public sealed class PdfSource : IDisposable
 
         return count;
     }
+
+    /// <summary>Mittelpunkt eines Rechtecks.</summary>
+    private static PdfPoint Center(PdfRect rect) => new(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+
+    /// <summary>Ob ein Punkt im Rechteck liegt.</summary>
+    private static bool Contains(PdfRect rect, PdfPoint point) =>
+        point.X >= rect.X && point.X <= rect.Right && point.Y >= rect.Y && point.Y <= rect.Bottom;
 
     /// <summary>
     /// Lädt die Textebene einer Seite und stellt eine Umrechnung von Schreibrichtungs- in Anzeige-Koordinaten bereit.

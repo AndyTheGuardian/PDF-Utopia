@@ -81,6 +81,50 @@
     <Style Selector="Border.insertedFrame.inserted">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     </Style>
+    <!-- Anmerkungsübersicht (A45): Reiter und Einträge -->
+    <Style Selector="RadioButton.sideTab">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="7" Padding="4,6" Content="{TemplateBinding Content}" HorizontalContentAlignment="Center"
+                            Foreground="{DynamicResource MutedTextBrush}" />
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.sideTab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="RadioButton.sideTab:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="RadioButton.sideTab:checked TextBlock.count">
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="Button.annItem">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.annItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.annItem.selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <Style Selector="TextBlock.kindOnly">
+      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+    </Style>
     <Style Selector="Button.thumbAction">
       <Setter Property="Width" Value="26" />
       <Setter Property="Height" Value="26" />
@@ -419,13 +463,78 @@
       <Grid ColumnDefinitions="220,*" IsVisible="{Binding HasDocument}">
         <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0">
           <DockPanel>
-            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+            <!-- Ohne Anmerkungen: schlichte Überschrift der Seitenliste -->
+            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10"
+                    IsVisible="{Binding !ActiveDocument.AnnotationList.HasAny, FallbackValue=True}">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="{loc:T Pages.Title}" FontWeight="SemiBold" />
                 <TextBlock Grid.Column="1" Classes="hint" Text="{Binding ActiveDocument.Thumbnails.Count, FallbackValue=''}" />
               </Grid>
             </Border>
-            <ScrollViewer x:Name="PageListScroller">
+            <!-- Reiter „Seiten | Anmerkungen“ nur, wenn es Anmerkungen gibt (A45, Mockup v4) -->
+            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8"
+                    IsVisible="{Binding ActiveDocument.AnnotationList.HasAny, FallbackValue=False}">
+              <UniformGrid Columns="2" ColumnSpacing="2">
+                <RadioButton Classes="sideTab" GroupName="side" IsChecked="{Binding !ShowAnnotations}">
+                  <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock Text="{loc:T Pages.Title}" FontWeight="SemiBold" />
+                    <TextBlock Classes="hint count" Text="{Binding ActiveDocument.Thumbnails.Count, FallbackValue=''}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </RadioButton>
+                <RadioButton Classes="sideTab" GroupName="side" IsChecked="{Binding ShowAnnotations}">
+                  <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
+                    <TextBlock Text="{loc:T Annotations.Title}" FontWeight="SemiBold" />
+                    <TextBlock Classes="hint count" Text="{Binding ActiveDocument.AnnotationList.Count, FallbackValue=''}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </RadioButton>
+              </UniformGrid>
+            </Border>
+            <Panel>
+            <Panel IsVisible="{Binding ShowAnnotations}">
+            <DockPanel DataContext="{Binding ActiveDocument.AnnotationList, FallbackValue={x:Null}}" x:DataType="vm:AnnotationListViewModel">
+              <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8">
+                <ComboBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AnnotationFilterOption"><TextBlock Text="{Binding Name}" /></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </Border>
+              <Panel>
+                <TextBlock Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}" Classes="hint" TextWrapping="Wrap" TextAlignment="Center" Margin="16,24" />
+                <ScrollViewer>
+                  <ItemsControl ItemsSource="{Binding Items}" Margin="6,2,6,12">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:AnnotationListItem">
+                        <Panel>
+                          <TextBlock Text="{Binding HeaderText}" IsVisible="{Binding IsHeader}" Classes="hint" FontSize="11" FontWeight="SemiBold" Margin="8,10,8,4" />
+                          <Button Classes="annItem" Classes.selected="{Binding IsSelected}" IsVisible="{Binding IsEntry}"
+                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ShowAnnotationCommand}" CommandParameter="{Binding}">
+                            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+                              <Border Classes="thumbBadge" Width="22" Height="22" VerticalAlignment="Top">
+                                <Panel>
+                                  <Path Classes="icon small" Data="{StaticResource IconComment}" IsVisible="{Binding IsComment}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconMarker}" IsVisible="{Binding IsHighlight}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconPen}" IsVisible="{Binding IsFreehand}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconShapes}" IsVisible="{Binding IsShape}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconText}" IsVisible="{Binding IsText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Panel>
+                              </Border>
+                              <Ellipse Grid.Column="1" Width="9" Height="9" Margin="0,7,0,0" VerticalAlignment="Top"
+                                       Fill="{Binding ColorHex, Converter={StaticResource HexToBrush}}" Stroke="#26000000" StrokeThickness="1" />
+                              <TextBlock Grid.Column="2" Classes.kindOnly="{Binding IsKindOnly}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" FontSize="12" Margin="0,3,0,0">
+                                <Run Text="{Binding NumberPrefix}" FontWeight="Bold" /><Run Text="{Binding Description}" />
+                              </TextBlock>
+                            </Grid>
+                          </Button>
+                        </Panel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Panel>
+            </DockPanel>
+            </Panel>
+            <ScrollViewer x:Name="PageListScroller" IsVisible="{Binding !ShowAnnotations}">
               <Panel>
                 <ItemsControl x:Name="ThumbnailList" ItemsSource="{Binding ActiveDocument.Thumbnails, FallbackValue={x:Null}}" Margin="12">
                   <ItemsControl.ItemTemplate>
@@ -491,6 +600,7 @@
                 </Canvas>
               </Panel>
             </ScrollViewer>
+            </Panel>
           </DockPanel>
         </Border>
 
