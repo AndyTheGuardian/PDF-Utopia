@@ -122,6 +122,23 @@
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     </Style>
+    <!-- Lesezeichen: Markierung nur für das angezeigte Kapitel, keine eigene Auswahl des Baums -->
+    <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TreeViewItem:pointerover /template/ Border#PART_LayoutRoot">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.annItem:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.bookmark.missing">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="Button.bookmark">
+      <Setter Property="Padding" Value="6,4" />
+    </Style>
     <Style Selector="TextBlock.kindOnly">
       <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
     </Style>
@@ -265,13 +282,6 @@
             <Button Classes="tb" Command="{Binding InsertPagesCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconInsertPages}" /><TextBlock Text="{loc:T Toolbar.InsertPages}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding RotateCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconRotate}" /><TextBlock Text="{loc:T Toolbar.Rotate}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding DeleteCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconTrash}" /><TextBlock Text="{loc:T Toolbar.Delete}" /></StackPanel></Button>
-            <Border Classes="divider" />
-            <Button Classes="tb" Command="{Binding ZoomOutCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconMinus}" /><TextBlock Text="{loc:T Toolbar.ZoomOut}" /></StackPanel></Button>
-            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="6" Background="{DynamicResource Surface2Brush}"
-                    Padding="6,4" MinWidth="54" VerticalAlignment="Center">
-              <TextBlock Text="{Binding ZoomText}" HorizontalAlignment="Center" />
-            </Border>
-            <Button Classes="tb" Command="{Binding ZoomInCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconPlus}" /><TextBlock Text="{loc:T Toolbar.ZoomIn}" /></StackPanel></Button>
         </WrapPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top" Margin="8,6,0,0">
           <TextBox x:Name="SearchBox" Width="200" Text="{Binding SearchText}" PlaceholderText="{loc:T Toolbar.SearchPlaceholder}" VerticalAlignment="Center">
@@ -419,11 +429,19 @@
               <StackPanel Orientation="Horizontal" Spacing="5"><Path Classes="icon small" Data="{StaticResource IconFitPage}" /><TextBlock Text="{loc:T Status.FitPage}" /></StackPanel>
             </RadioButton>
           </StackPanel>
-          <Button Width="22" Height="22" Padding="0" Command="{Binding ZoomOutCommand}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+          <Button Width="22" Height="22" Padding="0" Command="{Binding ZoomOutCommand}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" ToolTip.Tip="{loc:T Toolbar.ZoomOut}">
             <Path Classes="icon small" Data="{StaticResource IconMinus}" />
           </Button>
-          <TextBlock Classes="hint" Text="{Binding ZoomText}" MinWidth="44" TextAlignment="Center" VerticalAlignment="Center" />
-          <Button Width="22" Height="22" Padding="0" Command="{Binding ZoomInCommand}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+          <!-- Zoom direkt eingeben: Enter übernimmt, Esc oder Verlassen des Felds stellt den aktuellen Wert wieder her -->
+          <TextBox x:Name="ZoomBox" Classes="zoomInput" Text="{Binding ZoomInput}" Width="62" MinHeight="22" Padding="4,1" FontSize="12"
+                   TextAlignment="Center" VerticalAlignment="Center" VerticalContentAlignment="Center" ToolTip.Tip="{loc:T Status.ZoomInput}"
+                   LostFocus="OnZoomBoxLostFocus">
+            <TextBox.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding ApplyZoomInputCommand}" />
+              <KeyBinding Gesture="Escape" Command="{Binding ResetZoomInputCommand}" />
+            </TextBox.KeyBindings>
+          </TextBox>
+          <Button Width="22" Height="22" Padding="0" Command="{Binding ZoomInCommand}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" ToolTip.Tip="{loc:T Toolbar.ZoomIn}">
             <Path Classes="icon small" Data="{StaticResource IconPlus}" />
           </Button>
         </StackPanel>
@@ -460,37 +478,68 @@
 
     <!-- Hauptbereich -->
     <Grid>
-      <Grid ColumnDefinitions="220,*" IsVisible="{Binding HasDocument}">
-        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0">
+      <Grid x:Name="MainArea" IsVisible="{Binding HasDocument}">
+        <!-- Linke Leiste in der Breite veränderbar (F30) -->
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="220" MinWidth="180" MaxWidth="420" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border x:Name="Sidebar" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0"
+                SizeChanged="OnSidebarSizeChanged">
           <DockPanel>
-            <!-- Ohne Anmerkungen: schlichte Überschrift der Seitenliste -->
+            <!-- Ohne Anmerkungen und Lesezeichen: schlichte Überschrift der Seitenliste -->
             <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10"
-                    IsVisible="{Binding !ActiveDocument.AnnotationList.HasAny, FallbackValue=True}">
+                    IsVisible="{Binding !ShowSidebarTabs}">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="{loc:T Pages.Title}" FontWeight="SemiBold" />
                 <TextBlock Grid.Column="1" Classes="hint" Text="{Binding ActiveDocument.Thumbnails.Count, FallbackValue=''}" />
               </Grid>
             </Border>
-            <!-- Reiter „Seiten | Anmerkungen“ nur, wenn es Anmerkungen gibt (A45, Mockup v4) -->
+            <!-- Reiter nur für vorhandene Inhalte (A45, A46); passen sie nicht nebeneinander, rückt der dritte nach unten (F30) -->
             <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8"
-                    IsVisible="{Binding ActiveDocument.AnnotationList.HasAny, FallbackValue=False}">
-              <UniformGrid Columns="2" ColumnSpacing="2">
-                <RadioButton Classes="sideTab" GroupName="side" IsChecked="{Binding !ShowAnnotations}">
-                  <StackPanel Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                    IsVisible="{Binding ShowSidebarTabs}">
+              <controls:TabStripPanel>
+                <RadioButton Classes="sideTab" GroupName="side" IsChecked="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Pages}">
+                  <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
                     <TextBlock Text="{loc:T Pages.Title}" FontWeight="SemiBold" />
                     <TextBlock Classes="hint count" Text="{Binding ActiveDocument.Thumbnails.Count, FallbackValue=''}" VerticalAlignment="Center" />
                   </StackPanel>
                 </RadioButton>
-                <RadioButton Classes="sideTab" GroupName="side" IsChecked="{Binding ShowAnnotations}">
+                <RadioButton Classes="sideTab" GroupName="side" IsVisible="{Binding ActiveDocument.AnnotationList.HasAny, FallbackValue=False}"
+                             IsChecked="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Annotations}">
                   <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
                     <TextBlock Text="{loc:T Annotations.Title}" FontWeight="SemiBold" />
                     <TextBlock Classes="hint count" Text="{Binding ActiveDocument.AnnotationList.Count, FallbackValue=''}" VerticalAlignment="Center" />
                   </StackPanel>
                 </RadioButton>
-              </UniformGrid>
+                <RadioButton Classes="sideTab" GroupName="side" IsVisible="{Binding ActiveDocument.BookmarkList.HasAny, FallbackValue=False}"
+                             IsChecked="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Bookmarks}">
+                  <TextBlock Text="{loc:T Bookmarks.Title}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                </RadioButton>
+              </controls:TabStripPanel>
             </Border>
             <Panel>
-            <Panel IsVisible="{Binding ShowAnnotations}">
+            <!-- Lesezeichen (A46) -->
+            <TreeView IsVisible="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Bookmarks}"
+                      ItemsSource="{Binding ActiveDocument.BookmarkList.Items, FallbackValue={x:Null}}" Margin="4,4,4,12">
+              <TreeView.Styles>
+                <Style Selector="TreeViewItem" x:DataType="vm:BookmarkItemViewModel">
+                  <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                  <Setter Property="MinHeight" Value="28" />
+                </Style>
+              </TreeView.Styles>
+              <TreeView.ItemTemplate>
+                <TreeDataTemplate x:DataType="vm:BookmarkItemViewModel" ItemsSource="{Binding Children}">
+                  <Button Classes="annItem bookmark" Classes.selected="{Binding IsCurrent}" Classes.missing="{Binding IsTargetMissing}"
+                          IsEnabled="{Binding CanShow}" ToolTip.Tip="{Binding ToolTip}" ToolTip.ShowOnDisabled="True"
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ShowBookmarkCommand}" CommandParameter="{Binding}">
+                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" FontSize="12" />
+                  </Button>
+                </TreeDataTemplate>
+              </TreeView.ItemTemplate>
+            </TreeView>
+            <Panel IsVisible="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Annotations}">
             <DockPanel DataContext="{Binding ActiveDocument.AnnotationList, FallbackValue={x:Null}}" x:DataType="vm:AnnotationListViewModel">
               <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8">
                 <ComboBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" HorizontalAlignment="Stretch">
@@ -534,7 +583,7 @@
               </Panel>
             </DockPanel>
             </Panel>
-            <ScrollViewer x:Name="PageListScroller" IsVisible="{Binding !ShowAnnotations}">
+            <ScrollViewer x:Name="PageListScroller" IsVisible="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Pages}">
               <Panel>
                 <ItemsControl x:Name="ThumbnailList" ItemsSource="{Binding ActiveDocument.Thumbnails, FallbackValue={x:Null}}" Margin="12">
                   <ItemsControl.ItemTemplate>
@@ -542,9 +591,12 @@
                       <Border Classes="thumb" Classes.selected="{Binding IsSelected}">
                         <Panel>
                           <StackPanel Spacing="6" HorizontalAlignment="Center">
-                            <Border Width="112" Height="158">
+                            <Border Width="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailBoxWidth}"
+                                    Height="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailBoxHeight}">
                               <Border Classes="insertedFrame" Classes.inserted="{Binding IsInserted}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                              <Image Source="{Binding Thumbnail}" Stretch="Uniform" MaxWidth="106" MaxHeight="150">
+                              <Image Source="{Binding Thumbnail}" Stretch="Uniform"
+                                     MaxWidth="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailImageMaxWidth}"
+                                     MaxHeight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailImageMaxHeight}">
                                 <Image.Effect><DropShadowEffect BlurRadius="4" OffsetX="0" OffsetY="1" Opacity="0.3" /></Image.Effect>
                               </Image>
                               </Border>
@@ -593,7 +645,9 @@
                           Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBorderBrush}" BorderThickness="2"
                           BoxShadow="0 6 18 0 #40000000">
                     <StackPanel Spacing="6" HorizontalAlignment="Center">
-                      <Image Source="{Binding Thumbnail}" Stretch="Uniform" MaxWidth="106" MaxHeight="150" />
+                      <Image Source="{Binding Thumbnail}" Stretch="Uniform"
+                             MaxWidth="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailImageMaxWidth}"
+                             MaxHeight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailImageMaxHeight}" />
                       <TextBlock Text="{Binding Label}" Classes="hint" HorizontalAlignment="Center" />
                     </StackPanel>
                   </Border>
@@ -604,7 +658,9 @@
           </DockPanel>
         </Border>
 
-        <ScrollViewer x:Name="PageScroller" Grid.Column="1" Background="{DynamicResource CanvasBrush}" HorizontalScrollBarVisibility="Auto">
+        <GridSplitter Grid.Column="1" Width="5" Background="Transparent" ResizeDirection="Columns" DragCompleted="OnSidebarResized"
+                      ToolTip.Tip="{loc:T Sidebar.Resize}" />
+        <ScrollViewer x:Name="PageScroller" Grid.Column="2" Background="{DynamicResource CanvasBrush}" HorizontalScrollBarVisibility="Auto">
           <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="32">
             <Border BoxShadow="0 1 3 0 #30000000, 0 8 24 0 #20000000">
               <StackPanel>

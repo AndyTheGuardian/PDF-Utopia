@@ -48,6 +48,9 @@ public sealed partial class MainWindow : Window
         DataContextChanged += (_, _) => OnViewModelChanged();
     }
 
+    /// <summary>Spalte der linken Leiste (F30).</summary>
+    private ColumnDefinition SidebarColumn => MainArea.ColumnDefinitions[0];
+
     /// <summary>Das ViewModel des Fensters.</summary>
     private MainWindowViewModel? ViewModel => DataContext as MainWindowViewModel;
 
@@ -81,6 +84,8 @@ public sealed partial class MainWindow : Window
         {
             return;
         }
+
+        SidebarColumn.Width = new GridLength(viewModel.SidebarWidth);
 
         ApplyZoom(viewModel.Zoom);
         PageScroller.SizeChanged += (_, _) => Refit();
@@ -307,6 +312,21 @@ public sealed partial class MainWindow : Window
     private bool IsOverPageList(DragEventArgs e) =>
         ViewModel?.ActiveDocument is not null && PageListScroller.IsVisible &&
         new Rect(PageListScroller.Bounds.Size).Contains(e.GetPosition(PageListScroller));
+
+    /// <summary>
+    /// Linke Leiste ändert ihre Breite (auch während des Ziehens): Miniaturen mitwachsen lassen.
+    /// </summary>
+    private void OnSidebarSizeChanged(object? sender, SizeChangedEventArgs e) => ViewModel?.ResizeSidebar(e.NewSize.Width);
+
+    /// <summary>
+    /// Linke Leiste per Ziehen verbreitert oder verschmälert: Breite merken (F30).
+    /// </summary>
+    private void OnSidebarResized(object? sender, VectorEventArgs e) => ViewModel?.SaveSidebarWidth(SidebarColumn.ActualWidth);
+
+    /// <summary>
+    /// Zoom-Eingabe verlassen, ohne Enter zu drücken: aktuellen Zoom wieder anzeigen.
+    /// </summary>
+    private void OnZoomBoxLostFocus(object? sender, RoutedEventArgs e) => ViewModel?.ResetZoomInputCommand.Execute(null);
 
     /// <summary>
     /// Übernimmt einen bearbeiteten Fußnotentext beim Verlassen des Felds (rückgängig machbar).

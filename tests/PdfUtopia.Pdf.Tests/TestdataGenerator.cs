@@ -21,7 +21,16 @@ public sealed class TestdataGenerator
         var plain = TestPdfFactory.Create(Path.Combine(folder, "testdatei.pdf"));
         TestPdfFactory.Create(Path.Combine(folder, "testdatei-geschuetzt.pdf"), TestPdfFactory.Password);
         WriteEditedExample(plain, Path.Combine(folder, "beispiel-bearbeitet.pdf"));
+        WriteBookmarkExample();
     }
+
+    /// <summary>
+    /// Schreibt nur die Testdatei mit Lesezeichen (A46), ohne die übrigen Testdateien neu zu erzeugen:
+    /// <c>dotnet test --project tests/PdfUtopia.Pdf.Tests -- --filter-method "*WriteBookmarkExample" --explicit only</c>.
+    /// </summary>
+    [Fact(Explicit = true)]
+    public void WriteBookmarkExample() =>
+        TestPdfFactory.CreateWithBookmarks(Path.Combine(RepositoryRoot(), "testdata", "testdatei-lesezeichen.pdf"));
 
     /// <summary>
     /// Beispiel mit allen Annotationsarten, umsortierten, gedrehten und gelöschten Seiten.

@@ -28,6 +28,7 @@ public sealed class PdfSource : IDisposable
     private readonly byte[] _data;
     private GCHandle _pin;
     private FpdfDocumentT? _document;
+    private IReadOnlyList<Bookmark>? _bookmarks;
 
     /// <summary>
     /// Übernimmt ein geladenes PDFium-Dokument.
@@ -57,6 +58,26 @@ public sealed class PdfSource : IDisposable
     /// und werden über <see cref="CreateDocument"/> wieder bearbeitbar (F23).
     /// </summary>
     public IReadOnlyDictionary<int, IReadOnlyList<Annotation>> SavedAnnotations { get; }
+
+    /// <summary>
+    /// Lesezeichen (Inhaltsverzeichnis) der Datei als Baum (A46); leer, wenn die Datei keine hat.
+    /// </summary>
+    public IReadOnlyList<Bookmark> Bookmarks
+    {
+        get
+        {
+            if (_bookmarks is null)
+            {
+                lock (PdfiumLibrary.Sync)
+                {
+                    ObjectDisposedException.ThrowIf(_document is null, this);
+                    _bookmarks = ReadBookmarks(_document, null, new HashSet<IntPtr>(), depth: 0);
+                }
+            }
+
+            return _bookmarks;
+        }
+    }
 
     /// <summary>
     /// Inhalt der Datei beim Öffnen, bereinigt um eigene Annotationen und Seitenverlängerungen
@@ -329,6 +350,79 @@ public sealed class PdfSource : IDisposable
         return fpdf_text.FPDFTextGetCharBox(textPage, index, ref left, ref right, ref bottom, ref top) != 0
             ? PdfRect.FromCorners(new PdfPoint(left, -top), new PdfPoint(right, -bottom))
             : null;
+    }
+
+    /// <summary>Höchste Verschachtelungstiefe von Lesezeichen (Schutz vor fehlerhaften Dateien).</summary>
+    private const int MaxBookmarkDepth = 32;
+
+    /// <summary>
+    /// Liest die Unterpunkte eines Lesezeichens (bzw. die oberste Ebene). Bereits besuchte Lesezeichen werden
+    /// übersprungen, damit fehlerhafte Dateien mit Zyklen keine Endlosschleife auslösen.
+    /// </summary>
+    private static List<Bookmark> ReadBookmarks(FpdfDocumentT document, FpdfBookmarkT? parent, HashSet<IntPtr> visited, int depth)
+    {
+        var result = new List<Bookmark>();
+        if (depth > MaxBookmarkDepth)
+        {
+            return result;
+        }
+
+        for (var item = fpdf_doc.FPDFBookmarkGetFirstChild(document, parent);
+             item is not null && item.__Instance != IntPtr.Zero && visited.Add(item.__Instance);
+             item = fpdf_doc.FPDFBookmarkGetNextSibling(document, item))
+        {
+            result.Add(new Bookmark(
+                BookmarkTitle(item),
+                BookmarkPage(document, item),
+                fpdf_doc.FPDFBookmarkGetCount(item) > 0,
+                ReadBookmarks(document, item, visited, depth + 1)));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Titel eines Lesezeichens (UTF-16).
+    /// </summary>
+    private static string BookmarkTitle(FpdfBookmarkT bookmark)
+    {
+        var length = (int)fpdf_doc.FPDFBookmarkGetTitle(bookmark, IntPtr.Zero, 0);
+        if (length <= 2)
+        {
+            return string.Empty;
+        }
+
+        var buffer = Marshal.AllocHGlobal(length);
+        try
+        {
+            fpdf_doc.FPDFBookmarkGetTitle(bookmark, buffer, (ulong)length);
+            return (Marshal.PtrToStringUni(buffer, length / 2 - 1) ?? string.Empty).Trim();
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    /// <summary>
+    /// Zielseite eines Lesezeichens (1-basiert): direktes Ziel oder Ziel einer „Gehe zu“-Aktion.
+    /// </summary>
+    private static int? BookmarkPage(FpdfDocumentT document, FpdfBookmarkT bookmark)
+    {
+        var destination = fpdf_doc.FPDFBookmarkGetDest(document, bookmark);
+        if (destination is null || destination.__Instance == IntPtr.Zero)
+        {
+            var action = fpdf_doc.FPDFBookmarkGetAction(bookmark);
+            destination = action is null || action.__Instance == IntPtr.Zero ? null : fpdf_doc.FPDFActionGetDest(document, action);
+        }
+
+        if (destination is null || destination.__Instance == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        var index = fpdf_doc.FPDFDestGetDestPageIndex(document, destination);
+        return index >= 0 ? index + 1 : null;
     }
 
     /// <summary>

@@ -1,5 +1,6 @@
 using PdfSharp.Drawing;
 using PdfSharp.Pdf;
+using PdfSharp.Pdf.IO;
 using PdfUtopia.Pdf.Export;
 
 namespace PdfUtopia.Pdf.Tests;
@@ -52,6 +53,30 @@ internal static class TestPdfFactory
         }
 
         document.Save(path);
+        return path;
+    }
+
+    /// <summary>
+    /// Testdatei mit Lesezeichen: Kapitel 1 (S. 1) mit Abschnitt 1.1 (S. 2), Kapitel 2 (S. 5), Gliederungspunkt
+    /// „Anhang“ ohne Ziel mit einem Unterpunkt auf S. 14.
+    /// </summary>
+    /// <param name="path">Zieldatei.</param>
+    /// <returns>Der Pfad.</returns>
+    public static string CreateWithBookmarks(string path)
+    {
+        var plain = Create(path + ".ohne.pdf");
+        using (var document = PdfReader.Open(plain, PdfDocumentOpenMode.Modify))
+        {
+            var chapter = document.Outlines.Add("Kapitel 1", document.Pages[0], true);
+            chapter.Outlines.Add("Abschnitt 1.1", document.Pages[1]);
+            document.Outlines.Add("Kapitel 2 – Übersicht", document.Pages[4]);
+            var appendix = new PdfOutline { Title = "Anhang", Opened = true };
+            document.Outlines.Add(appendix);
+            appendix.Outlines.Add("Letzte Seite", document.Pages[13]);
+            document.Save(path);
+        }
+
+        File.Delete(plain);
         return path;
     }
 

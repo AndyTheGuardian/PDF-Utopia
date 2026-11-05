@@ -15,6 +15,7 @@ weiterbearbeiten.
 - **Radierer:** als Werkzeug oder über das Radiererende des Stifts.
 - **Seiten:** per Drag & Drop umsortieren, drehen, löschen.
 - **Anmerkungsübersicht:** alle Anmerkungen nach Seiten, mit Filter; ein Klick springt hin.
+- **Lesezeichen:** Inhaltsverzeichnis der Datei als Baum zum Springen; beim Speichern bleibt es erhalten.
 - **Extrahieren:** Seitenauswahl wie `2`, `4-8` oder `2,4,8,13-15`, mit Vorschau.
 - **Einfügen:** Seiten aus einer anderen PDF-Datei übernehmen, per Dialog oder Drag & Drop auf die Seitenliste; Anmerkungen kommen mit.
 - **Rückgängig/Wiederholen:** mit einstellbarer Anzahl von Schritten (Standard 50).
@@ -86,7 +87,7 @@ dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:Pub
 | `src/PdfUtopia.App` | Avalonia-Oberfläche (MVVM mit CommunityToolkit.Mvvm): Fenster, Dialoge, Seiteneditor, Lokalisierung, Themes |
 | `tests/PdfUtopia.Core.Tests` | Unit-Tests der Fachlogik |
 | `tests/PdfUtopia.Pdf.Tests` | Tests der PDF-Anbindung mit den Testdateien |
-| `testdata/` | Erzeugte Test-PDFs, darunter eine passwortgeschützte |
+| `testdata/` | Erzeugte Test-PDFs, darunter eine passwortgeschützte und eine mit Lesezeichen |
 | `mockups/` | Abgenommene HTML-Mockups der Oberfläche |
 | `spikes/PressureProbe` | Prototyp zum Prüfen von Stift-Andruck und Radiererende |
 | `docs/` | Anwenderdokumentation und Benutzerhandbuch |

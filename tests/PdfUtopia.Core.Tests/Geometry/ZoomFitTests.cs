@@ -31,4 +31,22 @@ public sealed class ZoomFitTests
     [InlineData(FitMode.Width, 800, -1)]
     public void Calculate_NoneOrInvalid_ReturnsNull(FitMode mode, double width, double height) =>
         Assert.Null(ZoomFit.Calculate(mode, width, height, 595, 842));
+
+    [Theory]
+    [InlineData("150", 1.5)]
+    [InlineData("150 %", 1.5)]
+    [InlineData(" 87,5% ", 0.875)]
+    [InlineData("87.5", 0.875)]
+    [InlineData("10", ZoomFit.MinZoom)]
+    [InlineData("1000", ZoomFit.MaxZoom)]
+    public void ParsePercent_ValidInput(string input, double expected) => Assert.Equal(expected, ZoomFit.ParsePercent(input));
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("0")]
+    [InlineData("-50")]
+    [InlineData("1,2,3")]
+    public void ParsePercent_InvalidInput_ReturnsNull(string? input) => Assert.Null(ZoomFit.ParsePercent(input));
 }

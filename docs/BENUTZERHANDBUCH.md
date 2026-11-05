@@ -73,10 +73,11 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 | Ganze Seite sehen | unten rechts **Ganze Seite** wählen (Standard) |
 | Seite so hoch wie möglich | **Volle Höhe** |
 | Seite so breit wie möglich | **Volle Breite** |
-| Feiner zoomen | **−** / **+** in der Werkzeug- oder Statusleiste, oder **Strg+Minus** / **Strg+Plus** |
+| Feiner zoomen | **−** / **+** in der Statusleiste, oder **Strg+Minus** / **Strg+Plus** |
+| Zoom genau einstellen | in der Statusleiste in das Feld zwischen − und + klicken, z. B. `150` eintippen und **Enter** drücken |
 
 Die gewählte Ansicht passt sich automatisch an, wenn Sie das Fenster vergrößern, maximieren oder verkleinern.
-Sobald Sie mit − oder + zoomen, bleibt der Zoom fest, bis Sie wieder eine Ansicht wählen.
+Sobald Sie mit −, + oder dem Eingabefeld zoomen, bleibt der Zoom fest, bis Sie wieder eine Ansicht wählen.
 
 Ist die Seite größer als die Ansicht (z. B. bei **Volle Breite**), scrollen Mausrad und **↑** / **↓** zuerst
 innerhalb der Seite. Am unteren Rand blättert die nächste Drehung weiter, am oberen Rand zurück – dann sehen Sie
@@ -91,6 +92,15 @@ das Ende der vorigen Seite. Während Sie in ein Textfeld schreiben, blättern di
 4. Ein **Klick** auf einen Eintrag springt zur Seite; die Anmerkung wird kurz farbig umrahmt.
 
 Mit **Seiten** kehren Sie zur Seitenliste zurück.
+
+### Mit Lesezeichen springen
+Hat die Datei ein Inhaltsverzeichnis (Lesezeichen), gibt es oben in der linken Leiste den Reiter **Lesezeichen**.
+Klicken Sie auf ein Lesezeichen, um zur Seite zu springen; mit dem Pfeil davor klappen Sie Unterpunkte auf und zu.
+Das Kapitel der angezeigten Seite ist farbig markiert, Lesezeichen gelöschter Seiten sind grau. Beim Speichern
+bleiben die Lesezeichen erhalten.
+
+> **Tipp:** Ist die Leiste zu schmal, ziehen Sie ihren rechten Rand mit der Maus nach rechts – die Seitenminiaturen
+> werden dabei größer. PDF Utopia merkt sich die Breite. Passen nicht alle Reiter in eine Zeile, steht der dritte darunter.
 
 ---
 

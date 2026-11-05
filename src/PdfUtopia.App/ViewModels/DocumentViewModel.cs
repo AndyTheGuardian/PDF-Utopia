@@ -17,11 +17,15 @@ namespace PdfUtopia.App.ViewModels;
 /// </summary>
 public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 {
+    /// <summary>Breite einer Miniatur bei der Standardbreite der linken Leiste.</summary>
     private const double ThumbnailWidth = 106;
 
     private readonly PageRenderer _renderer;
     private readonly List<PdfSource> _sources = [];
-    private readonly Dictionary<(int Source, int Page, PageRotation Rotation), Bitmap> _thumbnails = [];
+    private Dictionary<(int Source, int Page, PageRotation Rotation), Bitmap> _thumbnails = [];
+    private Dictionary<(int Source, int Page, PageRotation Rotation), Bitmap> _staleThumbnails = [];
+    private double _thumbnailScale;
+    private int _thumbnailRun;
     private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _textBlocks = [];
     private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _searchHits = [];
     private readonly Dictionary<(int Source, int Page, PdfRect Area), string> _highlightedTexts = [];
@@ -32,13 +36,16 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     /// <param name="source">Die Datei.</param>
     /// <param name="undoLimit">Höchstzahl der Rückgängig-Schritte.</param>
-    public DocumentViewModel(PdfSource source, int undoLimit)
+    /// <param name="thumbnailScale">Größe der Miniaturen relativ zur Standardbreite der linken Leiste.</param>
+    public DocumentViewModel(PdfSource source, int undoLimit, double thumbnailScale = 1)
     {
         Source = source;
+        _thumbnailScale = thumbnailScale;
         _sources.Add(source);
         Document = source.CreateDocument(undoLimit);
         _renderer = new PageRenderer(SourceOf);
         AnnotationList = new AnnotationListViewModel(Document, HighlightedText);
+        BookmarkList = new BookmarkListViewModel(Document, source.Bookmarks);
         Document.Pages.Changed += (_, _) => OnPagesChanged();
         Document.Annotations.Changed += (_, pageId) => OnAnnotationsChanged(pageId);
         Document.History.Changed += (_, _) => OnHistoryChanged();
@@ -54,6 +61,9 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 
     /// <summary>Anmerkungsübersicht (A45).</summary>
     public AnnotationListViewModel AnnotationList { get; }
+
+    /// <summary>Lesezeichen der geöffneten Datei (A46).</summary>
+    public BookmarkListViewModel BookmarkList { get; }
 
     /// <summary>Die geöffnete Datei.</summary>
     public PdfSource Source { get; }
@@ -143,6 +153,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         }
 
         RebuildFootnotes();
+        BookmarkList.MarkCurrent(CurrentIndex);
         CurrentPageAnnotationsChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -181,6 +192,28 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         _sources.Add(source);
         Document.InsertPages(index, _sources.Count - 1, sourcePageNumbers, page => source.SavedAnnotations.GetValueOrDefault(page) ?? []);
         Show(index);
+    }
+
+    /// <summary>
+    /// Rendert die Miniaturen für eine neue Breite der linken Leiste (F30) neu, damit sie scharf bleiben. Bis die
+    /// neuen fertig sind, bleiben die bisherigen sichtbar.
+    /// </summary>
+    /// <param name="scale">Größe relativ zur Standardbreite.</param>
+    public void SetThumbnailScale(double scale)
+    {
+        if (Math.Abs(scale - _thumbnailScale) < 0.02)
+        {
+            return;
+        }
+
+        _thumbnailScale = scale;
+        foreach (var (key, bitmap) in _thumbnails)
+        {
+            _staleThumbnails.TryAdd(key, bitmap);
+        }
+
+        _thumbnails = [];
+        _ = RenderThumbnailsAsync();
     }
 
     /// <summary>
@@ -314,7 +347,8 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _renderer.Dispose();
-        foreach (var bitmap in _thumbnails.Values)
+        _thumbnailRun++;
+        foreach (var bitmap in _thumbnails.Values.Concat(_staleThumbnails.Values).Distinct())
         {
             bitmap.Dispose();
         }
@@ -378,6 +412,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     private void OnPagesChanged()
     {
         AnnotationList.RequestRefresh();
+        BookmarkList.Refresh(CurrentIndex);
         RebuildThumbnails();
         _ = RenderThumbnailsAsync();
         Show(CurrentIndex);
@@ -424,7 +459,8 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
             var sourceName = entry.IsInserted ? Path.GetFileName(SourceOf(entry).FilePath) : null;
             var thumbnail = new PageThumbnailViewModel(entry, i + 1, sourceName)
             {
-                Thumbnail = _thumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation)),
+                Thumbnail = _thumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation))
+                    ?? _staleThumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation)),
                 IsSelected = i == CurrentIndex,
             };
             thumbnail.ShowAnnotationKinds(Document.Annotations.For(entry.Id));
@@ -435,26 +471,41 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Rendert fehlende Miniaturen im Hintergrund.
+    /// Rendert fehlende oder für eine andere Leistenbreite gerenderte Miniaturen im Hintergrund. Ein neuer Durchlauf
+    /// beendet einen laufenden; danach werden nicht mehr gebrauchte Miniaturen freigegeben.
     /// </summary>
     private async Task RenderThumbnailsAsync()
     {
-        foreach (var thumbnail in Thumbnails.ToList().Where(item => item.Thumbnail is null))
+        var run = ++_thumbnailRun;
+        var cache = _thumbnails;
+        foreach (var thumbnail in Thumbnails.ToList())
         {
             var entry = thumbnail.Entry;
             var key = (entry.SourceIndex, entry.SourcePageNumber, entry.Rotation);
-            if (!_thumbnails.TryGetValue(key, out var bitmap))
+            if (!cache.TryGetValue(key, out var bitmap))
             {
                 var source = SourceOf(entry);
                 var (pageWidth, pageHeight) = source.PageSize(entry.SourcePageNumber);
                 var (width, height) = PageTransform.RotatedSize(pageWidth, pageHeight, entry.Rotation);
-                var scale = ThumbnailWidth / Math.Max(width, height / 1.414);
+                var scale = ThumbnailWidth * _thumbnailScale / Math.Max(width, height / 1.414);
                 var rendered = await Task.Run(() => source.Render(entry.SourcePageNumber, scale, entry.Rotation));
+                if (run != _thumbnailRun)
+                {
+                    return;
+                }
+
                 bitmap = PageRenderer.ToBitmap(rendered);
-                _thumbnails[key] = bitmap;
+                cache[key] = bitmap;
             }
 
             thumbnail.Thumbnail = bitmap;
         }
+
+        foreach (var stale in _staleThumbnails.Values.Except(cache.Values))
+        {
+            stale.Dispose();
+        }
+
+        _staleThumbnails.Clear();
     }
 }

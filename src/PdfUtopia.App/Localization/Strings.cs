@@ -56,6 +56,7 @@ public static class Strings
         ["Status.FitHeight"] = ("Volle Höhe", "Full height"),
         ["Status.FitWidth"] = ("Volle Breite", "Full width"),
         ["Status.FitPage"] = ("Ganze Seite", "Whole page"),
+        ["Status.ZoomInput"] = ("Zoom in Prozent eingeben, Enter übernimmt", "Type a zoom in percent, Enter applies"),
 
         // Werkzeuge
         ["Tool.Select"] = ("Auswählen", "Select"),
@@ -103,6 +104,12 @@ public static class Strings
         ["Pages.HasHighlights"] = ("Seite enthält Markierungen", "Page has highlights"),
         ["Pages.HasInk"] = ("Seite enthält Freihandlinien", "Page has freehand drawings"),
         ["Pages.HasShapes"] = ("Seite enthält Formen", "Page has shapes"),
+
+        // Lesezeichen (A46) und linke Leiste (F30)
+        ["Bookmarks.Title"] = ("Lesezeichen", "Bookmarks"),
+        ["Bookmarks.Untitled"] = ("(ohne Titel)", "(untitled)"),
+        ["Bookmarks.Deleted"] = ("Die Zielseite wurde gelöscht", "The target page was deleted"),
+        ["Sidebar.Resize"] = ("Breite der Leiste ändern", "Resize the sidebar"),
 
         // Anmerkungsübersicht (A45)
         ["Annotations.Title"] = ("Anmerkungen", "Annotations"),

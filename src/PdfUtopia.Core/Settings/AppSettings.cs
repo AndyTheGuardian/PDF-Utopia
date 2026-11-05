@@ -95,6 +95,18 @@ public sealed record AppSettings
     /// <summary>Ob Freihand dem Andruck folgt.</summary>
     public bool PressureSensitive { get; init; }
 
+    /// <summary>Kleinste Breite der linken Leiste.</summary>
+    public const double MinSidebarWidth = 180;
+
+    /// <summary>Größte Breite der linken Leiste.</summary>
+    public const double MaxSidebarWidth = 420;
+
+    /// <summary>Standardbreite der linken Leiste.</summary>
+    public const double DefaultSidebarWidth = 220;
+
+    /// <summary>Breite der linken Leiste in Pixeln (F30).</summary>
+    public double SidebarWidth { get; init; } = DefaultSidebarWidth;
+
     /// <summary>Radius des Radierers in Punkten.</summary>
     public double EraserRadius { get; init; } = EraserHitTest.DefaultRadius;
 
@@ -124,6 +136,7 @@ public sealed record AppSettings
         MarkerHeight = Math.Clamp(MarkerHeight, 8, 30),
         Smoothing = Math.Clamp(Smoothing, 0, 100),
         EraserRadius = EraserHitTest.ClampRadius(EraserRadius),
+        SidebarWidth = double.IsFinite(SidebarWidth) ? Math.Clamp(SidebarWidth, MinSidebarWidth, MaxSidebarWidth) : DefaultSidebarWidth,
     };
 
     /// <summary>

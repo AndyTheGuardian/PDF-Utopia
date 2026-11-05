@@ -137,6 +137,7 @@ public static class PdfExporter
         {
             using var output = new PdfDocument();
             var writer = new AnnotationWriter(output, options);
+            var written = new List<PdfPage>();
             foreach (var entry in entries)
             {
                 if (!inputs.TryGetValue(entry.SourceIndex, out var input))
@@ -155,8 +156,11 @@ public static class PdfExporter
                 }
 
                 page.Rotate = (geometry.FileRotation + (int)entry.Rotation) % 360;
+                written.Add(page);
             }
 
+            // Lesezeichen der geöffneten Datei auf die neue Seitenfolge umstellen (P6)
+            AddBookmarks(output.Outlines, BookmarkMap.Prune(BookmarkMap.Place(sources[PageEntry.OpenedFile].Bookmarks, entries)), written);
             Protect(output, targetPassword);
             SaveAtomically(output, targetPath);
         }
@@ -166,6 +170,24 @@ public static class PdfExporter
             {
                 input.Dispose();
             }
+        }
+    }
+
+    /// <summary>
+    /// Schreibt Lesezeichen samt Unterpunkten; Gliederungspunkte ohne Ziel bleiben ohne Ziel.
+    /// </summary>
+    private static void AddBookmarks(PdfOutlineCollection target, IReadOnlyList<PlacedBookmark> bookmarks, List<PdfPage> pages)
+    {
+        foreach (var bookmark in bookmarks)
+        {
+            var outline = new PdfOutline { Title = bookmark.Source.Title, Opened = bookmark.Source.IsOpen };
+            if (bookmark.PageIndex is { } index)
+            {
+                outline.DestinationPage = pages[index];
+            }
+
+            target.Add(outline);
+            AddBookmarks(outline.Outlines, bookmark.Children, pages);
         }
     }
 

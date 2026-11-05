@@ -99,7 +99,7 @@ dafür wäre ein eigenes Bundle nötig.
 │ PDF Utopia   Datei  Bearbeiten  Ansicht  Sprache                  (Menü) │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Öffnen Speichern Drucken │ ↶ ↷ │ Werkzeuge │ Extrahieren Einfügen Drehen Löschen │
-│ │ − 100 % + │                                 [Suche … ×]  ● Akzentfarbe │
+│                                                 [Suche … ×]  ● Akzentfarbe │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Werkzeug: Farbe, Strichstärke, … (Optionsleiste)                 Hinweis │
 ├─────────────────────────────────────────────────────────────────────────┤
@@ -113,19 +113,19 @@ dafür wäre ein eigenes Bundle nötig.
 │  │ 2 │        │                │  Fußnoten     │                        │
 │  └───┘        │                └───────────────┘                        │
 ├───────────────┴─────────────────────────────────────────────────────────┤
-│ Seite 1 von 14 · Rückgängig 2/50 · datei.pdf   Volle Höhe/Breite/Ganze Seite − 100 % + │
+│ Seite 1 von 14 · Rückgängig 2/50 · datei.pdf   Volle Höhe/Breite/Ganze Seite − [100 %] + │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 | Bereich | Inhalt |
 |---|---|
 | Menüleiste | Datei, Bearbeiten, Ansicht (Design, Akzentfarbe, Zoom), Sprache |
-| Werkzeugleiste | häufige Befehle, die Werkzeuge, Zoom, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
+| Werkzeugleiste | häufige Befehle, die Werkzeuge, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
-| Linke Leiste | Sobald das Dokument Anmerkungen hat, Reiter **Seiten** und **Anmerkungen** (mit Anzahl); sonst nur die Seitenliste. **Seiten:** Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
+| Linke Leiste | Reiter **Seiten**, **Anmerkungen** (mit Anzahl, sobald das Dokument Anmerkungen hat) und **Lesezeichen** (wenn die Datei welche hat); ohne beides nur die Seitenliste. Die Leiste lässt sich am rechten Rand von 180 bis 420 Pixel breit ziehen (Standard 220, wird gespeichert); die Seitenminiaturen wachsen und schrumpfen mit und werden kurz nach dem Ziehen scharf neu gezeichnet; passen die drei Reiter nicht nebeneinander, steht der dritte darunter. **Seiten:** Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
 | Seitenansicht | die angezeigte Seite mit Annotationen; darunter die Fußnoten der Kommentare |
-| Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom |
+| Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom (− / Eingabefeld / +) |
 
 ---
 
@@ -290,7 +290,23 @@ Textebene liefern keine Treffer.
 
 Die gewählte Ansicht wird bei jeder Größenänderung des Fensters – auch beim Maximieren –, beim Seitenwechsel
 und beim Drehen neu angewandt. Zoomen mit + oder − (Schritte von 10 %, 30–400 %) schaltet die Ansicht ab, bis
-wieder eine gewählt wird.
+wieder eine gewählt wird. Der Zoom lässt sich auch direkt in das Feld zwischen − und + eintippen, z. B. `150`,
+`150 %` oder `87,5`; **Enter** übernimmt den Wert (begrenzt auf 30–400 %). Ungültige Eingaben, **Esc** oder das
+Verlassen des Felds ohne Enter stellen den aktuellen Zoom wieder her. Zoomen gibt es nur in der Statusleiste,
+im Menü **Ansicht** und per Tastatur, nicht mehr in der Werkzeugleiste.
+
+### 5.10b Lesezeichen
+
+Hat die Datei Lesezeichen (Inhaltsverzeichnis), erscheint in der linken Leiste der Reiter **Lesezeichen**. Er zeigt
+die Lesezeichen als Baum; die erste Ebene ist aufgeklappt, tiefere Ebenen wie in der Datei vorgegeben. Ein Klick
+zeigt die Zielseite – auch nach Umsortieren oder Einfügen von Seiten. Das Lesezeichen des Kapitels, in dem die
+angezeigte Seite liegt, ist markiert. Lesezeichen, deren Zielseite gelöscht wurde, und Gliederungspunkte ohne Ziel
+sind ausgegraut.
+
+Beim **Speichern** und **Extrahieren** bleiben die Lesezeichen erhalten und zeigen auf die neue Seitenfolge.
+Lesezeichen gelöschter (bzw. nicht extrahierter) Seiten entfallen, ihre Unterpunkte rücken an ihre Stelle;
+Gliederungspunkte ohne Ziel bleiben, solange sie Unterpunkte haben. Lesezeichen lassen sich nicht anlegen oder
+umbenennen.
 
 ### 5.10a Anmerkungsübersicht
 
@@ -407,7 +423,7 @@ Zurücksetzen aller Einstellungen genügt es, die Datei zu löschen, während PD
 | – | Annotationen anderer Programme werden angezeigt, sind aber nicht bearbeitbar. |
 | – | Beim Speichern einer geschützten Fremddatei geht ein abweichendes Besitzerpasswort verloren; es wird durch das eingegebene Passwort ersetzt. |
 | – | Die Absatzerkennung kann bei Spalten, Tabellen oder ungewöhnlichem Satz danebenliegen; dann einen Bereich aufziehen. |
-| – | Beim Einfügen von Seiten werden Lesezeichen, Formularfelder und Verknüpfungen der Quelldatei nicht übernommen. Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
+| – | Beim Einfügen von Seiten werden Lesezeichen, Formularfelder und Verknüpfungen der eingefügten Datei nicht übernommen. Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 
 ---
 

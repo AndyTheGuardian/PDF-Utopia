@@ -13,6 +13,19 @@ using PdfUtopia.Pdf.Rendering;
 
 namespace PdfUtopia.App.ViewModels;
 
+/// <summary>Inhalt der linken Leiste.</summary>
+public enum SidebarView
+{
+    /// <summary>Seitenliste.</summary>
+    Pages,
+
+    /// <summary>Anmerkungsübersicht (A45).</summary>
+    Annotations,
+
+    /// <summary>Lesezeichen (A46).</summary>
+    Bookmarks,
+}
+
 /// <summary>
 /// ViewModel des Hauptfensters: geöffnete Dokumente (Tabs), Werkzeug, Zoom, Theme, Sprache, Farbwahl und alle
 /// Befehle aus Menü und Werkzeugleiste. Einstellungen werden bei jeder Änderung gespeichert.
@@ -31,6 +44,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly ThemeService _theme;
     private readonly SettingsStore _settingsStore;
     private AppSettings _settings;
+    private Avalonia.Threading.DispatcherTimer? _thumbnailRenderDelay;
 
     /// <summary>
     /// Erzeugt das ViewModel.
@@ -100,9 +114,49 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     public partial FitMode FitMode { get; set; } = FitMode.Page;
 
-    /// <summary>Ob die linke Leiste die Anmerkungsübersicht statt der Seitenliste zeigt (A45).</summary>
+    /// <summary>Was die linke Leiste zeigt: Seiten, Anmerkungen (A45) oder Lesezeichen (A46).</summary>
     [ObservableProperty]
-    public partial bool ShowAnnotations { get; set; }
+    public partial SidebarView SidebarView { get; set; }
+
+    /// <summary>Ob die linke Leiste Reiter zeigt (das Dokument hat Anmerkungen oder Lesezeichen).</summary>
+    public bool ShowSidebarTabs => ActiveDocument is { } document && (document.AnnotationList.HasAny || document.BookmarkList.HasAny);
+
+    /// <summary>Breite der linken Leiste in Pixeln (F30).</summary>
+    public double SidebarWidth => _settings.SidebarWidth;
+
+    /// <summary>Größe der Miniaturen relativ zur Standardbreite der linken Leiste; wächst und schrumpft mit ihr.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThumbnailBoxWidth), nameof(ThumbnailBoxHeight), nameof(ThumbnailImageMaxWidth), nameof(ThumbnailImageMaxHeight))]
+    public partial double ThumbnailScale { get; set; } = 1;
+
+    /// <summary>
+    /// Neue Miniaturgröße: nach einer kurzen Pause scharf neu rendern lassen (nicht bei jedem Schritt des Ziehens).
+    /// </summary>
+    partial void OnThumbnailScaleChanged(double value)
+    {
+        _thumbnailRenderDelay ??= new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(300), Avalonia.Threading.DispatcherPriority.Background, (_, _) =>
+        {
+            _thumbnailRenderDelay?.Stop();
+            foreach (var document in Documents)
+            {
+                document.SetThumbnailScale(ThumbnailScale);
+            }
+        });
+        _thumbnailRenderDelay.Stop();
+        _thumbnailRenderDelay.Start();
+    }
+
+    /// <summary>Breite des Miniaturfelds.</summary>
+    public double ThumbnailBoxWidth => 112 * ThumbnailScale;
+
+    /// <summary>Höhe des Miniaturfelds.</summary>
+    public double ThumbnailBoxHeight => 158 * ThumbnailScale;
+
+    /// <summary>Größte Breite des Miniaturbilds.</summary>
+    public double ThumbnailImageMaxWidth => 106 * ThumbnailScale;
+
+    /// <summary>Größte Höhe des Miniaturbilds.</summary>
+    public double ThumbnailImageMaxHeight => 150 * ThumbnailScale;
 
     /// <summary>Ob ein Suchbegriff eingegeben ist (× zum Leeren sichtbar).</summary>
     public bool HasSearchText => SearchText.Length > 0;
@@ -124,6 +178,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Zoom als Text.</summary>
     public string ZoomText => $"{Math.Round(Zoom * 100)} %";
+
+    /// <summary>
+    /// Inhalt des Zoom-Eingabefelds in der Statusleiste; folgt dem Zoom, bis eine Eingabe übernommen wird.
+    /// </summary>
+    [ObservableProperty]
+    public partial string ZoomInput { get; set; } = "100 %";
 
     /// <summary>Gewähltes Erscheinungsbild.</summary>
     public ThemePreference Theme => _settings.Theme;
@@ -353,6 +413,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
     }
 
+    /// <summary>Zeigt die Zielseite eines Lesezeichens (A46).</summary>
+    /// <param name="item">Das Lesezeichen.</param>
+    [RelayCommand]
+    private void ShowBookmark(BookmarkItemViewModel item)
+    {
+        if (item.Bookmark.PageIndex is { } index)
+        {
+            ActiveDocument?.Show(index);
+        }
+    }
+
     /// <summary>Zeigt eine Seite aus der Seitenliste an.</summary>
     /// <param name="page">Die Seite.</param>
     [RelayCommand]
@@ -379,6 +450,29 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     /// <param name="zoom">Der berechnete Zoom.</param>
     public void ApplyFitZoom(double zoom) => Zoom = zoom;
+
+    /// <summary>
+    /// Übernimmt einen eingegebenen Zoom (beendet die Anpassung an den Anzeigebereich); ungültige Eingaben werden
+    /// verworfen.
+    /// </summary>
+    [RelayCommand]
+    private void ApplyZoomInput()
+    {
+        if (ZoomFit.ParsePercent(ZoomInput) is { } zoom)
+        {
+            FitMode = FitMode.None;
+            Zoom = zoom;
+        }
+
+        ResetZoomInput();
+    }
+
+    /// <summary>Stellt im Zoom-Eingabefeld den aktuellen Zoom wieder her.</summary>
+    [RelayCommand]
+    private void ResetZoomInput() => ZoomInput = ZoomText;
+
+    /// <summary>Neuer Zoom: Eingabefeld nachführen.</summary>
+    partial void OnZoomChanged(double value) => ZoomInput = ZoomText;
 
     /// <summary>Beendet die Suche und leert das Suchfeld.</summary>
     [RelayCommand]
@@ -473,7 +567,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             try
             {
                 var source = await Task.Run(() => PdfSource.Open(fullPath, password));
-                Add(new DocumentViewModel(source, _settings.UndoLimit));
+                Add(new DocumentViewModel(source, _settings.UndoLimit, ThumbnailScale));
                 return;
             }
             catch (PdfOpenException exception) when (exception.Error == PdfOpenError.PasswordRequired)
@@ -690,30 +784,48 @@ public sealed partial class MainWindowViewModel : ObservableObject
             newValue.AnnotationList.PropertyChanged += OnAnnotationListPropertyChanged;
         }
 
-        LeaveEmptyAnnotationList();
+        LeaveEmptySidebarView();
     }
 
     /// <summary>
-    /// Letzte Anmerkung entfernt: zurück zur Seitenliste.
+    /// Letzte Anmerkung entfernt: Reiter und Ansicht der linken Leiste prüfen.
     /// </summary>
     private void OnAnnotationListPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(AnnotationListViewModel.HasAny))
         {
-            LeaveEmptyAnnotationList();
+            LeaveEmptySidebarView();
         }
     }
 
     /// <summary>
-    /// Ohne Anmerkungen gibt es keine Reiter (A45); die linke Leiste zeigt dann die Seitenliste.
+    /// Reiter gibt es nur für vorhandene Inhalte (A45, A46); ohne Inhalt zeigt die linke Leiste die Seitenliste.
     /// </summary>
-    private void LeaveEmptyAnnotationList()
+    private void LeaveEmptySidebarView()
     {
-        if (ActiveDocument?.AnnotationList.HasAny != true)
+        var document = ActiveDocument;
+        if ((SidebarView == SidebarView.Annotations && document?.AnnotationList.HasAny != true)
+            || (SidebarView == SidebarView.Bookmarks && document?.BookmarkList.HasAny != true))
         {
-            ShowAnnotations = false;
+            SidebarView = SidebarView.Pages;
         }
+
+        OnPropertyChanged(nameof(ShowSidebarTabs));
     }
+
+    /// <summary>
+    /// Merkt sich die per Ziehen gewählte Breite der linken Leiste (F30).
+    /// </summary>
+    /// <param name="width">Die Breite.</param>
+    public void SaveSidebarWidth(double width) => SaveSettings(_settings with { SidebarWidth = width });
+
+    /// <summary>
+    /// Passt die Miniaturen beim Ziehen an die Breite der linken Leiste an; scharf neu gerendert wird, sobald sich die
+    /// Breite kurz nicht mehr ändert.
+    /// </summary>
+    /// <param name="width">Aktuelle Breite der Leiste.</param>
+    public void ResizeSidebar(double width) =>
+        ThumbnailScale = Math.Clamp(width, AppSettings.MinSidebarWidth, AppSettings.MaxSidebarWidth) / AppSettings.DefaultSidebarWidth;
 
     /// <summary>
     /// Aktualisiert abhängige Anzeigen beim Wechsel des Dokuments.
