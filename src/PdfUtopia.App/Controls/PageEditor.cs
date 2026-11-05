@@ -15,7 +15,7 @@ using BezierSegment = PdfUtopia.Core.Drawing.BezierSegment;
 namespace PdfUtopia.App.Controls;
 
 /// <summary>
-/// Zeigt die aktuelle Seite mit ihren Annotationen und nimmt Eingaben für Marker, Freihand, Rechteck,
+/// Zeigt die aktuelle Seite mit ihren Annotationen und nimmt Eingaben für Marker, Freihand, Formen,
 /// Kommentar, Text und Radierer entgegen. Text wird in einem eingeblendeten Textfeld geschrieben (A43). Die Größe entspricht der angezeigten Seite in Punkten; der Zoom wird von
 /// außen über eine Layout-Transformation angewandt, die Seite aber passend zum Zoom scharf gerendert.
 /// Eingaberegeln aus dem Mockup-Test (A12): nicht an Zeiger-ID oder Gerätetyp gebunden, nur bei Kontakt.
@@ -57,6 +57,7 @@ public sealed class PageEditor : Control
     private DocumentViewModel? _subscribed;
     private ToolOptionsViewModel? _subscribedOptions;
     private TextAnnotation? _movingText;
+    private bool _constrain;
     private Guid? _hoveredText;
     private TextBox? _textEditor;
     private TextAnnotation? _editing;
@@ -213,6 +214,7 @@ public sealed class PageEditor : Control
 
         var point = e.GetCurrentPoint(this);
         var display = ToPoint(point.Position);
+        _constrain = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         if (_hoveredBadge is { } badge && point.Properties.IsLeftButtonPressed)
         {
             Document.Document.RemoveAnnotation(Document.CurrentPage.Id, badge);
@@ -250,6 +252,7 @@ public sealed class PageEditor : Control
         var point = e.GetCurrentPoint(this);
         _pointer = ToPoint(point.Position);
         _eraserEndHovering = point.Properties.IsEraser;
+        _constrain = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         if (_gesture is null)
         {
             UpdateHover(_pointer.Value, point.Properties.IsEraser);
@@ -273,6 +276,7 @@ public sealed class PageEditor : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+        _constrain = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         Finish();
     }
 
@@ -361,8 +365,8 @@ public sealed class PageEditor : Control
             case Tool.Marker when Math.Abs(_current.X - _start.X) >= MinDragDistance:
                 document.AddAnnotation(new HighlightAnnotation(Guid.NewGuid(), options.MarkerColor, ToPage(MarkerBand())));
                 break;
-            case Tool.Rectangle when IsDrag():
-                document.AddAnnotation(new RectangleAnnotation(Guid.NewGuid(), options.RectangleColor, options.RectangleWidth, ToPage(DragRect())));
+            case Tool.Shape when DraggedShape(options, Guid.NewGuid(), toPage: true) is { } shape:
+                document.AddAnnotation(shape);
                 break;
             case Tool.Comment when IsDrag():
                 document.AddAnnotation(new CommentAnnotation(Guid.NewGuid(), options.CommentColor, ToPage(DragRect()), Loc.T("Comment.New")));
@@ -462,7 +466,76 @@ public sealed class PageEditor : Control
             case TextAnnotation text:
                 DrawText(context, text);
                 break;
+            case LineAnnotation line:
+                DrawLine(context, line);
+                break;
+            case EllipseAnnotation ellipse:
+                var bounds = ToRect(ellipse.Bounds);
+                context.DrawEllipse(null, new Pen(Brush(ellipse.ColorHex), ellipse.Width), bounds.Center, bounds.Width / 2, bounds.Height / 2);
+                break;
         }
+    }
+
+    /// <summary>
+    /// Linie mit runden Enden, beim Pfeil mit offenen oder gefüllten Spitzen an einem oder beiden Enden.
+    /// </summary>
+    private static void DrawLine(DrawingContext context, LineAnnotation line)
+    {
+        var pen = RoundPen(Brush(line.ColorHex), line.Width);
+        context.DrawLine(pen, new Point(line.StrokeStart.X, line.StrokeStart.Y), new Point(line.StrokeEnd.X, line.StrokeEnd.Y));
+        foreach (var head in line.Heads)
+        {
+            var (tip, left, right) = (new Point(head.Tip.X, head.Tip.Y), new Point(head.Left.X, head.Left.Y), new Point(head.Right.X, head.Right.Y));
+            if (line.Arrow != ArrowStyle.Closed)
+            {
+                context.DrawLine(pen, left, tip);
+                context.DrawLine(pen, right, tip);
+                continue;
+            }
+
+            var triangle = new StreamGeometry();
+            using (var figure = triangle.Open())
+            {
+                figure.BeginFigure(left, true);
+                figure.LineTo(tip);
+                figure.LineTo(right);
+                figure.EndFigure(true);
+            }
+
+            context.DrawGeometry(pen.Brush, pen, triangle);
+        }
+    }
+
+    /// <summary>
+    /// Aufgezogene Form in Anzeige- oder Seitenkoordinaten; <c>null</c>, wenn kaum gezogen wurde. Mit Umschalt rasten
+    /// Linien in 15°-Schritten ein, Rechteck und Ellipse werden quadratisch.
+    /// </summary>
+    private Annotation? DraggedShape(ToolOptionsViewModel options, Guid id, bool toPage)
+    {
+        var isLine = options.Shape is ShapeKind.Line or ShapeKind.Arrow or ShapeKind.ClosedArrow;
+        var end = !_constrain ? _current : isLine ? ShapeConstraint.SnapAngle(_start, _current) : ShapeConstraint.Square(_start, _current);
+        var rect = PdfRect.FromCorners(_start, end);
+        var pageRect = toPage ? ToPage(rect) : rect;
+        var (color, width) = (options.RectangleColor, options.RectangleWidth);
+        if (isLine)
+        {
+            return _start.DistanceTo(end) < MinDragDistance ? null
+                : new LineAnnotation(id, color, width, toPage ? ToPage(_start) : _start, toPage ? ToPage(end) : end, options.Shape switch
+                {
+                    ShapeKind.Arrow => ArrowStyle.Open,
+                    ShapeKind.ClosedArrow => ArrowStyle.Closed,
+                    _ => ArrowStyle.None,
+                }, options.ArrowEnds);
+        }
+
+        if (rect.Width < MinDragDistance || rect.Height < MinDragDistance)
+        {
+            return null;
+        }
+
+        return options.Shape == ShapeKind.Ellipse
+            ? new EllipseAnnotation(id, color, width, pageRect)
+            : new RectangleAnnotation(id, color, width, pageRect);
     }
 
     /// <summary>
@@ -801,8 +874,8 @@ public sealed class PageEditor : Control
             case Tool.Marker:
                 context.FillRectangle(new SolidColorBrush(WithAlpha(options.MarkerColor, MarkerAlpha)), ToRect(MarkerBand()));
                 break;
-            case Tool.Rectangle:
-                DrawRounded(context, null, new Pen(Brush(options.RectangleColor), options.RectangleWidth), ToRect(DragRect()));
+            case Tool.Shape when DraggedShape(options, Guid.Empty, toPage: false) is { } shape:
+                DrawAnnotation(context, shape);
                 break;
             case Tool.Comment:
                 DrawRounded(context, new SolidColorBrush(WithAlpha(options.CommentColor, CommentFillAlpha)),

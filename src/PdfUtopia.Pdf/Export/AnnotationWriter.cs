@@ -63,6 +63,8 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
                 RectangleAnnotation rectangle => Rectangle(geometry, rectangle),
                 CommentAnnotation comment => Comment(geometry, comment, comments.IndexOf(comment) + 1),
                 TextAnnotation text => Text(geometry, text),
+                LineAnnotation line => Line(geometry, line),
+                EllipseAnnotation ellipse => Ellipse(geometry, ellipse),
                 _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
             };
             dictionary.Elements.SetString("/NM", annotation.Id.ToString());
@@ -147,6 +149,67 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
         annotation.Elements["/BS"] = BorderStyle(rectangle.Width);
         annotation.Elements["/RD"] = Numbers(Enumerable.Repeat(rectangle.Width / 2, 4));
         return annotation;
+    }
+
+    /// <summary>
+    /// Linie, optional mit offenen oder geschlossenen Pfeilspitzen an einem oder beiden Enden (A44), als Standard-Annotation „Line“.
+    /// </summary>
+    private RawAnnotation Line(PageGeometry geometry, LineAnnotation line)
+    {
+        var bounds = Inflate(line.Bounds, line.Width / 2 + 1);
+        var content = new ContentBuilder().RoundCaps().StrokeColor(line.ColorHex).LineWidth(line.Width);
+        StrokeLine(content, bounds, line.StrokeStart, line.StrokeEnd);
+        foreach (var head in line.Heads)
+        {
+            var tip = Local(bounds, head.Tip);
+            var (l, r) = (Local(bounds, head.Left), Local(bounds, head.Right));
+            content.MoveTo(l.X, l.Y).LineTo(tip.X, tip.Y).LineTo(r.X, r.Y);
+            if (line.Arrow == ArrowStyle.Closed)
+            {
+                content.FillColor(line.ColorHex).ClosePath().FillAndStroke();
+            }
+            else
+            {
+                content.Stroke();
+            }
+        }
+
+        var annotation = Create("/Line", geometry, bounds, line.ColorHex, Appearance(geometry, bounds, content));
+        annotation.Elements["/L"] = Numbers([.. Coordinates(geometry.ToUser(line.Start)), .. Coordinates(geometry.ToUser(line.End))]);
+        var ending = line.Arrow == ArrowStyle.Closed ? "/ClosedArrow" : "/OpenArrow";
+        var endings = new PdfArray(document);
+        endings.Elements.Add(new PdfName(line.HasStartArrow ? ending : "/None"));
+        endings.Elements.Add(new PdfName(line.HasEndArrow ? ending : "/None"));
+        annotation.Elements["/LE"] = endings;
+        if (line.Arrow == ArrowStyle.Closed)
+        {
+            annotation.Elements["/IC"] = Numbers(Color(line.ColorHex));
+        }
+        annotation.Elements["/BS"] = BorderStyle(line.Width);
+        return annotation;
+    }
+
+    /// <summary>
+    /// Ellipse (A44) als Standard-Annotation „Circle“.
+    /// </summary>
+    private RawAnnotation Ellipse(PageGeometry geometry, EllipseAnnotation ellipse)
+    {
+        var bounds = Inflate(ellipse.Bounds, ellipse.Width / 2);
+        var content = new ContentBuilder().StrokeColor(ellipse.ColorHex).LineWidth(ellipse.Width)
+            .Ellipse(bounds.Width / 2, bounds.Height / 2, ellipse.Bounds.Width / 2, ellipse.Bounds.Height / 2).Stroke();
+        var annotation = Create("/Circle", geometry, bounds, ellipse.ColorHex, Appearance(geometry, bounds, content));
+        annotation.Elements["/BS"] = BorderStyle(ellipse.Width);
+        annotation.Elements["/RD"] = Numbers(Enumerable.Repeat(ellipse.Width / 2, 4));
+        return annotation;
+    }
+
+    /// <summary>
+    /// Gerade Strecke in lokalen Koordinaten des Erscheinungsbildes.
+    /// </summary>
+    private static void StrokeLine(ContentBuilder content, PdfRect bounds, PdfPoint start, PdfPoint end)
+    {
+        var (from, to) = (Local(bounds, start), Local(bounds, end));
+        content.MoveTo(from.X, from.Y).LineTo(to.X, to.Y).Stroke();
     }
 
     /// <summary>

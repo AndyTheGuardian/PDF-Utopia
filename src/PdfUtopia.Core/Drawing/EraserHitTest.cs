@@ -23,8 +23,8 @@ public static class EraserHitTest
     /// Ob eine Annotation vom Radierer entfernt werden kann.
     /// </summary>
     /// <param name="annotation">Die Annotation.</param>
-    /// <returns><c>true</c> für Marker, Freihand, Rechtecke und Text.</returns>
-    public static bool IsErasable(Annotation annotation) => annotation is InkAnnotation or HighlightAnnotation or RectangleAnnotation or TextAnnotation;
+    /// <returns><c>true</c> für Marker, Freihand, Formen und Text.</returns>
+    public static bool IsErasable(Annotation annotation) => annotation is InkAnnotation or HighlightAnnotation or RectangleAnnotation or TextAnnotation or LineAnnotation or EllipseAnnotation;
 
     /// <summary>
     /// Ob der Radierer an einem Punkt die Annotation berührt.
@@ -39,6 +39,8 @@ public static class EraserHitTest
         HighlightAnnotation highlight => DistanceToArea(highlight.Bounds, point) <= radius,
         RectangleAnnotation rectangle => DistanceToOutline(rectangle.Bounds, point) <= radius + rectangle.Width / 2,
         TextAnnotation text => DistanceToArea(text.Bounds, point) <= radius,
+        LineAnnotation line => HitsLine(line, point, radius + line.Width / 2),
+        EllipseAnnotation ellipse => DistanceToEllipse(ellipse.Bounds, point) <= radius + ellipse.Width / 2,
         _ => false,
     };
 
@@ -79,6 +81,47 @@ public static class EraserHitTest
         }
 
         return false;
+    }
+
+    /// <summary>
+    /// Ob der Radierer eine Linie oder die Schenkel ihrer Pfeilspitze berührt.
+    /// </summary>
+    private static bool HitsLine(LineAnnotation line, PdfPoint point, double tolerance)
+    {
+        if (DistanceToSegment(point, line.Start, line.End) <= tolerance)
+        {
+            return true;
+        }
+
+        return line.Heads.Any(head =>
+            DistanceToSegment(point, head.Tip, head.Left) <= tolerance || DistanceToSegment(point, head.Tip, head.Right) <= tolerance
+            || (line.Arrow == ArrowStyle.Closed && (DistanceToSegment(point, head.Left, head.Right) <= tolerance || InTriangle(point, head.Tip, head.Left, head.Right))));
+    }
+
+    /// <summary>
+    /// Ob ein Punkt im Dreieck liegt (gefüllte Pfeilspitze).
+    /// </summary>
+    private static bool InTriangle(PdfPoint point, PdfPoint a, PdfPoint b, PdfPoint c)
+    {
+        static double Side(PdfPoint p, PdfPoint from, PdfPoint to) => (to.X - from.X) * (p.Y - from.Y) - (to.Y - from.Y) * (p.X - from.X);
+        var (ab, bc, ca) = (Side(point, a, b), Side(point, b, c), Side(point, c, a));
+        return (ab >= 0 && bc >= 0 && ca >= 0) || (ab <= 0 && bc <= 0 && ca <= 0);
+    }
+
+    /// <summary>
+    /// Ungefährer Abstand zum Umriss einer Ellipse: entlang des Strahls vom Mittelpunkt durch den Punkt.
+    /// </summary>
+    private static double DistanceToEllipse(PdfRect bounds, PdfPoint point)
+    {
+        var (radiusX, radiusY) = (bounds.Width / 2, bounds.Height / 2);
+        var center = new PdfPoint(bounds.X + radiusX, bounds.Y + radiusY);
+        if (radiusX <= 0 || radiusY <= 0)
+        {
+            return DistanceToSegment(point, new PdfPoint(bounds.X, bounds.Y), new PdfPoint(bounds.Right, bounds.Bottom));
+        }
+
+        var scaled = Math.Sqrt(Math.Pow((point.X - center.X) / radiusX, 2) + Math.Pow((point.Y - center.Y) / radiusY, 2));
+        return scaled == 0 ? Math.Min(radiusX, radiusY) : Math.Abs(1 - 1 / scaled) * point.DistanceTo(center);
     }
 
     /// <summary>

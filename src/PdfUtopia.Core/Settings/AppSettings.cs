@@ -59,7 +59,13 @@ public sealed record AppSettings
     /// <summary>Farbe für Freihand.</summary>
     public string FreehandColor { get; init; } = DrawingColors.FreehandDefault;
 
-    /// <summary>Farbe für Rechtecke.</summary>
+    /// <summary>Gewählte Form des Werkzeugs „Formen“ (A44).</summary>
+    public ShapeKind Shape { get; init; } = ShapeKind.Rectangle;
+
+    /// <summary>Wo Pfeile ihre Spitzen tragen (Anfang, Ende, beide).</summary>
+    public ArrowEnds ArrowEnds { get; init; } = ArrowEnds.End;
+
+    /// <summary>Farbe für Formen (Rechteck, Ellipse, Linie, Pfeil; Name aus der Zeit vor A44).</summary>
     public string RectangleColor { get; init; } = DrawingColors.RectangleDefault;
 
     /// <summary>Farbe für Kommentare.</summary>
@@ -77,7 +83,7 @@ public sealed record AppSettings
     /// <summary>Strichstärke Freihand (1–12).</summary>
     public double FreehandWidth { get; init; } = 3;
 
-    /// <summary>Strichstärke Rechteck (1–12).</summary>
+    /// <summary>Strichstärke der Formen (1–12).</summary>
     public double RectangleWidth { get; init; } = 2;
 
     /// <summary>Höhe des Markers (8–30).</summary>
@@ -99,6 +105,8 @@ public sealed record AppSettings
     public AppSettings Normalized() => this with
     {
         Theme = Enum.IsDefined(Theme) ? Theme : ThemePreference.System,
+        Shape = Enum.IsDefined(Shape) ? Shape : ShapeKind.Rectangle,
+        ArrowEnds = Enum.IsDefined(ArrowEnds) ? ArrowEnds : ArrowEnds.End,
         Language = Language is { } language && Enum.IsDefined(language) ? language : null,
         AccentColor = AccentPalette.IsValidHex(AccentColor) ? AccentPalette.Normalize(AccentColor!) : null,
         PastelSaturation = AccentPalette.ClampSaturation(PastelSaturation),

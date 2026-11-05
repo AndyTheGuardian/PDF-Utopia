@@ -56,9 +56,9 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     [ObservableProperty]
     public partial bool HasInk { get; set; }
 
-    /// <summary>Ob die Seite Rechtecke enthält.</summary>
+    /// <summary>Ob die Seite Formen enthält (Rechteck, Ellipse, Linie, Pfeil).</summary>
     [ObservableProperty]
-    public partial bool HasRectangles { get; set; }
+    public partial bool HasShapes { get; set; }
 
     /// <summary>Ob die Seite freien Text enthält (Text-Werkzeug, A43).</summary>
     [ObservableProperty]
@@ -73,7 +73,7 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
         HasComments = annotations.OfType<CommentAnnotation>().Any();
         HasHighlights = annotations.OfType<HighlightAnnotation>().Any();
         HasInk = annotations.OfType<InkAnnotation>().Any();
-        HasRectangles = annotations.OfType<RectangleAnnotation>().Any();
+        HasShapes = annotations.Any(annotation => annotation is RectangleAnnotation or EllipseAnnotation or LineAnnotation);
         HasText = annotations.OfType<TextAnnotation>().Any();
     }
 }

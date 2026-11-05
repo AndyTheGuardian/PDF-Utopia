@@ -159,6 +159,29 @@ internal sealed class ContentBuilder
         return Op("h");
     }
 
+    /// <summary>
+    /// Ellipse als Pfad aus vier Bézier-Kurven.
+    /// </summary>
+    /// <param name="centerX">Mittelpunkt X.</param>
+    /// <param name="centerY">Mittelpunkt Y.</param>
+    /// <param name="radiusX">Halbachse waagerecht.</param>
+    /// <param name="radiusY">Halbachse senkrecht.</param>
+    /// <returns>Dieser Builder.</returns>
+    public ContentBuilder Ellipse(double centerX, double centerY, double radiusX, double radiusY)
+    {
+        var (kx, ky) = (radiusX * CircleKappa, radiusY * CircleKappa);
+        MoveTo(centerX + radiusX, centerY);
+        CurveTo(new(centerX + radiusX, centerY + ky), new(centerX + kx, centerY + radiusY), new(centerX, centerY + radiusY));
+        CurveTo(new(centerX - kx, centerY + radiusY), new(centerX - radiusX, centerY + ky), new(centerX - radiusX, centerY));
+        CurveTo(new(centerX - radiusX, centerY - ky), new(centerX - kx, centerY - radiusY), new(centerX, centerY - radiusY));
+        CurveTo(new(centerX + kx, centerY - radiusY), new(centerX + radiusX, centerY - ky), new(centerX + radiusX, centerY));
+        return Op("h");
+    }
+
+    /// <summary>Schließt den aktuellen Teilpfad.</summary>
+    /// <returns>Dieser Builder.</returns>
+    public ContentBuilder ClosePath() => Op("h");
+
     /// <summary>Zeichnet den Pfad als Linie.</summary>
     /// <returns>Dieser Builder.</returns>
     public ContentBuilder Stroke() => Op("S");

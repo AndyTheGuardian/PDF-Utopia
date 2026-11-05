@@ -207,8 +207,8 @@
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Freehand}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconPen}" /><TextBlock Text="{loc:T Tool.Freehand}" /></StackPanel>
             </RadioButton>
-            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Rectangle}">
-              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconRect}" /><TextBlock Text="{loc:T Tool.Rectangle}" /></StackPanel>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Shape}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconShapes}" /><TextBlock Text="{loc:T Tool.Shape}" /></StackPanel>
             </RadioButton>
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Text}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconText}" /><TextBlock Text="{loc:T Tool.Text}" /></StackPanel>
@@ -287,6 +287,44 @@
                 </DataTemplate>
               </ItemsControl.ItemTemplate>
             </ItemsControl>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowShapeKinds}" VerticalAlignment="Center">
+            <TextBlock Text="{loc:T Options.Shape}" Classes="hint" VerticalAlignment="Center" Margin="0,0,4,0" />
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.Rectangle}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=Rectangle}">
+              <Path Classes="icon" Data="{StaticResource IconRect}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.Ellipse}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=Ellipse}">
+              <Path Classes="icon" Data="{StaticResource IconEllipse}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.Line}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=Line}">
+              <Path Classes="icon" Data="{StaticResource IconLine}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.Arrow}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=Arrow}">
+              <Path Classes="icon" Data="{StaticResource IconArrow}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.ClosedArrow}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=ClosedArrow}">
+              <Path Classes="icon" Data="{StaticResource IconClosedArrow}" />
+            </RadioButton>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowArrowEnds}" VerticalAlignment="Center">
+            <TextBlock Text="{loc:T Options.ArrowEnds}" Classes="hint" VerticalAlignment="Center" Margin="0,0,4,0" />
+            <RadioButton Classes="fit" GroupName="arrowEnds" ToolTip.Tip="{loc:T ArrowEnds.End}"
+                         IsChecked="{Binding ArrowEnds, Converter={StaticResource EnumEquals}, ConverterParameter=End}">
+              <Path Classes="icon" Data="{StaticResource IconArrowEnd}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="arrowEnds" ToolTip.Tip="{loc:T ArrowEnds.Start}"
+                         IsChecked="{Binding ArrowEnds, Converter={StaticResource EnumEquals}, ConverterParameter=Start}">
+              <Path Classes="icon" Data="{StaticResource IconArrowStart}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="arrowEnds" ToolTip.Tip="{loc:T ArrowEnds.Both}"
+                         IsChecked="{Binding ArrowEnds, Converter={StaticResource EnumEquals}, ConverterParameter=Both}">
+              <Path Classes="icon" Data="{StaticResource IconArrowBoth}" />
+            </RadioButton>
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowWidth}" VerticalAlignment="Center">
             <TextBlock Text="{Binding WidthLabel}" Classes="hint" VerticalAlignment="Center" />
@@ -417,8 +455,8 @@
                             <Border Classes="thumbBadge" IsVisible="{Binding HasInk}" ToolTip.Tip="{loc:T Pages.HasInk}">
                               <Path Classes="icon small" Data="{StaticResource IconPen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
-                            <Border Classes="thumbBadge" IsVisible="{Binding HasRectangles}" ToolTip.Tip="{loc:T Pages.HasRectangles}">
-                              <Path Classes="icon small" Data="{StaticResource IconRect}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasShapes}" ToolTip.Tip="{loc:T Pages.HasShapes}">
+                              <Path Classes="icon small" Data="{StaticResource IconShapes}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                             <Border Classes="thumbBadge" IsVisible="{Binding HasText}" ToolTip.Tip="{loc:T Pages.HasText}">
                               <Path Classes="icon small" Data="{StaticResource IconText}" HorizontalAlignment="Center" VerticalAlignment="Center" />

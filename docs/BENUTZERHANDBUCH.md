@@ -11,7 +11,7 @@ Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokum
 2. [Dokumente öffnen](#2-dokumente-öffnen)
 3. [Durch das Dokument bewegen](#3-durch-das-dokument-bewegen)
 4. [Kommentieren](#4-kommentieren)
-5. [Markieren, Zeichnen, Rechtecke, Text](#5-markieren-zeichnen-rechtecke-text)
+5. [Markieren, Zeichnen, Formen, Text](#5-markieren-zeichnen-formen-text)
 6. [Radieren](#6-radieren)
 7. [Seiten umsortieren, drehen, löschen](#7-seiten-umsortieren-drehen-löschen)
 8. [Rückgängig und Wiederholen](#8-rückgängig-und-wiederholen)
@@ -68,7 +68,7 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 |---|---|
 | Seite anzeigen | in der Seitenliste links auf die Miniatur klicken |
 | Blättern | **Mausrad** über der Seite, **←** / **→**, **Bild↑** / **Bild↓**; **Pos1** / **Ende** für die erste / letzte Seite. Die Seitenliste scrollt mit, die aktuelle Seite bleibt dort sichtbar |
-| Seiten mit Anmerkungen finden | in der Seitenliste zeigen kleine **Symbole in der Akzentfarbe** oben links, was die Seite enthält: je eines für Kommentare, Markierungen, Freihandlinien und Rechtecke (wie in der Werkzeugleiste) |
+| Seiten mit Anmerkungen finden | in der Seitenliste zeigen kleine **Symbole in der Akzentfarbe** oben links, was die Seite enthält: je eines für Kommentare, Markierungen, Freihandlinien, Formen und Texte (wie in der Werkzeugleiste) |
 | Ganze Seite sehen | unten rechts **Ganze Seite** wählen (Standard) |
 | Seite so hoch wie möglich | **Volle Höhe** |
 | Seite so breit wie möglich | **Volle Breite** |
@@ -110,7 +110,7 @@ Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt
 
 ---
 
-## 5. Markieren, Zeichnen, Rechtecke, Text
+## 5. Markieren, Zeichnen, Formen, Text
 
 ### Text markieren (Marker)
 1. Werkzeug **Marker** wählen.
@@ -127,9 +127,18 @@ Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt
    fester Druck eine dicke Linie.
 4. Zeichnen. Der Strich endet, wenn Sie die Maustaste loslassen oder den Stift abheben.
 
-### Ein Rechteck aufziehen
-1. Werkzeug **Rechteck** wählen, **Farbe** und **Strichstärke** einstellen.
-2. Von einer Ecke zur gegenüberliegenden ziehen. Die Ecken sind wie bei Kommentaren leicht abgerundet.
+### Formen zeichnen: Rechteck, Ellipse, Linie, Pfeil
+1. Werkzeug **Formen** wählen.
+2. In der Optionsleiste die **Form** anklicken – Rechteck, Ellipse, Linie, Pfeil mit offener Spitze oder Pfeil
+   mit geschlossener (gefüllter) Spitze – und **Farbe** und **Strichstärke** einstellen. Farbe und Stärke gelten
+   für alle Formen. Bei Pfeilen legen Sie unter **Spitze** fest, ob sie am Ende, am Anfang oder an beiden Enden
+   sitzt.
+3. Ziehen:
+   - **Rechteck und Ellipse:** von einer Ecke zur gegenüberliegenden. Rechtecke haben wie Kommentare leicht
+     abgerundete Ecken.
+   - **Linie und Pfeil:** vom Anfang zum Ende. „Ende“ ist dort, wo Sie loslassen.
+4. Mit gedrückter **Umschalttaste** rasten Linien und Pfeile in 15°-Schritten ein (waagerecht, senkrecht,
+   45° …), aus Rechteck und Ellipse werden **Quadrat** und **Kreis**.
 
 ### Text schreiben
 1. Werkzeug **Text** wählen; in der Optionsleiste **Farbe** und **Schriftgröße** einstellen.
@@ -143,7 +152,7 @@ So ändern Sie einen Text später (Werkzeug **Text** gewählt):
 - **Verschieben:** den Text mit gedrückter Maustaste an die neue Stelle ziehen.
 - **Löschen:** den ganzen Text entfernen und die Eingabe abschließen – oder mit dem **Radierer** darüberstreichen.
 
-> **Hinweis:** Sehr kurze Striche oder winzige Rechtecke (Klick ohne Ziehen) werden nicht angelegt.
+> **Hinweis:** Sehr kurze Striche oder winzige Formen (Klick ohne Ziehen) werden nicht angelegt.
 
 ---
 
@@ -152,14 +161,14 @@ So ändern Sie einen Text später (Werkzeug **Text** gewählt):
 ### Mit dem Radierer-Werkzeug
 1. Werkzeug **Radierer** wählen; in der Optionsleiste die **Größe** einstellen. Ein gestrichelter Kreis zeigt
    sie am Mauszeiger.
-2. Über Marker, Freihandlinien, Rechtecke oder Texte streichen. Was getroffen ist, wird **blass**.
+2. Über Marker, Freihandlinien, Formen oder Texte streichen. Was getroffen ist, wird **blass**.
 3. Loslassen – die getroffenen Markierungen werden **vollständig** entfernt.
 
 ### Mit dem Radiererende des Stifts
 Drehen Sie den Stift um und streichen Sie mit dem Radiererende über die Markierung – egal, welches Werkzeug
 gerade gewählt ist. Der gestrichelte Radierkreis erscheint schon, sobald der Stift über der Seite schwebt.
 
-> **Gut zu wissen:** Rechtecke werden nur über ihren Rand erfasst, nicht über ihre Fläche. Kommentare werden
+> **Gut zu wissen:** Rechtecke und Ellipsen werden nur über ihren Rand erfasst, nicht über ihre Fläche. Kommentare werden
 > nicht radiert; sie entfernen Sie über das × an der Fußnotenzahl. Ein Radierstrich lässt sich mit einem
 > einzigen **Rückgängig** zurücknehmen.
 
@@ -192,7 +201,7 @@ Die letzte Seite eines Dokuments lässt sich nicht löschen.
 - **Wiederholen**: Schaltfläche **Wiederholen**, **Strg+Y** oder **Strg+Umschalt+Z**
 
 Rückgängig machen lässt sich alles, was Sie am Dokument ändern: Kommentare, Fußnotentexte, Markierungen,
-Zeichnungen, Rechtecke, Radieren sowie Verschieben, Drehen und Löschen von Seiten. Die Statusleiste zeigt, wie
+Zeichnungen, Formen, Texte, Radieren sowie Verschieben, Drehen und Löschen von Seiten. Die Statusleiste zeigt, wie
 viele Schritte verfügbar sind (z. B. „Rückgängig: 4 / 50 Schritte“). Die Höchstzahl stellen Sie in den
 [Einstellungen](#15-einstellungen) ein.
 
@@ -288,7 +297,7 @@ gewählte Werkzeug, die gewählte Seite, Auswahlfelder und die Hinterlegung von 
 
 ### Die Farbwahl bedienen
 Dieselbe Farbwahl gibt es für die Akzentfarbe und – über den Farbpunkt in der Optionsleiste – für Freihand,
-Rechteck und Kommentar. Der Titel zeigt, wofür Sie gerade wählen.
+Formen, Kommentar und Text. Der Titel zeigt, wofür Sie gerade wählen.
 
 | Bereich | Bedienung |
 |---|---|
@@ -324,7 +333,7 @@ in der Optionsleiste ein; auch sie werden gespeichert.
 
 ## 16. Arbeiten mit dem Stift
 
-- **Zeichnen**: Freihand, Marker und Rechteck funktionieren mit dem Stift wie mit der Maus. Gezeichnet wird nur,
+- **Zeichnen**: Freihand, Marker und Formen funktionieren mit dem Stift wie mit der Maus. Gezeichnet wird nur,
   solange der Stift aufliegt. Während Sie zeichnen, verschiebt der Stift die Seite nicht.
 - **Seite verschieben**: Mit dem Werkzeug **Auswählen** können Sie die Seite mit dem Stift wie mit dem Finger
   verschieben.

@@ -14,7 +14,7 @@ PDF Utopia ist ein Editor zum Bearbeiten und Kommentieren von PDF-Dateien. Mit i
 
 - Textabschnitte **kommentieren** (farbig umrandet und hinterlegt, mit Fußnotenzahl und Fußnotentext auf einer
   nach unten verlängerten Seite),
-- mit Maus oder Stift **markieren, zeichnen und Rechtecke aufziehen**, auf Wunsch druckempfindlich,
+- mit Maus oder Stift **markieren, zeichnen, Formen (Rechteck, Ellipse, Linie, Pfeile) und Text einfügen**, auf Wunsch druckempfindlich,
 - Markierungen mit dem **Radierer** wieder entfernen,
 - Seiten **umsortieren, drehen und löschen**,
 - einzelne Seiten oder Seitenbereiche **extrahieren**,
@@ -123,7 +123,7 @@ dafür wäre ein eigenes Bundle nötig.
 | Werkzeugleiste | häufige Befehle, die Werkzeuge, Zoom, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
-| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Rechteck, Text); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
+| Seitenliste | Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
 | Seitenansicht | die angezeigte Seite mit Annotationen; darunter die Fußnoten der Kommentare |
 | Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom |
 
@@ -139,9 +139,9 @@ dafür wäre ein eigenes Bundle nötig.
 | **Kommentar** | Absatz anklicken (wird erkannt) oder Bereich aufziehen | Farbe (Farbwahl) |
 | **Marker** | waagerechter, halbtransparenter Balken wie ein Textmarker | 5 Textmarker-Farben, Höhe 8–30 |
 | **Freihand** | freie Linie mit Maus oder Stift | Farbe (Farbwahl), Stärke 1–12, Glättung 0–100 %, druckempfindlich |
-| **Rechteck** | Rechteck aufziehen | Farbe (Farbwahl), Stärke 1–12 |
+| **Formen** | Rechteck, Ellipse, Linie, Pfeil mit offener oder geschlossener (gefüllter) Spitze aufziehen; Pfeilspitzen am Ende, am Anfang oder an beiden Enden; mit Umschalt rasten Linien in 15°-Schritten ein, Rechteck und Ellipse werden zu Quadrat und Kreis | Form, Lage der Pfeilspitze, Farbe (Farbwahl), Stärke 1–12 (gemeinsam für alle Formen); die Pfeilspitze wächst mit der Stärke |
 | **Text** | freien Text auf die Seite schreiben; klicken (Standardbreite 200 pt) oder die Breite aufziehen | Farbe (Farbwahl, Standard fast Schwarz), Schriftgröße 8–36 pt (Standard 12) |
-| **Radierer** | entfernt berührte Marker, Freihandlinien, Rechtecke und Texte vollständig | Größe 2–40 |
+| **Radierer** | entfernt berührte Marker, Freihandlinien, Formen und Texte vollständig | Größe 2–40 |
 
 Weitere Regeln:
 
@@ -153,8 +153,8 @@ Weitere Regeln:
   Optionsleiste weist darauf hin. Mit der Maus wirkt die Einstellung nicht.
 - **Glättung** verbindet die Punkte einer Freihandlinie mit Kurven statt geraden Stücken. Punkte, die näher als
   1,5 Punkte beieinanderliegen, werden verworfen (gegen Zittern).
-- **Radierer:** Er entfernt immer ganze Markierungen. Rechtecke werden nur über ihren Rand erfasst, nicht über
-  ihre Fläche; Texte über ihre ganze Fläche. Kommentare radiert er nicht – sie werden über ihre Fußnotenzahl entfernt. Das **Radiererende des
+- **Radierer:** Er entfernt immer ganze Markierungen. Rechtecke und Ellipsen werden nur über ihren Rand erfasst, nicht über
+  ihre Fläche; Linien und Pfeile entlang der Strecke, Texte über ihre ganze Fläche. Kommentare radiert er nicht – sie werden über ihre Fußnotenzahl entfernt. Das **Radiererende des
   Stifts** radiert unabhängig vom gewählten Werkzeug. Ein Radierstrich ist ein Rückgängig-Schritt.
 - **Sehr kleine Striche** (unter 4 Punkte Ausdehnung) gelten als versehentlicher Klick und werden verworfen.
 - **Text:** Zeilen brechen an der Breite des Textfelds um, die Höhe wächst mit; Enter beginnt eine neue Zeile,
@@ -256,8 +256,8 @@ extrahieren und durchsuchen. Gespeichert wird mit dem Passwortschutz des aktuell
 
 ### 5.7 Wie Annotationen in der PDF-Datei stehen
 
-Kommentare, Marker, Freihandlinien und Rechtecke werden als **echte PDF-Annotationen** gespeichert
-(Square, Highlight, Ink, FreeText) – mit eigenem Erscheinungsbild, damit sie in jedem PDF-Betrachter
+Kommentare, Marker, Freihandlinien, Formen und Texte werden als **echte PDF-Annotationen** gespeichert
+(Square, Circle, Line, Highlight, Ink, FreeText) – mit eigenem Erscheinungsbild, damit sie in jedem PDF-Betrachter
 (Acrobat, Browser, Vorschau …) so aussehen wie in PDF Utopia. Seiten mit Kommentaren werden nach unten
 verlängert; dort stehen die Fußnoten unter einer gestrichelten Trennlinie mit der Überschrift „Kommentare“
 (in der Sprache der Oberfläche beim Speichern).
@@ -304,7 +304,7 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
   reines Weiß, das dunkle ist neutral grau; die PDF-Seite selbst bleibt immer weiß.
 - **Sprache:** Deutsch oder Englisch (Menü **Sprache**). Ohne eigene Wahl richtet sie sich nach dem
   Betriebssystem – Deutsch bei deutscher Systemsprache, sonst Englisch.
-- **Farbwahl** (Akzentfarbe sowie Farben für Freihand, Rechteck und Kommentar):
+- **Farbwahl** (Akzentfarbe sowie Farben für Freihand, Formen, Kommentar und Text):
 
   | Gruppe | Inhalt |
   |---|---|
@@ -314,7 +314,7 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
   | Benutzerdefiniert | eigene Farben per Hex-Code (`#RRGGBB`), höchstens 10, die älteste fällt bei mehr weg |
 
   Sättigung und eigene Farben gelten gemeinsam für alle Ziele. **Standard** setzt das jeweilige Ziel auf seine
-  Standardfarbe zurück (Akzent und Kommentar Indigo, Freihand Rot, Rechteck Blau). Schrift auf der Akzentfarbe
+  Standardfarbe zurück (Akzent und Kommentar Indigo, Freihand Rot, Formen Blau, Text fast Schwarz). Schrift auf der Akzentfarbe
   wird automatisch hell oder dunkel gesetzt; hebt sich eine Akzentfarbe zu wenig vom Hintergrund ab, bekommen
   Akzentflächen einen Rahmen in einer satteren Variante der Farbe (bei neutralen Farben in Textfarbe).
 

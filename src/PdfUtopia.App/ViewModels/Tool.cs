@@ -17,8 +17,8 @@ public enum Tool
     /// <summary>Freihand.</summary>
     Freehand,
 
-    /// <summary>Rechteck.</summary>
-    Rectangle,
+    /// <summary>Formen: Rechteck, Ellipse, Linie, Pfeil (A44).</summary>
+    Shape,
 
     /// <summary>Freier Text (A43).</summary>
     Text,
@@ -38,8 +38,8 @@ public enum ColorTarget
     /// <summary>Freihand.</summary>
     Freehand,
 
-    /// <summary>Rechteck.</summary>
-    Rectangle,
+    /// <summary>Formen.</summary>
+    Shape,
 
     /// <summary>Kommentar.</summary>
     Comment,

@@ -23,6 +23,8 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
         RectangleColor = settings.RectangleColor;
         CommentColor = settings.CommentColor;
         TextColor = settings.TextColor;
+        Shape = settings.Shape;
+        ArrowEnds = settings.ArrowEnds;
         TextSize = settings.TextSize;
         MarkerColor = settings.MarkerColor;
         FreehandWidth = settings.FreehandWidth;
@@ -41,7 +43,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
 
     /// <summary>Gewähltes Werkzeug.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Title), nameof(Hint), nameof(ShowColorPicker), nameof(ShowMarkerColors), nameof(ShowWidth),
+    [NotifyPropertyChangedFor(nameof(Title), nameof(Hint), nameof(ShowColorPicker), nameof(ShowMarkerColors), nameof(ShowShapeKinds), nameof(ShowArrowEnds), nameof(ShowWidth),
         nameof(ShowFreehandOptions), nameof(ShowEraserOptions), nameof(CurrentColor), nameof(CurrentWidth), nameof(WidthMinimum),
         nameof(WidthMaximum), nameof(WidthLabel), nameof(WidthText), nameof(ShowPressureHint), nameof(ColorTarget))]
     public partial Tool Tool { get; set; } = Tool.Select;
@@ -65,6 +67,15 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CurrentColor))]
     public partial string MarkerColor { get; set; }
+
+    /// <summary>Gewählte Form des Werkzeugs „Formen“ (A44).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ShowArrowEnds))]
+    public partial ShapeKind Shape { get; set; }
+
+    /// <summary>Wo Pfeile ihre Spitzen tragen.</summary>
+    [ObservableProperty]
+    public partial ArrowEnds ArrowEnds { get; set; }
 
     /// <summary>Farbe des Text-Werkzeugs.</summary>
     [ObservableProperty]
@@ -116,13 +127,19 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     public string Hint => Loc.T($"Hint.{Tool}");
 
     /// <summary>Ob die gemeinsame Farbwahl angeboten wird (Freihand, Rechteck, Kommentar).</summary>
-    public bool ShowColorPicker => Tool is Tool.Freehand or Tool.Rectangle or Tool.Comment or Tool.Text;
+    public bool ShowColorPicker => Tool is Tool.Freehand or Tool.Shape or Tool.Comment or Tool.Text;
 
     /// <summary>Ob die festen Markerfarben angeboten werden.</summary>
     public bool ShowMarkerColors => Tool == Tool.Marker;
 
+    /// <summary>Ob die Formauswahl gezeigt wird.</summary>
+    public bool ShowShapeKinds => Tool == Tool.Shape;
+
+    /// <summary>Ob die Lage der Pfeilspitzen gewählt werden kann (nur bei Pfeilen).</summary>
+    public bool ShowArrowEnds => Tool == Tool.Shape && Shape is ShapeKind.Arrow or ShapeKind.ClosedArrow;
+
     /// <summary>Ob eine Strichstärke einstellbar ist.</summary>
-    public bool ShowWidth => Tool is Tool.Freehand or Tool.Rectangle or Tool.Marker or Tool.Text;
+    public bool ShowWidth => Tool is Tool.Freehand or Tool.Shape or Tool.Marker or Tool.Text;
 
     /// <summary>Beschriftung des Schiebereglers: Strichstärke bzw. beim Text die Schriftgröße.</summary>
     public string WidthLabel => Loc.T(Tool == Tool.Text ? "Options.FontSize" : "Options.Width");
@@ -142,7 +159,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     /// <summary>Ziel der Farbwahl für das aktuelle Werkzeug.</summary>
     public ColorTarget ColorTarget => Tool switch
     {
-        Tool.Rectangle => ColorTarget.Rectangle,
+        Tool.Shape => ColorTarget.Shape,
         Tool.Comment => ColorTarget.Comment,
         Tool.Text => ColorTarget.Text,
         _ => ColorTarget.Freehand,
@@ -151,7 +168,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     /// <summary>Farbe des aktuellen Werkzeugs.</summary>
     public string CurrentColor => Tool switch
     {
-        Tool.Rectangle => RectangleColor,
+        Tool.Shape => RectangleColor,
         Tool.Comment => CommentColor,
         Tool.Marker => MarkerColor,
         Tool.Text => TextColor,
@@ -163,7 +180,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     {
         get => Tool switch
         {
-            Tool.Rectangle => RectangleWidth,
+            Tool.Shape => RectangleWidth,
             Tool.Marker => MarkerHeight,
             Tool.Text => TextSize,
             _ => FreehandWidth,
@@ -172,7 +189,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
         {
             switch (Tool)
             {
-                case Tool.Rectangle: RectangleWidth = value; break;
+                case Tool.Shape: RectangleWidth = value; break;
                 case Tool.Marker: MarkerHeight = value; break;
                 case Tool.Text: TextSize = value; break;
                 default: FreehandWidth = value; break;
@@ -203,7 +220,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     /// <returns>Die Farbe.</returns>
     public string ColorOf(ColorTarget target) => target switch
     {
-        ColorTarget.Rectangle => RectangleColor,
+        ColorTarget.Shape => RectangleColor,
         ColorTarget.Comment => CommentColor,
         ColorTarget.Text => TextColor,
         _ => FreehandColor,
@@ -218,7 +235,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     {
         switch (target)
         {
-            case ColorTarget.Rectangle: RectangleColor = hex; break;
+            case ColorTarget.Shape: RectangleColor = hex; break;
             case ColorTarget.Comment: CommentColor = hex; break;
             case ColorTarget.Text: TextColor = hex; break;
             case ColorTarget.Freehand: FreehandColor = hex; break;
@@ -232,7 +249,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     /// <returns>Die Farbe.</returns>
     public static string DefaultColorOf(ColorTarget target) => target switch
     {
-        ColorTarget.Rectangle => DrawingColors.RectangleDefault,
+        ColorTarget.Shape => DrawingColors.RectangleDefault,
         ColorTarget.Comment => DrawingColors.CommentDefault,
         ColorTarget.Freehand => DrawingColors.FreehandDefault,
         ColorTarget.Text => DrawingColors.TextDefault,
@@ -250,6 +267,8 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
         RectangleColor = RectangleColor,
         CommentColor = CommentColor,
         TextColor = TextColor,
+        Shape = Shape,
+        ArrowEnds = ArrowEnds,
         TextSize = TextAnnotation.ClampFontSize(TextSize),
         MarkerColor = MarkerColor,
         FreehandWidth = FreehandWidth,
@@ -267,7 +286,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        if (e.PropertyName is nameof(FreehandColor) or nameof(RectangleColor) or nameof(CommentColor) or nameof(MarkerColor) or nameof(TextColor) or nameof(TextSize)
+        if (e.PropertyName is nameof(FreehandColor) or nameof(RectangleColor) or nameof(CommentColor) or nameof(MarkerColor) or nameof(TextColor) or nameof(TextSize) or nameof(Shape) or nameof(ArrowEnds)
             or nameof(FreehandWidth) or nameof(RectangleWidth) or nameof(MarkerHeight) or nameof(Smoothing)
             or nameof(PressureSensitive) or nameof(EraserRadius))
         {

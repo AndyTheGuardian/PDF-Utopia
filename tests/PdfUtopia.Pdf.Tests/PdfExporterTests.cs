@@ -246,6 +246,69 @@ public sealed class PdfExporterTests : IDisposable
     }
 
     [Fact]
+    public void Save_Arrow_IsRenderedWithHead()
+    {
+        var arrow = new LineAnnotation(Guid.NewGuid(), Blue, 4, new PdfPoint(100, 300), new PdfPoint(400, 300), Arrow: ArrowStyle.Open);
+        var saved = SaveWith(document => document.AddAnnotation(document.Pages[1].Id, arrow));
+
+        using var source = PdfSource.Open(saved, importSavedAnnotations: false);
+        var page = source.Render(2, scale: 1);
+        AssertBlue(page.PixelAt(250, 300));
+        var (_, left, right) = Assert.Single(arrow.Heads);
+        AssertBlue(page.PixelAt((int)Math.Round((left.X + 400) / 2), (int)Math.Round((left.Y + 300) / 2)));
+        AssertBlue(page.PixelAt((int)Math.Round((right.X + 400) / 2), (int)Math.Round((right.Y + 300) / 2)));
+        Assert.Equal("/Line", Assert.Single(AnnotationsOf(saved, 1)).Elements.GetName("/Subtype"));
+    }
+
+    [Fact]
+    public void Save_ClosedArrow_HasFilledHead()
+    {
+        var arrow = new LineAnnotation(Guid.NewGuid(), Blue, 2, new PdfPoint(100, 300), new PdfPoint(400, 300), Arrow: ArrowStyle.Closed);
+        var saved = SaveWith(document => document.AddAnnotation(document.Pages[1].Id, arrow));
+
+        using var source = PdfSource.Open(saved, importSavedAnnotations: false);
+        var page = source.Render(2, scale: 1);
+        var (_, left, right) = Assert.Single(arrow.Heads);
+        // Schwerpunkt der Spitze liegt neben der Linie, ist aber gefüllt
+        AssertBlue(page.PixelAt((int)Math.Round((left.X + right.X + 400) / 3), (int)Math.Round((left.Y + right.Y + 300) / 3) + 3));
+        var line = Assert.Single(AnnotationsOf(saved, 1));
+        Assert.Equal("/ClosedArrow", ((PdfName)line.Elements.GetArray("/LE")!.Elements[1]).Value);
+    }
+
+    [Fact]
+    public void Save_ArrowWithBothHeads_WritesBothLineEndings()
+    {
+        var arrow = new LineAnnotation(Guid.NewGuid(), Blue, 4, new PdfPoint(100, 300), new PdfPoint(400, 300), ArrowStyle.Open, ArrowEnds.Both);
+        var saved = SaveWith(document => document.AddAnnotation(document.Pages[1].Id, arrow));
+
+        using var source = PdfSource.Open(saved, importSavedAnnotations: false);
+        var page = source.Render(2, scale: 1);
+        foreach (var head in arrow.Heads)
+        {
+            AssertBlue(page.PixelAt((int)Math.Round((head.Left.X + head.Tip.X) / 2), (int)Math.Round((head.Left.Y + head.Tip.Y) / 2)));
+        }
+
+        var endings = Assert.Single(AnnotationsOf(saved, 1)).Elements.GetArray("/LE")!;
+        Assert.Equal(["/OpenArrow", "/OpenArrow"], endings.Elements.Select(item => ((PdfName)item).Value));
+    }
+
+    [Fact]
+    public void Save_Ellipse_IsRenderedAsOutline()
+    {
+        var saved = SaveWith(document =>
+            document.AddAnnotation(document.Pages[1].Id, new EllipseAnnotation(Guid.NewGuid(), Blue, 3, new PdfRect(100, 300, 300, 200))));
+
+        using var source = PdfSource.Open(saved, importSavedAnnotations: false);
+        var page = source.Render(2, scale: 1);
+        AssertBlue(page.PixelAt(100, 400));
+        AssertBlue(page.PixelAt(250, 300));
+        // Ecke des umschließenden Rechtecks liegt außerhalb der Ellipse: Seite unverändert
+        using var original = PdfSource.Open(_file);
+        Assert.Equal(original.Render(2, scale: 1).PixelAt(110, 310), page.PixelAt(110, 310));
+        Assert.Equal("/Circle", Assert.Single(AnnotationsOf(saved, 1)).Elements.GetName("/Subtype"));
+    }
+
+    [Fact]
     public void Save_Comment_IsRenderedWithBorderAndBadge()
     {
         var saved = SaveWith(document => document.AddAnnotation(document.Pages[0].Id, Comment("Hinweis")));
