@@ -112,6 +112,13 @@ public static class Strings
         ["Pages.HasInk"] = ("Seite enthält Freihandlinien", "Page has freehand drawings"),
         ["Pages.HasShapes"] = ("Seite enthält Formen", "Page has shapes"),
 
+        // Formulare (A50)
+        ["Form.Notice"] = ("Dieses Dokument enthält ein Formular mit {0} Feldern. Es bleibt beim Speichern erhalten.",
+            "This document contains a form with {0} fields. It is kept when saving."),
+        ["Form.NoticeOne"] = ("Dieses Dokument enthält ein Formular mit einem Feld. Es bleibt beim Speichern erhalten.",
+            "This document contains a form with one field. It is kept when saving."),
+        ["Form.Dismiss"] = ("Hinweis schließen", "Close notice"),
+
         // Unterschrift (A49)
         ["Tool.Signature"] = ("Unterschrift", "Signature"),
         ["Hint.Signature"] = ("Unterschrift wählen, auf die Seite klicken oder Größe aufziehen · gesetzte Unterschrift ziehen zum Verschieben",

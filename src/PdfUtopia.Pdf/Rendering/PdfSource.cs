@@ -28,7 +28,10 @@ public sealed class PdfSource : IDisposable
     private readonly byte[] _data;
     private GCHandle _pin;
     private FpdfDocumentT? _document;
+    private FPDF_FORMFILLINFO? _formInfo;
+    private FpdfFormHandleT? _form;
     private IReadOnlyList<Bookmark>? _bookmarks;
+    private int? _formFieldCount;
 
     /// <summary>
     /// Übernimmt ein geladenes PDFium-Dokument.
@@ -42,6 +45,21 @@ public sealed class PdfSource : IDisposable
         _document = loaded.Document;
         PageCount = fpdfview.FPDF_GetPageCount(loaded.Document);
         SavedAnnotations = savedAnnotations;
+        InitForms(loaded.Document);
+    }
+
+    /// <summary>
+    /// Richtet die Formularumgebung ein: Ohne sie zeichnet PDFium keine Formularfelder, ausgefüllte Formulare sähen
+    /// leer aus (A50). Version 1 braucht keine Rückrufe; die Struktur muss so lange leben wie die Umgebung.
+    /// </summary>
+    private void InitForms(FpdfDocumentT document)
+    {
+        lock (PdfiumLibrary.Sync)
+        {
+            _formInfo = new FPDF_FORMFILLINFO { Version = 1 };
+            var form = fpdf_formfill.FPDFDOC_InitFormFillEnvironment(document, _formInfo);
+            _form = form is null || form.__Instance == IntPtr.Zero ? null : form;
+        }
     }
 
     /// <summary>Pfad der Datei (bei erzeugten Seiten leer).</summary>
@@ -81,6 +99,12 @@ public sealed class PdfSource : IDisposable
             return _bookmarks;
         }
     }
+
+    /// <summary>
+    /// Anzahl der Formularfelder (A50); 0 ohne Formular. Gezählt werden ausfüllbare Felder, nicht ihre Widgets
+    /// (eine Gruppe von Optionsfeldern ist ein Feld).
+    /// </summary>
+    public int FormFieldCount => _formFieldCount ??= CountFormFields();
 
     /// <summary>
     /// Inhalt der Datei beim Öffnen, bereinigt um eigene Annotationen und Seitenverlängerungen
@@ -229,7 +253,7 @@ public sealed class PdfSource : IDisposable
                 (width, height) = (height, width);
             }
 
-            return RenderToPixels(page, width, height, (int)rotation / 90);
+            return RenderToPixels(page, _form, width, height, (int)rotation / 90);
         });
     }
 
@@ -375,6 +399,49 @@ public sealed class PdfSource : IDisposable
             : null;
     }
 
+    /// <summary>
+    /// Zählt die Felder des Formulars; eine unlesbare Datei ergibt 0 (sie wird trotzdem angezeigt).
+    /// </summary>
+    private int CountFormFields()
+    {
+        try
+        {
+            using var stream = new MemoryStream(_data, writable: false);
+            using var document = Password is { } password
+                ? PdfSharp.Pdf.IO.PdfReader.Open(stream, password, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)
+                : PdfSharp.Pdf.IO.PdfReader.Open(stream, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+            var fields = document.Internals.Catalog.Elements.GetDictionary("/AcroForm")?.Elements.GetArray("/Fields");
+            return fields is null ? 0 : fields.Elements.Sum(item => CountFields(Resolve(item), depth: 0));
+        }
+        catch (Exception exception) when (exception is PdfSharp.Pdf.IO.PdfReaderException or InvalidOperationException or NotImplementedException)
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Zählt ein Feld: ohne Unterfelder (Kinder mit eigenem Namen) als eins, sonst die Summe der Unterfelder.
+    /// </summary>
+    private static int CountFields(PdfSharp.Pdf.PdfDictionary? node, int depth)
+    {
+        if (node is null || depth > MaxBookmarkDepth)
+        {
+            return 0;
+        }
+
+        var children = node.Elements.GetArray("/Kids")?.Elements.Select(Resolve).OfType<PdfSharp.Pdf.PdfDictionary>()
+            .Where(kid => kid.Elements.ContainsKey("/T")).ToList() ?? [];
+        return children.Count == 0 ? 1 : children.Sum(child => CountFields(child, depth + 1));
+    }
+
+    /// <summary>Dictionary hinter einem Eintrag (auch über Verweise).</summary>
+    private static PdfSharp.Pdf.PdfDictionary? Resolve(PdfSharp.Pdf.PdfItem item) => item switch
+    {
+        PdfSharp.Pdf.Advanced.PdfReference reference => reference.Value as PdfSharp.Pdf.PdfDictionary,
+        PdfSharp.Pdf.PdfDictionary dictionary => dictionary,
+        _ => null,
+    };
+
     /// <summary>Höchste Verschachtelungstiefe von Lesezeichen (Schutz vor fehlerhaften Dateien).</summary>
     private const int MaxBookmarkDepth = 32;
 
@@ -474,6 +541,14 @@ public sealed class PdfSource : IDisposable
                 return;
             }
 
+            if (_form is not null)
+            {
+                fpdf_formfill.FPDFDOC_ExitFormFillEnvironment(_form);
+                _form = null;
+            }
+
+            _formInfo?.Dispose();
+            _formInfo = null;
             fpdfview.FPDF_CloseDocument(_document);
             _document = null;
             _pin.Free();
@@ -495,13 +570,21 @@ public sealed class PdfSource : IDisposable
     /// <summary>
     /// Rendert eine geladene Seite in ein BGRA-Pixelfeld.
     /// </summary>
-    private static RenderedPage RenderToPixels(FpdfPageT page, int width, int height, int quarterTurns)
+    private static RenderedPage RenderToPixels(FpdfPageT page, FpdfFormHandleT? form, int width, int height, int quarterTurns)
     {
         var bitmap = fpdfview.FPDFBitmapCreate(width, height, HasAlpha);
         try
         {
             fpdfview.FPDFBitmapFillRect(bitmap, 0, 0, width, height, 0xFFFFFFFF);
             fpdfview.FPDF_RenderPageBitmap(bitmap, page, 0, 0, width, height, quarterTurns, RenderAnnotations);
+            if (form is not null)
+            {
+                // Formularfelder mit ihren aktuellen Werten über die Seite zeichnen
+                fpdf_formfill.FORM_OnAfterLoadPage(page, form);
+                fpdf_formfill.FPDF_FFLDraw(form, bitmap, page, 0, 0, width, height, quarterTurns, RenderAnnotations);
+                fpdf_formfill.FORM_OnBeforeClosePage(page, form);
+            }
+
             var stride = fpdfview.FPDFBitmapGetStride(bitmap);
             var pixels = new byte[stride * height];
             Marshal.Copy(fpdfview.FPDFBitmapGetBuffer(bitmap), pixels, 0, pixels.Length);

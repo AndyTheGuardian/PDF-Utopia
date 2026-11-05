@@ -166,6 +166,16 @@ Weitere Regeln:
   in der gespeicherten Datei als „?“ (E5). Auf einer gedrehten Seite steht neuer Text aufrecht und dreht sich
   danach mit der Seite. Gespeichert wird der Text als Standard-Annotation „FreeText“.
 
+### 5.0 Formulare
+
+Enthält eine Datei ein PDF-Formular (AcroForm), zeigt PDF Utopia über der Seite den Hinweis „Dieses Dokument
+enthält ein Formular mit N Feldern. Es bleibt beim Speichern erhalten.“; das × schließt ihn für dieses Dokument.
+Die Felder werden mit ihren aktuellen Werten angezeigt. Beim **Speichern** und **Extrahieren** bleibt das
+Formular ausfüllbar: Felder gelöschter bzw. nicht extrahierter Seiten entfallen, gleichnamige Felder aus
+eingefügten Dateien werden umbenannt („Name_2“), damit sie keinen gemeinsamen Wert bekommen. Ausfüllen in PDF
+Utopia ist noch nicht möglich (folgt). Nicht übernommen werden XFA-Formulardaten; eigene Schriften des Formulars
+für neu erzeugte Feldinhalte werden durch Helvetica ersetzt.
+
 ### 5.1a Unterschrift
 
 Mit dem Werkzeug **Unterschrift** setzen Sie eine zuvor geschriebene Unterschrift auf die Seite. Ist noch keine
@@ -470,7 +480,7 @@ Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
 | – | Annotationen anderer Programme werden angezeigt, sind aber nicht bearbeitbar. |
 | – | Beim Speichern einer geschützten Fremddatei geht ein abweichendes Besitzerpasswort verloren; es wird durch das eingegebene Passwort ersetzt. |
 | – | Die Absatzerkennung kann bei Spalten, Tabellen oder ungewöhnlichem Satz danebenliegen; dann einen Bereich aufziehen. |
-| – | Beim Einfügen von Seiten werden Lesezeichen, Formularfelder und Verknüpfungen der eingefügten Datei nicht übernommen. Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
+| – | Beim Einfügen von Seiten werden Lesezeichen und Verknüpfungen der eingefügten Datei nicht übernommen; ihre Formularfelder schon (gleichnamige werden umbenannt). Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 
 ---
 

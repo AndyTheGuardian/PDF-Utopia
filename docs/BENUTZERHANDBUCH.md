@@ -177,6 +177,11 @@ So ändern Sie einen Text später (Werkzeug **Text** gewählt):
 
 ---
 
+### Formulare
+Enthält eine Datei ein Formular, steht über der Seite ein Hinweis mit der Anzahl der Felder. Ausgefüllte Werte
+werden angezeigt, und beim Speichern bleibt das Formular in anderen Programmen ausfüllbar. Selbst ausfüllen lassen
+sich die Felder in PDF Utopia noch nicht.
+
 ### Unterschreiben
 1. Werkzeug **Unterschrift** wählen. Beim ersten Mal öffnet sich der Dialog **Unterschriften**.
 2. Im weißen Feld mit Stift oder Maus unterschreiben, einen **Namen** vergeben (z. B. „Unterschrift“ oder „Kürzel“),

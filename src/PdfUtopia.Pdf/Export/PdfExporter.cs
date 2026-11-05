@@ -138,6 +138,7 @@ public static class PdfExporter
             using var output = new PdfDocument();
             var writer = new AnnotationWriter(output, options);
             var written = new List<PdfPage>();
+            var origins = new List<(PdfPage Page, int SourceIndex)>();
             foreach (var entry in entries)
             {
                 if (!inputs.TryGetValue(entry.SourceIndex, out var input))
@@ -157,10 +158,13 @@ public static class PdfExporter
 
                 page.Rotate = (geometry.FileRotation + (int)entry.Rotation) % 360;
                 written.Add(page);
+                origins.Add((page, entry.SourceIndex));
             }
 
             // Lesezeichen der geöffneten Datei auf die neue Seitenfolge umstellen (P6)
             AddBookmarks(output.Outlines, BookmarkMap.Prune(BookmarkMap.Place(sources[PageEntry.OpenedFile].Bookmarks, entries)), written);
+            // Formular-Registrierung neu aufbauen, sonst sind Formularfelder in anderen Programmen nicht mehr ausfüllbar (P7)
+            FormRebuilder.Rebuild(output, origins, inputs);
             Protect(output, targetPassword);
             SaveAtomically(output, targetPath);
         }

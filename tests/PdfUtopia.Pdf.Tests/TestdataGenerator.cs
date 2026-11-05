@@ -22,6 +22,7 @@ public sealed class TestdataGenerator
         TestPdfFactory.Create(Path.Combine(folder, "testdatei-geschuetzt.pdf"), TestPdfFactory.Password);
         WriteEditedExample(plain, Path.Combine(folder, "beispiel-bearbeitet.pdf"));
         WriteBookmarkExample();
+        WriteFormExample();
     }
 
     /// <summary>
@@ -31,6 +32,14 @@ public sealed class TestdataGenerator
     [Fact(Explicit = true)]
     public void WriteBookmarkExample() =>
         TestPdfFactory.CreateWithBookmarks(Path.Combine(RepositoryRoot(), "testdata", "testdatei-lesezeichen.pdf"));
+
+    /// <summary>
+    /// Schreibt nur die Testdatei mit Formular (A50):
+    /// <c>dotnet test --project tests/PdfUtopia.Pdf.Tests -- --filter-method "*WriteFormExample" --explicit only</c>.
+    /// </summary>
+    [Fact(Explicit = true)]
+    public void WriteFormExample() =>
+        TestPdfFactory.CreateWithForm(Path.Combine(RepositoryRoot(), "testdata", "testdatei-formular.pdf"));
 
     /// <summary>
     /// Beispiel mit allen Annotationsarten, umsortierten, gedrehten und gelöschten Seiten.

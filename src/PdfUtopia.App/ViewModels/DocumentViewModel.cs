@@ -29,6 +29,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _textBlocks = [];
     private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _searchHits = [];
     private readonly Dictionary<(int Source, int Page, PdfRect Area), string> _highlightedTexts = [];
+    private bool _formNoticeDismissed;
     private string _searchTerm = string.Empty;
 
     /// <summary>
@@ -65,6 +66,15 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 
     /// <summary>Lesezeichen der geöffneten Datei (A46).</summary>
     public BookmarkListViewModel BookmarkList { get; }
+
+    /// <summary>Anzahl der Formularfelder der geöffneten Datei (A50).</summary>
+    public int FormFieldCount => Source.FormFieldCount;
+
+    /// <summary>Hinweis auf das Formular über der Seite.</summary>
+    public string FormNotice => Loc.F(FormFieldCount == 1 ? "Form.NoticeOne" : "Form.Notice", FormFieldCount);
+
+    /// <summary>Ob der Hinweis gezeigt wird: bei Formularen, bis er für dieses Dokument geschlossen wird.</summary>
+    public bool ShowFormNotice => FormFieldCount > 0 && !_formNoticeDismissed;
 
     /// <summary>Mehrfachauswahl in der Seitenliste (A48).</summary>
     public PageListSelection Selection { get; } = new();
@@ -274,6 +284,14 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 
         _thumbnails = [];
         _ = RenderThumbnailsAsync();
+    }
+
+    /// <summary>Schließt den Formular-Hinweis für dieses Dokument.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void DismissFormNotice()
+    {
+        _formNoticeDismissed = true;
+        OnPropertyChanged(nameof(ShowFormNotice));
     }
 
     /// <summary>
