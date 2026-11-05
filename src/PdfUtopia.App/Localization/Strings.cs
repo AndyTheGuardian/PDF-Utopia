@@ -113,10 +113,12 @@ public static class Strings
         ["Pages.HasShapes"] = ("Seite enthält Formen", "Page has shapes"),
 
         // Formulare (A50)
-        ["Form.Notice"] = ("Dieses Dokument enthält ein Formular mit {0} Feldern. Es bleibt beim Speichern erhalten.",
-            "This document contains a form with {0} fields. It is kept when saving."),
-        ["Form.NoticeOne"] = ("Dieses Dokument enthält ein Formular mit einem Feld. Es bleibt beim Speichern erhalten.",
-            "This document contains a form with one field. It is kept when saving."),
+        ["Form.Notice"] = ("Dieses Dokument enthält ein Formular mit {0} Feldern. Im Werkzeug „Auswählen“ Felder anklicken und ausfüllen; Tab springt zum nächsten Feld.",
+            "This document contains a form with {0} fields. With the Select tool, click fields and fill them in; Tab moves to the next field."),
+        ["Form.NoticeOtherTool"] = ("Dieses Dokument enthält ein Formular mit {0} Feldern. Zum Ausfüllen das Werkzeug „Auswählen“ wählen.",
+            "This document contains a form with {0} fields. Choose the Select tool to fill it in."),
+        ["Form.Highlight"] = ("Felder hervorheben", "Highlight fields"),
+        ["Form.ReadOnly"] = ("Schreibgeschützt – kann nicht geändert werden", "Read-only – cannot be changed"),
         ["Form.Dismiss"] = ("Hinweis schließen", "Close notice"),
 
         // Unterschrift (A49)

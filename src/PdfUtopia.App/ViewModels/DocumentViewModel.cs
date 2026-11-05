@@ -67,11 +67,16 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// <summary>Lesezeichen der geöffneten Datei (A46).</summary>
     public BookmarkListViewModel BookmarkList { get; }
 
+    /// <summary>
+    /// Ob eine Seite ausfüllbare Felder zeigt: Seiten der geöffneten Datei, wenn sie ein Formular hat (7b). Ihre Felder
+    /// zeichnet die Seitenansicht als Eingabefelder, nicht PDFium.
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <returns><c>true</c>, wenn die Felder als Eingabefelder erscheinen.</returns>
+    public bool IsFillable(PageEntry page) => !page.IsInserted && Document.Form.HasFields;
+
     /// <summary>Anzahl der Formularfelder der geöffneten Datei (A50).</summary>
     public int FormFieldCount => Source.FormFieldCount;
-
-    /// <summary>Hinweis auf das Formular über der Seite.</summary>
-    public string FormNotice => Loc.F(FormFieldCount == 1 ? "Form.NoticeOne" : "Form.Notice", FormFieldCount);
 
     /// <summary>Ob der Hinweis gezeigt wird: bei Formularen, bis er für dieses Dokument geschlossen wird.</summary>
     public bool ShowFormNotice => FormFieldCount > 0 && !_formNoticeDismissed;
@@ -235,7 +240,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public async Task RenderCurrentAsync(double scale)
     {
         var page = CurrentPage;
-        var bitmap = await _renderer.RenderAsync(page, scale);
+        var bitmap = await _renderer.RenderAsync(page, scale, drawForms: !IsFillable(page));
         if (page == CurrentPage)
         {
             CurrentBitmap = bitmap;

@@ -248,7 +248,10 @@ internal sealed class ContentBuilder
     /// <summary>
     /// Hängt einen Befehl an.
     /// </summary>
-    private ContentBuilder Op(string op)
+    /// <summary>Hängt einen beliebigen Operator an (z. B. „/Tx BMC“, „W n“).</summary>
+    /// <param name="op">Der Operator mit Operanden.</param>
+    /// <returns>Dieser Builder.</returns>
+    public ContentBuilder Op(string op)
     {
         _content.Append(op).Append('\n');
         return this;

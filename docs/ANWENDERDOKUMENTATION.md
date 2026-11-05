@@ -169,12 +169,27 @@ Weitere Regeln:
 ### 5.0 Formulare
 
 Enthält eine Datei ein PDF-Formular (AcroForm), zeigt PDF Utopia über der Seite den Hinweis „Dieses Dokument
-enthält ein Formular mit N Feldern. Es bleibt beim Speichern erhalten.“; das × schließt ihn für dieses Dokument.
-Die Felder werden mit ihren aktuellen Werten angezeigt. Beim **Speichern** und **Extrahieren** bleibt das
-Formular ausfüllbar: Felder gelöschter bzw. nicht extrahierter Seiten entfallen, gleichnamige Felder aus
-eingefügten Dateien werden umbenannt („Name_2“), damit sie keinen gemeinsamen Wert bekommen. Ausfüllen in PDF
-Utopia ist noch nicht möglich (folgt). Nicht übernommen werden XFA-Formulardaten; eigene Schriften des Formulars
-für neu erzeugte Feldinhalte werden durch Helvetica ersetzt.
+enthält ein Formular mit N Feldern.“; das × schließt ihn für dieses Dokument.
+Die Felder werden mit ihren aktuellen Werten angezeigt.
+
+**Ausfüllen:** Im Werkzeug **Auswählen** lassen sich Textfelder (ein- und mehrzeilig, mit Höchstlänge),
+Kontrollkästchen, Optionsfelder, Klapplisten und Auswahllisten direkt auf der Seite bearbeiten. Mit einem anderen
+Werkzeug sind die Felder gesperrt, der Hinweis nennt dann „Zum Ausfüllen das Werkzeug ‚Auswählen‘ wählen“. Der
+Schalter **Felder hervorheben** in der Hinweisleiste hinterlegt die Felder dezent in der Akzentfarbe; die
+Einstellung wird gespeichert (Standard: an). **Tab** springt zum nächsten Feld der Seite, in Leserichtung von
+oben nach unten und links nach rechts. Schreibgeschützte Felder sind grau und nicht bearbeitbar. Text wird beim
+Verlassen des Felds übernommen. Jede Feldänderung ist ein Rückgängig-Schritt (Strg+Z).
+
+Beim **Speichern** und **Extrahieren** bleibt das Formular ausfüllbar: Felder gelöschter bzw. nicht extrahierter
+Seiten entfallen, gleichnamige Felder aus eingefügten Dateien werden umbenannt („Name_2“), damit sie keinen
+gemeinsamen Wert bekommen. Geänderte Werte bekommen ein neues Erscheinungsbild in Helvetica, damit jeder
+PDF-Betrachter sie zeigt; unveränderte Felder bleiben, wie sie waren.
+
+Einschränkungen: Die Miniaturen zeigen bis zum Speichern die ursprünglichen Werte. Textfelder auf Seiten, die
+schon in der Datei gedreht sind, werden beim Bearbeiten nicht mitgedreht. Formulare eingefügter Seiten werden
+angezeigt, lassen sich aber erst nach Speichern und erneutem Öffnen ausfüllen. Nicht unterstützt werden
+XFA-Formulare, JavaScript (Berechnungen, Prüfungen, Formate), Schaltflächen mit Aktionen und digitale
+Signaturfelder; eigene Schriften des Formulars werden für neue Feldinhalte durch Helvetica ersetzt.
 
 ### 5.1a Unterschrift
 

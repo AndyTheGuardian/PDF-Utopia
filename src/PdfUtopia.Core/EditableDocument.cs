@@ -27,6 +27,9 @@ public sealed class EditableDocument
     /// <summary>Seiten in aktueller Reihenfolge.</summary>
     public PageList Pages { get; }
 
+    /// <summary>Formularfelder der geöffneten Datei mit ihren Werten (A50, 7b).</summary>
+    public Forms.FormValues Form { get; } = new();
+
     /// <summary>Annotationen aller Seiten.</summary>
     public AnnotationStore Annotations { get; } = new();
 
@@ -65,6 +68,35 @@ public sealed class EditableDocument
         {
             Annotations.Add(pageId, annotation);
         }
+    }
+
+    /// <summary>
+    /// Ändert den Wert eines Formularfelds als einen Rückgängig-Schritt; schreibgeschützte und unbekannte Felder
+    /// sowie unveränderte Werte ergeben keinen Schritt.
+    /// </summary>
+    /// <param name="name">Feldname.</param>
+    /// <param name="value">Neuer Wert; bei Textfeldern auf die Höchstlänge gekürzt.</param>
+    /// <returns><c>true</c>, wenn sich der Wert geändert hat.</returns>
+    public bool SetFieldValue(string name, string value)
+    {
+        if (Form.Field(name) is not { ReadOnly: false } field)
+        {
+            return false;
+        }
+
+        if (field.MaxLength > 0 && value.Length > field.MaxLength)
+        {
+            value = value[..field.MaxLength];
+        }
+
+        var previous = Form.Value(name);
+        if (previous == value)
+        {
+            return false;
+        }
+
+        History.Execute(new DelegateCommand(() => Form.Set(name, value), () => Form.Set(name, previous)));
+        return true;
     }
 
     /// <summary>

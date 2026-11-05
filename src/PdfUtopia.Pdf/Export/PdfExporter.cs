@@ -164,7 +164,7 @@ public static class PdfExporter
             // Lesezeichen der geöffneten Datei auf die neue Seitenfolge umstellen (P6)
             AddBookmarks(output.Outlines, BookmarkMap.Prune(BookmarkMap.Place(sources[PageEntry.OpenedFile].Bookmarks, entries)), written);
             // Formular-Registrierung neu aufbauen, sonst sind Formularfelder in anderen Programmen nicht mehr ausfüllbar (P7)
-            FormRebuilder.Rebuild(output, origins, inputs);
+            FormRebuilder.Rebuild(output, origins, inputs, document.Form);
             Protect(output, targetPassword);
             SaveAtomically(output, targetPath);
         }

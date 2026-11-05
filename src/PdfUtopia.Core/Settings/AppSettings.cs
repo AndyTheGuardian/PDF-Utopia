@@ -101,6 +101,9 @@ public sealed record AppSettings
     /// <summary>Größte Breite der linken Leiste.</summary>
     public const double MaxSidebarWidth = 420;
 
+    /// <summary>Ob Formularfelder hervorgehoben werden (A50).</summary>
+    public bool HighlightFormFields { get; init; } = true;
+
     /// <summary>Gewählte Unterschrift (Position in der Liste, A49).</summary>
     public int SelectedSignature { get; init; }
 

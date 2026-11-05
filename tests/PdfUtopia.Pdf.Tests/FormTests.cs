@@ -101,6 +101,58 @@ public sealed class FormTests : IDisposable
         Assert.Equal("Erika Muster", Fields(pdf)[3].Elements.GetString("/V"));
     }
 
+    [Fact]
+    public void FormFields_AreReadWithKindValueAndPosition()
+    {
+        using var source = PdfSource.Open(_file);
+        var fields = source.FormFields;
+
+        Assert.Equal(["Name", "Newsletter", "Anrede"], fields.Select(field => field.Name));
+        Assert.Equal([Core.Forms.FormFieldKind.Text, Core.Forms.FormFieldKind.CheckBox, Core.Forms.FormFieldKind.Radio], fields.Select(field => field.Kind));
+        Assert.Equal(["Max Muster", "Yes", "Frau"], fields.Select(field => field.InitialValue));
+        var name = Assert.Single(fields[0].Widgets);
+        Assert.Equal(1, name.SourcePageNumber);
+        Assert.Equal(100, name.Bounds.X, 1);
+        Assert.Equal(TestPdfFactory.Height - 720, name.Bounds.Y, 1);
+        Assert.Equal((200, 20), (Math.Round(name.Bounds.Width), Math.Round(name.Bounds.Height)));
+        Assert.Equal(12, fields[0].FontSize);
+        Assert.Equal("Yes", Assert.Single(fields[1].Widgets).OnState);
+        Assert.Equal(["Frau", "Herr"], fields[2].Widgets.Select(widget => widget.OnState));
+        Assert.Equal(3, Assert.Single(fields[2].Widgets.Select(widget => widget.SourcePageNumber).Distinct()));
+    }
+
+    [Fact]
+    public void Save_WritesChangedValues_AndAppearance()
+    {
+        var saved = Save(document =>
+        {
+            document.SetFieldValue("Name", "Erika Beispiel");
+            document.SetFieldValue("Newsletter", "Off");
+            document.SetFieldValue("Anrede", "Herr");
+        });
+
+        using var reopened = PdfSource.Open(saved);
+        Assert.Equal(["Erika Beispiel", "Off", "Herr"], reopened.FormFields.Select(field => field.InitialValue));
+        using var pdf = PdfReader.Open(saved, PdfDocumentOpenMode.Import);
+        var radios = Fields(pdf)[2].Elements.GetArray("/Kids")!.Elements
+            .Select(item => ((PdfSharp.Pdf.Advanced.PdfReference)item).Value as PdfDictionary).Select(widget => widget!.Elements.GetName("/AS"));
+        Assert.Equal(["/Off", "/Herr"], radios);
+        // Neues Erscheinungsbild: Seite 1 sieht anders aus als vorher
+        using var before = PdfSource.Open(_file);
+        Assert.NotEqual(before.Render(1, 1).Pixels, reopened.Render(1, 1).Pixels);
+    }
+
+    [Fact]
+    public void Save_UnchangedValues_KeepOriginalAppearance()
+    {
+        var saved = Save(_ => { });
+
+        using var pdf = PdfReader.Open(saved, PdfDocumentOpenMode.Import);
+        Assert.False(pdf.Internals.Catalog.Elements.GetDictionary("/AcroForm")!.Elements.GetBoolean("/NeedAppearances"));
+        using var reopened = PdfSource.Open(saved);
+        Assert.Equal("Max Muster", reopened.FormFields[0].InitialValue);
+    }
+
     /// <summary>
     /// Pixel einer Seite, die sich von derselben Seite ohne Formular unterscheiden – also das, was die Felder zeichnen.
     /// </summary>

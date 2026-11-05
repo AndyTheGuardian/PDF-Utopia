@@ -177,10 +177,15 @@ So ändern Sie einen Text später (Werkzeug **Text** gewählt):
 
 ---
 
-### Formulare
-Enthält eine Datei ein Formular, steht über der Seite ein Hinweis mit der Anzahl der Felder. Ausgefüllte Werte
-werden angezeigt, und beim Speichern bleibt das Formular in anderen Programmen ausfüllbar. Selbst ausfüllen lassen
-sich die Felder in PDF Utopia noch nicht.
+### Formulare ausfüllen
+Enthält eine Datei ein Formular, steht über der Seite ein Hinweis mit der Anzahl der Felder.
+1. Werkzeug **Auswählen** wählen.
+2. In ein Feld klicken und Text eingeben, ein Kästchen ankreuzen oder einen Eintrag wählen.
+3. Mit **Tab** zum nächsten Feld springen.
+4. Speichern. Das Formular bleibt in anderen Programmen ausfüllbar.
+
+> **Tipp:** Der Schalter **Felder hervorheben** im Hinweis hinterlegt alle Felder farbig. Ein falscher Eintrag
+> lässt sich mit Strg+Z zurücknehmen. Graue Felder sind schreibgeschützt.
 
 ### Unterschreiben
 1. Werkzeug **Unterschrift** wählen. Beim ersten Mal öffnet sich der Dialog **Unterschriften**.

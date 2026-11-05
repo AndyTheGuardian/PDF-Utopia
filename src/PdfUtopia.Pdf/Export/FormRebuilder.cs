@@ -1,4 +1,6 @@
 using PdfSharp.Pdf;
+using PdfUtopia.Core.Forms;
+using PdfUtopia.Core.Text;
 
 namespace PdfUtopia.Pdf.Export;
 
@@ -19,7 +21,9 @@ internal static class FormRebuilder
     /// <param name="output">Die neue Datei.</param>
     /// <param name="pages">Gespeicherte Seiten mit der Quelldatei, aus der sie stammen.</param>
     /// <param name="inputs">Geöffnete Quelldateien nach Quellnummer.</param>
-    public static void Rebuild(PdfDocument output, IReadOnlyList<(PdfPage Page, int SourceIndex)> pages, IReadOnlyDictionary<int, PdfDocument> inputs)
+    /// <param name="form">Felder der geöffneten Datei mit ihren aktuellen Werten (7b) oder <c>null</c>.</param>
+    public static void Rebuild(
+        PdfDocument output, IReadOnlyList<(PdfPage Page, int SourceIndex)> pages, IReadOnlyDictionary<int, PdfDocument> inputs, FormValues? form = null)
     {
         var widgets = new HashSet<PdfDictionary>(ReferenceEqualityComparer.Instance);
         var fields = new List<(PdfDictionary Field, int SourceIndex)>();
@@ -42,6 +46,8 @@ internal static class FormRebuilder
             return;
         }
 
+        var resources = DefaultResources(output);
+        var needAppearances = form is not null && WriteValues(fields.Where(entry => entry.SourceIndex == 0).Select(entry => entry.Field), form, resources);
         RenameDuplicates(fields);
         var acroForm = new PdfDictionary(output);
         var array = new PdfArray(output);
@@ -52,8 +58,127 @@ internal static class FormRebuilder
 
         acroForm.Elements[FieldsKey] = array;
         CopySettings(Template(inputs, fields[0].SourceIndex), acroForm);
-        acroForm.Elements["/DR"] = DefaultResources(output);
+        if (needAppearances)
+        {
+            acroForm.Elements.SetBoolean("/NeedAppearances", true);
+        }
+
+        acroForm.Elements["/DR"] = resources;
         output.Internals.Catalog.Elements["/AcroForm"] = acroForm;
+    }
+
+    /// <summary>
+    /// Schreibt geänderte Werte der geöffneten Datei in ihre Felder (7b): Text und Listen in /V mit neuem
+    /// Erscheinungsbild, Kästchen und Optionsfelder über /V und den Zustand /AS der Widgets.
+    /// </summary>
+    /// <returns><c>true</c>, wenn ein Erscheinungsbild fehlt und Betrachter es neu erzeugen sollen (Auswahllisten).</returns>
+    private static bool WriteValues(IEnumerable<PdfDictionary> topFields, FormValues form, PdfDictionary resources)
+    {
+        var changed = form.ChangedValues();
+        if (changed.Count == 0)
+        {
+            return false;
+        }
+
+        var needAppearances = false;
+        foreach (var (node, name, widgets) in topFields.SelectMany(field => Terminals(field, string.Empty, depth: 0)))
+        {
+            if (!changed.TryGetValue(name, out var value) || form.Field(name) is not { } field)
+            {
+                continue;
+            }
+
+            switch (field.Kind)
+            {
+                case FormFieldKind.CheckBox or FormFieldKind.Radio:
+                    node.Elements.SetName("/V", "/" + value);
+                    foreach (var widget in widgets)
+                    {
+                        var states = widget.Elements.GetDictionary("/AP")?.Elements.GetDictionary("/N");
+                        widget.Elements.SetName("/AS", states?.Elements.ContainsKey("/" + value) == true ? "/" + value : "/" + FormField.Off);
+                    }
+
+                    break;
+                case FormFieldKind.ListBox:
+                    node.Elements["/V"] = new PdfString(value, PdfStringEncoding.Unicode);
+                    needAppearances = true;
+                    break;
+                default:
+                    node.Elements["/V"] = new PdfString(value, PdfStringEncoding.Unicode);
+                    var label = field.Kind == FormFieldKind.ComboBox ? field.Options.FirstOrDefault(option => option.Value == value)?.Label ?? value : value;
+                    foreach (var widget in widgets)
+                    {
+                        SetTextAppearance(widget, field, label, resources);
+                    }
+
+                    break;
+            }
+        }
+
+        return needAppearances;
+    }
+
+    /// <summary>
+    /// Endfelder eines Felds mit vollständigem Namen und ihren Widgets (wie beim Lesen, <see cref="Import.FormReader"/>).
+    /// </summary>
+    private static IEnumerable<(PdfDictionary Node, string Name, List<PdfDictionary> Widgets)> Terminals(PdfDictionary node, string parentName, int depth)
+    {
+        if (depth > 32)
+        {
+            yield break;
+        }
+
+        var partial = node.Elements.GetString("/T");
+        var name = partial.Length == 0 ? parentName : parentName.Length == 0 ? partial : $"{parentName}.{partial}";
+        var kids = node.Elements.GetArray("/Kids")?.Elements.Select(Resolve).OfType<PdfDictionary>().ToList() ?? [];
+        var subfields = kids.Where(kid => kid.Elements.ContainsKey("/T")).ToList();
+        if (subfields.Count == 0)
+        {
+            yield return (node, name, kids.Count > 0 ? kids : [node]);
+            yield break;
+        }
+
+        foreach (var terminal in subfields.SelectMany(child => Terminals(child, name, depth + 1)))
+        {
+            yield return terminal;
+        }
+    }
+
+    /// <summary>
+    /// Erscheinungsbild eines Text- oder Klapplistenfelds in Helvetica: einzeilig senkrecht mittig, mehrzeilig von oben
+    /// mit Umbruch, Ausrichtung wie im Feld.
+    /// </summary>
+    private static void SetTextAppearance(PdfDictionary widget, FormField field, string text, PdfDictionary resources)
+    {
+        if (widget.Elements.GetArray("/Rect") is not { Elements.Count: 4 } rect)
+        {
+            return;
+        }
+
+        var values = rect.Elements.Select(Number).ToArray();
+        var (width, height) = (Math.Abs(values[2] - values[0]), Math.Abs(values[3] - values[1]));
+        var size = field.FontSizeFor(height);
+        var lines = field.Multiline ? TextWrapper.Wrap(text, width - 4, size) : [text.ReplaceLineEndings(" ")];
+        var content = new ContentBuilder().Op("/Tx BMC").Save().Rectangle(1, 1, width - 2, height - 2).Op("W n").FillColor("#000000");
+        for (var i = 0; i < lines.Count; i++)
+        {
+            var lineWidth = Helvetica.Width(lines[i], size);
+            var x = field.Alignment switch { 1 => (width - lineWidth) / 2, 2 => width - 2 - lineWidth, _ => 2 };
+            var y = field.Multiline ? height - 2 - size * (i + 1) * 1.15 + size * 0.2 : (height - size * 0.72) / 2;
+            content.Text(x, y, lines[i], size);
+        }
+
+        content.Restore().Op("EMC");
+        var form = new PdfDictionary(widget.Owner);
+        form.Elements.SetName("/Type", "/XObject");
+        form.Elements.SetName("/Subtype", "/Form");
+        form.Elements["/BBox"] = new PdfArray(widget.Owner, new PdfReal(0), new PdfReal(0), new PdfReal(width), new PdfReal(height));
+        form.Elements["/Resources"] = resources;
+        form.CreateStream(content.ToBytes());
+        widget.Owner.Internals.AddObject(form);
+        var appearance = new PdfDictionary(widget.Owner);
+        appearance.Elements["/N"] = form.Reference;
+        widget.Elements["/AP"] = appearance;
     }
 
     /// <summary>Widget-Annotationen einer Seite.</summary>
@@ -180,6 +305,14 @@ internal static class FormRebuilder
         output.Internals.AddObject(font);
         return font.Reference!;
     }
+
+    /// <summary>Zahl eines Eintrags (auch über Verweise).</summary>
+    private static double Number(PdfItem item) => (item is PdfSharp.Pdf.Advanced.PdfReference reference ? reference.Value : item) switch
+    {
+        PdfReal real => real.Value,
+        PdfInteger integer => integer.Value,
+        _ => 0,
+    };
 
     /// <summary>Dictionary hinter einem Eintrag (auch über Verweise).</summary>
     private static PdfDictionary? Resolve(PdfItem item) => item switch

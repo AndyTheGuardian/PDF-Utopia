@@ -16,7 +16,7 @@ weiterbearbeiten.
 - **Seiten:** per Drag & Drop umsortieren, drehen, löschen, leere Seiten einfügen – auch mehrere Seiten auf einmal (Strg/Umschalt+Klick).
 - **Unterschrift:** bis zu fünf Unterschriften mit Stift oder Maus schreiben und als Stempel auf Seiten setzen (sichtbar, keine digitale Signatur).
 - **Anmerkungsübersicht:** alle Anmerkungen nach Seiten, mit Filter; ein Klick springt hin.
-- **Formulare:** werden angezeigt und bleiben beim Speichern ausfüllbar.
+- **Formulare:** direkt auf der Seite ausfüllen (Text, Kästchen, Optionen, Listen); sie bleiben beim Speichern ausfüllbar.
 - **Lesezeichen:** Inhaltsverzeichnis der Datei als Baum zum Springen; beim Speichern bleibt es erhalten.
 - **Extrahieren:** Seitenauswahl wie `2`, `4-8` oder `2,4,8,13-15`, mit Vorschau.
 - **Einfügen:** Seiten aus einer anderen PDF-Datei übernehmen, per Dialog oder Drag & Drop auf die Seitenliste; Anmerkungen kommen mit.
@@ -92,7 +92,7 @@ dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:Pub
 | `testdata/` | Erzeugte Test-PDFs, darunter eine passwortgeschützte, eine mit Lesezeichen und eine mit Formular |
 | `mockups/` | Abgenommene HTML-Mockups der Oberfläche |
 | `spikes/PressureProbe` | Prototyp zum Prüfen von Stift-Andruck und Radiererende |
-| `docs/` | Anwenderdokumentation und Benutzerhandbuch |
+| `docs/` | Anwenderdokumentation, Benutzerhandbuch und Funktionsübersicht |
 | `SPECS.md` | Ursprüngliche Spezifikation |
 | `OFFENE-PUNKTE.md` | Getroffene Annahmen, bekannte Einschränkungen und erledigte Punkte |
 
@@ -101,6 +101,7 @@ dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:Pub
 - [Benutzerhandbuch](docs/BENUTZERHANDBUCH.md): Schritt-für-Schritt-Anleitungen für alle Aufgaben
 - [Anwenderdokumentation](docs/ANWENDERDOKUMENTATION.md): Installation, Bedienkonzept, Tastenkürzel,
   Einstellungen, Datenschutz, Einschränkungen
+- [Funktionsübersicht](docs/FUNKTIONSUEBERSICHT.md): verdichteter Entwicklungsverlauf, alle Funktionen nach Phasen
 - [Offene Punkte](OFFENE-PUNKTE.md): Entscheidungen und Annahmen aus der Entwicklung
 
 ## Verwendete Bibliotheken

@@ -61,6 +61,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _theme = theme;
         _settings = settingsStore.Load();
         ToolOptions = new ToolOptionsViewModel(_settings);
+        HighlightFormFields = _settings.HighlightFormFields;
         _signatureStore = new SignatureStore(SignatureStore.PathNextTo(settingsStore.FilePath));
         ToolOptions.SetSignatures(_signatureStore.Load());
         ToolOptions.Changed += (_, _) => SaveSettings(ToolOptions.ApplyTo(_settings));
@@ -70,6 +71,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             if (e.PropertyName == nameof(ToolOptionsViewModel.Tool))
             {
                 OnPropertyChanged(nameof(CurrentTool));
+                OnPropertyChanged(nameof(FormNotice));
                 // Ohne gespeicherte Unterschrift öffnet die Wahl des Werkzeugs gleich das Unterschriftenfeld
                 if (ToolOptions.Tool == Tool.Signature && ToolOptions.HasNoSignature)
                 {
@@ -129,6 +131,18 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     public partial bool ReverseRotation { get; set; }
+
+    /// <summary>Ob Formularfelder hervorgehoben werden (A50, Mockup v6); wird gespeichert.</summary>
+    [ObservableProperty]
+    public partial bool HighlightFormFields { get; set; }
+
+    /// <summary>
+    /// Hinweis über der Seite bei Formularen: mit dem Werkzeug „Auswählen“ wie man ausfüllt, sonst dass man dafür
+    /// „Auswählen“ wählt.
+    /// </summary>
+    public string FormNotice => ActiveDocument is { FormFieldCount: > 0 } document
+        ? Loc.F(ToolOptions.Tool == Tool.Select ? "Form.Notice" : "Form.NoticeOtherTool", document.FormFieldCount)
+        : string.Empty;
 
     /// <summary>Was die linke Leiste zeigt: Seiten, Anmerkungen (A45) oder Lesezeichen (A46).</summary>
     [ObservableProperty]
@@ -483,6 +497,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         ToolOptions.SetSignatures(signatures);
     }
+
+    /// <summary>Hervorhebung der Formularfelder gewählt: merken.</summary>
+    partial void OnHighlightFormFieldsChanged(bool value) => SaveSettings(_settings with { HighlightFormFields = value });
 
     /// <summary>Wählt alle Seiten der Seitenliste (Strg+A, A48).</summary>
     [RelayCommand]
@@ -915,6 +932,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
 
         OnPropertyChanged(nameof(ShowSidebarTabs));
+        OnPropertyChanged(nameof(FormNotice));
     }
 
     /// <summary>

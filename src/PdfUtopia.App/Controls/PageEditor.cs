@@ -21,7 +21,7 @@ namespace PdfUtopia.App.Controls;
 /// außen über eine Layout-Transformation angewandt, die Seite aber passend zum Zoom scharf gerendert.
 /// Eingaberegeln aus dem Mockup-Test (A12): nicht an Zeiger-ID oder Gerätetyp gebunden, nur bei Kontakt.
 /// </summary>
-public sealed class PageEditor : Control
+public sealed partial class PageEditor : Control
 {
     /// <summary>Angezeigtes Dokument.</summary>
     public static readonly StyledProperty<DocumentViewModel?> DocumentProperty =
@@ -115,6 +115,7 @@ public sealed class PageEditor : Control
         }
 
         _textEditor?.Measure(Size.Infinity);
+        MeasureFormFields();
         var (width, height) = Document.CurrentDisplaySize;
         return new Size(width, height);
     }
@@ -129,6 +130,7 @@ public sealed class PageEditor : Control
             editor.Arrange(new Rect(new Point(anchor.X, anchor.Y), new Size(text.Width, editor.DesiredSize.Height)));
         }
 
+        ArrangeFormFields();
         return finalSize;
     }
 
@@ -149,6 +151,10 @@ public sealed class PageEditor : Control
         else if (change.Property == ZoomProperty)
         {
             RequestRender();
+        }
+        else if (change.Property == HighlightFieldsProperty)
+        {
+            ApplyFormLook();
         }
     }
 
@@ -178,7 +184,11 @@ public sealed class PageEditor : Control
     /// <summary>
     /// Zeichnet nach geänderten Anwendungsressourcen neu.
     /// </summary>
-    private void OnApplicationResourcesChanged(object? sender, ResourcesChangedEventArgs e) => InvalidateVisual();
+    private void OnApplicationResourcesChanged(object? sender, ResourcesChangedEventArgs e)
+    {
+        ApplyFormLook();
+        InvalidateVisual();
+    }
 
     /// <inheritdoc />
     public override void Render(DrawingContext context)
@@ -1077,6 +1087,7 @@ public sealed class PageEditor : Control
             _subscribed.PropertyChanged -= OnDocumentPropertyChanged;
             _subscribed.CurrentPageAnnotationsChanged -= OnAnnotationsChanged;
             _subscribed.AnnotationFocusRequested -= OnAnnotationFocusRequested;
+            _subscribed.Document.Form.Changed -= OnFormValueChanged;
         }
 
         _subscribed = document;
@@ -1085,7 +1096,10 @@ public sealed class PageEditor : Control
             document.PropertyChanged += OnDocumentPropertyChanged;
             document.CurrentPageAnnotationsChanged += OnAnnotationsChanged;
             document.AnnotationFocusRequested += OnAnnotationFocusRequested;
+            document.Document.Form.Changed += OnFormValueChanged;
         }
+
+        RebuildFormFields();
     }
 
     /// <summary>
@@ -1163,8 +1177,13 @@ public sealed class PageEditor : Control
 
         switch (e.PropertyName)
         {
-            case nameof(ToolOptionsViewModel.Tool) when options.Tool != Tool.Text:
-                CommitText();
+            case nameof(ToolOptionsViewModel.Tool):
+                if (options.Tool != Tool.Text)
+                {
+                    CommitText();
+                }
+
+                UpdateFormInteraction();
                 break;
             case nameof(ToolOptionsViewModel.TextColor) or nameof(ToolOptionsViewModel.TextSize) when _editing is { } text:
                 _editing = text with { ColorHex = options.TextColor, FontSize = TextAnnotation.ClampFontSize(options.TextSize) };
@@ -1186,6 +1205,7 @@ public sealed class PageEditor : Control
         else if (e.PropertyName == nameof(DocumentViewModel.CurrentIndex))
         {
             CommitText();
+            RebuildFormFields();
             InvalidateMeasure();
             RequestRender();
         }
@@ -1196,6 +1216,7 @@ public sealed class PageEditor : Control
     /// </summary>
     private void OnAnnotationsChanged(object? sender, EventArgs e)
     {
+        RebuildFormFields();
         InvalidateMeasure();
         InvalidateVisual();
         RequestRender();

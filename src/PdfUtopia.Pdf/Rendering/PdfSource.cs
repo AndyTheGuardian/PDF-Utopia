@@ -32,6 +32,7 @@ public sealed class PdfSource : IDisposable
     private FpdfFormHandleT? _form;
     private IReadOnlyList<Bookmark>? _bookmarks;
     private int? _formFieldCount;
+    private IReadOnlyList<Core.Forms.FormField>? _formFields;
 
     /// <summary>
     /// Übernimmt ein geladenes PDFium-Dokument.
@@ -107,6 +108,12 @@ public sealed class PdfSource : IDisposable
     public int FormFieldCount => _formFieldCount ??= CountFormFields();
 
     /// <summary>
+    /// Ausfüllbare Felder mit der Lage ihrer sichtbaren Teile in Anzeige-Koordinaten (A50, 7b); leer ohne Formular
+    /// oder bei unlesbarem Formular.
+    /// </summary>
+    public IReadOnlyList<Core.Forms.FormField> FormFields => _formFields ??= ReadFormFields();
+
+    /// <summary>
     /// Inhalt der Datei beim Öffnen, bereinigt um eigene Annotationen und Seitenverlängerungen
     /// (Grundlage für Anzeige und Speichern).
     /// </summary>
@@ -166,6 +173,7 @@ public sealed class PdfSource : IDisposable
     public EditableDocument CreateDocument(int undoLimit = UndoHistory.DefaultLimit)
     {
         var document = new EditableDocument(PageCount, undoLimit);
+        document.Form.Load(FormFields);
         foreach (var (pageNumber, annotations) in SavedAnnotations)
         {
             document.LoadAnnotations(document.Pages[pageNumber - 1].Id, annotations);
@@ -241,7 +249,8 @@ public sealed class PdfSource : IDisposable
     /// <param name="scale">Pixel je Punkt (1 = 72 dpi).</param>
     /// <param name="rotation">Zusätzliche Drehung aus der Bearbeitung.</param>
     /// <returns>Die Pixel.</returns>
-    public RenderedPage Render(int sourcePageNumber, double scale, PageRotation rotation = PageRotation.None)
+    /// <param name="drawForms"><c>false</c>: Formularfelder nicht zeichnen (die Oberfläche zeigt sie als Eingabefelder).</param>
+    public RenderedPage Render(int sourcePageNumber, double scale, PageRotation rotation = PageRotation.None, bool drawForms = true)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(scale);
         return WithPage(sourcePageNumber, page =>
@@ -253,7 +262,7 @@ public sealed class PdfSource : IDisposable
                 (width, height) = (height, width);
             }
 
-            return RenderToPixels(page, _form, width, height, (int)rotation / 90);
+            return RenderToPixels(page, drawForms ? _form : null, width, height, (int)rotation / 90);
         });
     }
 
@@ -398,6 +407,39 @@ public sealed class PdfSource : IDisposable
             ? PdfRect.FromCorners(new PdfPoint(left, -top), new PdfPoint(right, -bottom))
             : null;
     }
+
+    /// <summary>
+    /// Liest die Felder und rechnet die Lage ihrer Widgets in Anzeige-Koordinaten um.
+    /// </summary>
+    private IReadOnlyList<Core.Forms.FormField> ReadFormFields()
+    {
+        try
+        {
+            using var stream = new MemoryStream(_data, writable: false);
+            using var document = Password is { } password
+                ? PdfSharp.Pdf.IO.PdfReader.Open(stream, password, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)
+                : PdfSharp.Pdf.IO.PdfReader.Open(stream, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+            return FormReader.Read(document).Select(raw => raw.Field with
+            {
+                Widgets = raw.Widgets.Where(widget => widget.Page <= PageCount).Select(widget => new Core.Forms.FormWidget(
+                    widget.Page, UserToDisplay(widget.Page, widget.Left, widget.Bottom, widget.Right, widget.Top), widget.OnState)).ToList(),
+            }).Where(field => field.Widgets.Count > 0).ToList();
+        }
+        catch (Exception exception) when (exception is PdfSharp.Pdf.IO.PdfReaderException or InvalidOperationException or NotImplementedException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Rechteck des PDF-Benutzerraums einer Seite in Anzeige-Koordinaten (Seitenbereich und Drehung der Datei).
+    /// </summary>
+    private PdfRect UserToDisplay(int sourcePageNumber, double left, double bottom, double right, double top) => WithPage(sourcePageNumber, page =>
+    {
+        var width = fpdfview.FPDF_GetPageWidthF(page);
+        var height = fpdfview.FPDF_GetPageHeightF(page);
+        return PdfRect.FromCorners(ToDisplay(page, width, height, left, top), ToDisplay(page, width, height, right, bottom));
+    });
 
     /// <summary>
     /// Zählt die Felder des Formulars; eine unlesbare Datei ergibt 0 (sie wird trotzdem angezeigt).

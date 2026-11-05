@@ -749,14 +749,15 @@
                 <Path Classes="icon small" Data="{StaticResource IconClose}" />
               </Button>
               <Path DockPanel.Dock="Left" Classes="icon" Data="{StaticResource IconForm}" Stroke="{DynamicResource AccentBorderBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-              <TextBlock Text="{Binding ActiveDocument.FormNotice, FallbackValue=''}" TextWrapping="Wrap" VerticalAlignment="Center" />
+              <CheckBox DockPanel.Dock="Right" Content="{loc:T Form.Highlight}" IsChecked="{Binding HighlightFormFields}" VerticalAlignment="Center" Margin="12,0,8,0" />
+              <TextBlock Text="{Binding FormNotice}" TextWrapping="Wrap" VerticalAlignment="Center" />
             </DockPanel>
           </Border>
         <ScrollViewer x:Name="PageScroller" Background="{DynamicResource CanvasBrush}" HorizontalScrollBarVisibility="Auto">
           <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="32">
             <Border BoxShadow="0 1 3 0 #30000000, 0 8 24 0 #20000000">
               <StackPanel>
-                <controls:PageEditor Document="{Binding ActiveDocument}" Options="{Binding ToolOptions}" Zoom="{Binding Zoom}" />
+                <controls:PageEditor Document="{Binding ActiveDocument}" Options="{Binding ToolOptions}" Zoom="{Binding Zoom}" HighlightFields="{Binding HighlightFormFields}" />
                 <!-- Fußnoten auf der verlängerten Seite -->
                 <Border Background="#FCFCFD" BorderBrush="#C9CDD8" BorderThickness="0,2,0,0" Padding="40,12,40,18"
                         IsVisible="{Binding ActiveDocument.HasFootnotes, FallbackValue=False}">
