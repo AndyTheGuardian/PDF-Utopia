@@ -78,7 +78,7 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     {
         HasComments = annotations.OfType<CommentAnnotation>().Any();
         HasHighlights = annotations.OfType<HighlightAnnotation>().Any();
-        HasInk = annotations.OfType<InkAnnotation>().Any();
+        HasInk = annotations.Any(annotation => annotation is InkAnnotation or SignatureAnnotation);
         HasShapes = annotations.Any(annotation => annotation is RectangleAnnotation or EllipseAnnotation or LineAnnotation);
         HasText = annotations.OfType<TextAnnotation>().Any();
     }

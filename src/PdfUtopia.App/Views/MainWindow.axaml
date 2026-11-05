@@ -62,6 +62,21 @@
     <Style Selector="Path.icon.small.mirrored">
       <Setter Property="RenderTransform" Value="scale(-0.55, 0.55)" />
     </Style>
+    <!-- Unterschriften in der Optionsleiste: weiß wie Papier, gewählte in der Akzentfarbe umrandet -->
+    <Style Selector="Button.sigChip">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Padding" Value="4,2" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+    </Style>
+    <Style Selector="Button.sigChip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="White" />
+    </Style>
+    <Style Selector="Button.sigChip.selected">
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
     <Style Selector="Border.thumb.marked">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     </Style>
@@ -290,6 +305,9 @@
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Text}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconText}" /><TextBlock Text="{loc:T Tool.Text}" /></StackPanel>
             </RadioButton>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Signature}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconSignature}" /><TextBlock Text="{loc:T Tool.Signature}" /></StackPanel>
+            </RadioButton>
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Eraser}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconEraser}" /><TextBlock Text="{loc:T Tool.Eraser}" /></StackPanel>
             </RadioButton>
@@ -380,6 +398,25 @@
                          IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=ClosedArrow}">
               <Path Classes="icon" Data="{StaticResource IconClosedArrow}" />
             </RadioButton>
+          </StackPanel>
+          <!-- Unterschrift (A49, Mockup v5): gespeicherte Unterschriften als Vorschau, „+ Neue“, „Verwalten…“ -->
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowSignatureOptions}" VerticalAlignment="Center">
+            <TextBlock Text="{loc:T Signature.None}" IsVisible="{Binding HasNoSignature}" Classes="hint" VerticalAlignment="Center" />
+            <ItemsControl ItemsSource="{Binding Signatures}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SignatureChoice">
+                  <Button Classes="sigChip" Classes.selected="{Binding IsSelected}" ToolTip.Tip="{Binding Signature.Name}"
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSignatureCommand}" CommandParameter="{Binding}">
+                    <controls:SignaturePreview Signature="{Binding Signature}" Width="76" Height="24" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="{loc:T Signature.New}" IsVisible="{Binding CanAddSignature}" VerticalAlignment="Center"
+                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NewSignatureCommand}" />
+            <Button Content="{loc:T Signature.Manage}" VerticalAlignment="Center"
+                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ManageSignaturesCommand}" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowArrowEnds}" VerticalAlignment="Center">
             <TextBlock Text="{loc:T Options.ArrowEnds}" Classes="hint" VerticalAlignment="Center" Margin="0,0,4,0" />

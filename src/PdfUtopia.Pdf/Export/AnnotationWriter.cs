@@ -59,6 +59,7 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
             var dictionary = annotation switch
             {
                 InkAnnotation ink => Ink(geometry, ink),
+                SignatureAnnotation signature => Signature(geometry, signature),
                 HighlightAnnotation highlight => Highlight(geometry, highlight),
                 RectangleAnnotation rectangle => Rectangle(geometry, rectangle),
                 CommentAnnotation comment => Comment(geometry, comment, comments.IndexOf(comment) + 1),
@@ -89,23 +90,40 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
     /// <summary>
     /// Freihandstrich mit Glättung und ggf. druckabhängiger Stärke.
     /// </summary>
-    private RawAnnotation Ink(PageGeometry geometry, InkAnnotation ink)
+    private RawAnnotation Ink(PageGeometry geometry, InkAnnotation ink) =>
+        Strokes(geometry, ink.ColorHex, ink.Width, [ink.Points], ink.Smoothing, ink.PressureSensitive);
+
+    /// <summary>
+    /// Unterschrift (A49) als „Ink“-Annotation mit allen Strichen; sichtbar wie Freihand, keine digitale Signatur.
+    /// </summary>
+    private RawAnnotation Signature(PageGeometry geometry, SignatureAnnotation signature) =>
+        Strokes(geometry, signature.ColorHex, signature.Width, signature.Strokes, Core.Signatures.Signature.Smoothing, signature.PressureSensitive);
+
+    /// <summary>
+    /// „Ink“-Annotation aus einem oder mehreren Strichen mit Glättung und ggf. druckabhängiger Stärke.
+    /// </summary>
+    private RawAnnotation Strokes(
+        PageGeometry geometry, string colorHex, double width, IReadOnlyList<IReadOnlyList<StrokePoint>> strokes, double smoothing, bool pressureSensitive)
     {
-        var segments = StrokeGeometry.ToSegments(ink);
-        var maxWidth = segments.Count == 0 ? ink.Width : segments.Max(segment => segment.Width);
-        var bounds = Inflate(BoundsOf(segments), maxWidth / 2 + 1);
-        var content = new ContentBuilder().RoundCaps().StrokeColor(ink.ColorHex);
-        if (ink.PressureSensitive)
+        var strokeSegments = strokes.Select(points => StrokeGeometry.ToSegments(points, smoothing, width, pressureSensitive)).ToList();
+        var all = strokeSegments.SelectMany(segments => segments).ToList();
+        var maxWidth = all.Count == 0 ? width : all.Max(segment => segment.Width);
+        var bounds = Inflate(BoundsOf(all), maxWidth / 2 + 1);
+        var content = new ContentBuilder().RoundCaps().StrokeColor(colorHex);
+        foreach (var segments in strokeSegments)
         {
-            foreach (var segment in segments)
+            if (pressureSensitive)
             {
-                content.LineWidth(segment.Width);
-                DrawSegment(content, bounds, segment, moveFirst: true).Stroke();
+                foreach (var segment in segments)
+                {
+                    content.LineWidth(segment.Width);
+                    DrawSegment(content, bounds, segment, moveFirst: true).Stroke();
+                }
+
+                continue;
             }
-        }
-        else
-        {
-            content.LineWidth(ink.Width);
+
+            content.LineWidth(width);
             for (var i = 0; i < segments.Count; i++)
             {
                 DrawSegment(content, bounds, segments[i], moveFirst: i == 0);
@@ -114,11 +132,15 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
             content.Stroke();
         }
 
-        var annotation = Create("/Ink", geometry, bounds, ink.ColorHex, Appearance(geometry, bounds, content));
+        var annotation = Create("/Ink", geometry, bounds, colorHex, Appearance(geometry, bounds, content));
         var inkList = new PdfArray(document);
-        inkList.Elements.Add(Numbers(ink.Points.SelectMany(point => Coordinates(geometry.ToUser(point.Position)))));
+        foreach (var points in strokes)
+        {
+            inkList.Elements.Add(Numbers(points.SelectMany(point => Coordinates(geometry.ToUser(point.Position)))));
+        }
+
         annotation.Elements["/InkList"] = inkList;
-        annotation.Elements["/BS"] = BorderStyle(ink.Width);
+        annotation.Elements["/BS"] = BorderStyle(width);
         return annotation;
     }
 

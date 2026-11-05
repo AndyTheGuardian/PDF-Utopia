@@ -23,8 +23,8 @@ public static class EraserHitTest
     /// Ob eine Annotation vom Radierer entfernt werden kann.
     /// </summary>
     /// <param name="annotation">Die Annotation.</param>
-    /// <returns><c>true</c> für Marker, Freihand, Formen und Text.</returns>
-    public static bool IsErasable(Annotation annotation) => annotation is InkAnnotation or HighlightAnnotation or RectangleAnnotation or TextAnnotation or LineAnnotation or EllipseAnnotation;
+    /// <returns><c>true</c> für Marker, Freihand, Formen, Text und Unterschriften.</returns>
+    public static bool IsErasable(Annotation annotation) => annotation is InkAnnotation or HighlightAnnotation or RectangleAnnotation or TextAnnotation or LineAnnotation or EllipseAnnotation or SignatureAnnotation;
 
     /// <summary>
     /// Ob der Radierer an einem Punkt die Annotation berührt.
@@ -39,6 +39,7 @@ public static class EraserHitTest
         HighlightAnnotation highlight => DistanceToArea(highlight.Bounds, point) <= radius,
         RectangleAnnotation rectangle => DistanceToOutline(rectangle.Bounds, point) <= radius + rectangle.Width / 2,
         TextAnnotation text => DistanceToArea(text.Bounds, point) <= radius,
+        SignatureAnnotation signature => DistanceToArea(signature.Bounds, point) <= radius,
         LineAnnotation line => HitsLine(line, point, radius + line.Width / 2),
         EllipseAnnotation ellipse => DistanceToEllipse(ellipse.Bounds, point) <= radius + ellipse.Width / 2,
         _ => false,

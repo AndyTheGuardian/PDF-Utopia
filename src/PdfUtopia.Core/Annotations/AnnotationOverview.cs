@@ -48,6 +48,9 @@ public enum AnnotationLabel
 
     /// <summary>Freier Text.</summary>
     Text,
+
+    /// <summary>Unterschrift (A49).</summary>
+    Signature,
 }
 
 /// <summary>
@@ -125,6 +128,7 @@ public static class AnnotationOverview
         {
             HighlightAnnotation highlight => (AnnotationCategory.Highlight, AnnotationLabel.Highlight, Shorten(highlightedText?.Invoke(page, highlight.Bounds) ?? string.Empty)),
             InkAnnotation => (AnnotationCategory.Freehand, AnnotationLabel.Freehand, string.Empty),
+            SignatureAnnotation => (AnnotationCategory.Freehand, AnnotationLabel.Signature, string.Empty),
             RectangleAnnotation => (AnnotationCategory.Shape, AnnotationLabel.Rectangle, string.Empty),
             EllipseAnnotation => (AnnotationCategory.Shape, AnnotationLabel.Ellipse, string.Empty),
             LineAnnotation line => (AnnotationCategory.Shape, line.Arrow == ArrowStyle.None ? AnnotationLabel.Line : AnnotationLabel.Arrow, string.Empty),

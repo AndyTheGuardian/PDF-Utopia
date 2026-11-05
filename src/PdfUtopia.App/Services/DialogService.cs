@@ -7,6 +7,7 @@ using PdfUtopia.App.Localization;
 using PdfUtopia.Core.History;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
+using PdfUtopia.Core.Signatures;
 using PdfUtopia.Pdf.Export;
 
 namespace PdfUtopia.App.Services;
@@ -173,6 +174,10 @@ public sealed class DialogService(Window owner) : IDialogService
     /// <inheritdoc />
     public async Task<InsertChoice?> AskPagesToInsertAsync(InsertRequest request) =>
         await new InsertPagesDialog(this, request).ShowAsync();
+
+    /// <inheritdoc />
+    public async Task<IReadOnlyList<Signature>> EditSignaturesAsync(IReadOnlyList<Signature> signatures, int startSlot, Action<IReadOnlyList<Signature>> persist) =>
+        await new SignatureDialog(this, signatures, startSlot, persist).ShowAsync();
 
     /// <inheritdoc />
     public async Task<SettingsChoice?> EditSettingsAsync(SettingsChoice current)

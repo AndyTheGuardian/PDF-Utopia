@@ -22,6 +22,7 @@ public static class AnnotationBounds
         LineAnnotation line => Inflate(line.Bounds, line.Width / 2),
         CommentAnnotation comment => comment.Bounds,
         TextAnnotation text => text.Bounds,
+        SignatureAnnotation signature => Inflate(signature.Bounds, signature.Width),
         _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
     };
 

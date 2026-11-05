@@ -23,6 +23,9 @@ public enum Tool
     /// <summary>Freier Text (A43).</summary>
     Text,
 
+    /// <summary>Unterschrift (A49).</summary>
+    Signature,
+
     /// <summary>Radierer (Objekt-Radierer).</summary>
     Eraser,
 }

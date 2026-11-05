@@ -177,12 +177,28 @@ So ändern Sie einen Text später (Werkzeug **Text** gewählt):
 
 ---
 
+### Unterschreiben
+1. Werkzeug **Unterschrift** wählen. Beim ersten Mal öffnet sich der Dialog **Unterschriften**.
+2. Im weißen Feld mit Stift oder Maus unterschreiben, einen **Namen** vergeben (z. B. „Unterschrift“ oder „Kürzel“),
+   eine **Farbe** wählen und **Speichern** klicken. Bis zu fünf Unterschriften sind möglich; **Schließen** beendet
+   den Dialog.
+3. In der Optionsleiste die gewünschte Unterschrift anklicken.
+4. Auf die Seite klicken – oder mit gedrückter Maustaste waagerecht ziehen, um die Größe zu bestimmen.
+5. Zum Verschieben die gesetzte Unterschrift mit gedrückter Maustaste an die neue Stelle ziehen.
+
+Über **Verwalten…** ändern oder löschen Sie Unterschriften, **+ Neue** legt eine weitere an.
+
+> **Wichtig:** Die Unterschrift ist ein sichtbares Abbild wie auf Papier, **keine digitale Signatur**. Für Verträge,
+> die eine qualifizierte elektronische Signatur verlangen, reicht sie nicht.
+
+---
+
 ## 6. Radieren
 
 ### Mit dem Radierer-Werkzeug
 1. Werkzeug **Radierer** wählen; in der Optionsleiste die **Größe** einstellen. Ein gestrichelter Kreis zeigt
    sie am Mauszeiger.
-2. Über Marker, Freihandlinien, Formen oder Texte streichen. Was getroffen ist, wird **blass**.
+2. Über Marker, Freihandlinien, Formen, Texte oder Unterschriften streichen. Was getroffen ist, wird **blass**.
 3. Loslassen – die getroffenen Markierungen werden **vollständig** entfernt.
 
 ### Mit dem Radiererende des Stifts

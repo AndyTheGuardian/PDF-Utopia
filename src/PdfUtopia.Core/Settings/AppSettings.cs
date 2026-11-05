@@ -101,6 +101,9 @@ public sealed record AppSettings
     /// <summary>Größte Breite der linken Leiste.</summary>
     public const double MaxSidebarWidth = 420;
 
+    /// <summary>Gewählte Unterschrift (Position in der Liste, A49).</summary>
+    public int SelectedSignature { get; init; }
+
     /// <summary>Standardbreite der linken Leiste.</summary>
     public const double DefaultSidebarWidth = 220;
 
@@ -136,6 +139,7 @@ public sealed record AppSettings
         MarkerHeight = Math.Clamp(MarkerHeight, 8, 30),
         Smoothing = Math.Clamp(Smoothing, 0, 100),
         EraserRadius = EraserHitTest.ClampRadius(EraserRadius),
+        SelectedSignature = Math.Clamp(SelectedSignature, 0, Signatures.Signature.MaxCount - 1),
         SidebarWidth = double.IsFinite(SidebarWidth) ? Math.Clamp(SidebarWidth, MinSidebarWidth, MaxSidebarWidth) : DefaultSidebarWidth,
     };
 

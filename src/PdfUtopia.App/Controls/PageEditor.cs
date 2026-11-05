@@ -9,6 +9,7 @@ using PdfUtopia.App.ViewModels;
 using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Drawing;
 using PdfUtopia.Core.Geometry;
+using PdfUtopia.Core.Signatures;
 using PdfUtopia.Core.Theming;
 using BezierSegment = PdfUtopia.Core.Drawing.BezierSegment;
 
@@ -60,6 +61,8 @@ public sealed class PageEditor : Control
     private DocumentViewModel? _subscribed;
     private ToolOptionsViewModel? _subscribedOptions;
     private TextAnnotation? _movingText;
+    private SignatureAnnotation? _movingSignature;
+    private bool _overSignature;
     private bool _constrain;
     private Guid? _flashId;
     private DateTime _flashStart;
@@ -194,7 +197,8 @@ public sealed class PageEditor : Control
 
         DrawSearchHits(context, document);
 
-        foreach (var annotation in document.CurrentAnnotations.Where(annotation => annotation.Id != _editing?.Id && annotation.Id != _movingText?.Id))
+        foreach (var annotation in document.CurrentAnnotations.Where(annotation =>
+                     annotation.Id != _editing?.Id && annotation.Id != _movingText?.Id && annotation.Id != _movingSignature?.Id))
         {
             var display = ToDisplay(annotation);
             using (context.PushOpacity(_eraserHits.Contains(annotation.Id) ? 0.2 : 1))
@@ -205,6 +209,7 @@ public sealed class PageEditor : Control
 
         DrawSuggestion(context);
         DrawTextFrames(context);
+        DrawSignatureGhost(context);
         DrawFlash(context);
         DrawGesture(context);
         DrawEraserCursor(context);
@@ -244,6 +249,14 @@ public sealed class PageEditor : Control
 
         // Ein Klick neben das Textfeld schließt die Bearbeitung ab
         CommitText();
+
+        // Unterschrift setzen, aber noch keine gespeichert: Unterschriftenfeld öffnen (A49)
+        if (tool == Tool.Signature && Options.SelectedSignature is null && SignatureAt(display) is null)
+        {
+            Options.RequestSignatureDialog();
+            e.Handled = true;
+            return;
+        }
 
         // Sonst wertet die umgebende Bildlaufleiste Stiftbewegungen als Wischgeste und verschiebt die Seite
         e.PreventGestureRecognition();
@@ -316,6 +329,7 @@ public sealed class PageEditor : Control
         _eraserPath.Clear();
         _eraserHits.Clear();
         _movingText = tool == Tool.Text ? TextAt(display) : null;
+        _movingSignature = tool == Tool.Signature ? SignatureAt(display) : null;
         if (tool == Tool.Freehand)
         {
             _recorder.Begin(sample with { Position = ToPage(display), IsEraser = false });
@@ -388,9 +402,13 @@ public sealed class PageEditor : Control
             case Tool.Text:
                 FinishText(document, options);
                 break;
+            case Tool.Signature:
+                FinishSignature(document, options);
+                break;
         }
 
         _movingText = null;
+        _movingSignature = null;
 
         _eraserHits.Clear();
         InvalidateVisual();
@@ -428,6 +446,15 @@ public sealed class PageEditor : Control
             InvalidateVisual();
         }
 
+        // Unterschrift: Vorschau folgt dem Zeiger, über einer gesetzten Unterschrift Verschieben-Zeiger
+        var overSignature = Options?.Tool == Tool.Signature && !eraserEnd && SignatureAt(display) is not null;
+        if (Options?.Tool == Tool.Signature || overSignature != _overSignature)
+        {
+            InvalidateVisual();
+        }
+
+        _overSignature = overSignature;
+
         var previousText = _hoveredText;
         _hoveredText = Options?.Tool == Tool.Text && !eraserEnd ? TextAt(display)?.Id : null;
         if (previousText != _hoveredText)
@@ -438,7 +465,7 @@ public sealed class PageEditor : Control
         var erasing = eraserEnd || Options?.Tool == Tool.Eraser;
         Cursor = _hoveredBadge is not null ? new Cursor(StandardCursorType.Hand)
             : erasing ? new Cursor(StandardCursorType.None)
-            : _hoveredText is not null ? new Cursor(StandardCursorType.SizeAll)
+            : _hoveredText is not null || _overSignature ? new Cursor(StandardCursorType.SizeAll)
             : Options?.Tool == Tool.Text ? new Cursor(StandardCursorType.Ibeam)
             : Options?.Tool is Tool.Select or null ? Cursor.Default
             : new Cursor(StandardCursorType.Cross);
@@ -472,6 +499,9 @@ public sealed class PageEditor : Control
                 break;
             case TextAnnotation text:
                 DrawText(context, text);
+                break;
+            case SignatureAnnotation signature:
+                StrokeRenderer.Draw(context, signature.Strokes, signature.ColorHex, signature.Width, signature.PressureSensitive, Signature.Smoothing);
                 break;
             case LineAnnotation line:
                 DrawLine(context, line);
@@ -580,6 +610,66 @@ public sealed class PageEditor : Control
         {
             context.DrawRectangle(null, pen, ToRect(Inflate(((TextAnnotation)ToDisplay(text)).Bounds, TextHitMargin)), 2, 2);
         }
+    }
+
+    /// <summary>
+    /// Gesetzte Unterschrift an einer Anzeigeposition (die oberste) oder <c>null</c>.
+    /// </summary>
+    private SignatureAnnotation? SignatureAt(PdfPoint display) =>
+        Document?.CurrentAnnotations.OfType<SignatureAnnotation>()
+            .LastOrDefault(signature => Contains(Inflate(((SignatureAnnotation)ToDisplay(signature)).Bounds, TextHitMargin), display));
+
+    /// <summary>
+    /// Halbtransparente Vorschau der gewählten Unterschrift am Zeiger, solange nichts gezogen wird (Mockup v5).
+    /// </summary>
+    private void DrawSignatureGhost(DrawingContext context)
+    {
+        if (_gesture is not null || _overSignature || Options is not { Tool: Tool.Signature, SelectedSignature: { } signature } || _pointer is not { } pointer)
+        {
+            return;
+        }
+
+        var height = signature.HeightFor(Signature.DefaultPlacedWidth);
+        DrawSignature(context, SignatureAnnotation.Place(signature, pointer.X - Signature.DefaultPlacedWidth / 2, pointer.Y - height / 2,
+            Signature.DefaultPlacedWidth, point => point), 0.45);
+    }
+
+    /// <summary>Zeichnet eine Unterschrift (Anzeige-Koordinaten) mit Deckkraft.</summary>
+    private static void DrawSignature(DrawingContext context, SignatureAnnotation signature, double opacity)
+    {
+        using (context.PushOpacity(opacity))
+        {
+            StrokeRenderer.Draw(context, signature.Strokes, signature.ColorHex, signature.Width, signature.PressureSensitive, Signature.Smoothing);
+        }
+    }
+
+    /// <summary>
+    /// Unterschrift-Werkzeug losgelassen: gesetzte Unterschrift verschieben oder neue setzen – per Klick in
+    /// Standardbreite mittig auf den Klickpunkt, per Ziehen in der gezogenen Breite (Seitenverhältnis bleibt).
+    /// </summary>
+    private void FinishSignature(DocumentViewModel document, ToolOptionsViewModel options)
+    {
+        var dragged = Math.Abs(_current.X - _start.X) >= MinDragDistance;
+        if (_movingSignature is { } existing)
+        {
+            if (_current.DistanceTo(_start) < MinDragDistance)
+            {
+                return;
+            }
+
+            var (from, to) = (ToPage(_start), ToPage(_current));
+            document.Document.UpdateAnnotation(document.CurrentPage.Id, existing.Translate(to.X - from.X, to.Y - from.Y));
+            return;
+        }
+
+        if (options.SelectedSignature is not { } signature)
+        {
+            return;
+        }
+
+        var width = dragged ? Math.Max(Signature.MinPlacedWidth, Math.Abs(_current.X - _start.X)) : Signature.DefaultPlacedWidth;
+        var (left, top) = dragged ? (Math.Min(_start.X, _current.X), _start.Y) : (_start.X - width / 2, _start.Y - signature.HeightFor(width) / 2);
+        document.AddAnnotation(SignatureAnnotation.Place(signature, left, top, width, ToPage));
     }
 
     /// <summary>
@@ -887,6 +977,13 @@ public sealed class PageEditor : Control
             case Tool.Comment:
                 DrawRounded(context, new SolidColorBrush(WithAlpha(options.CommentColor, CommentFillAlpha)),
                     new Pen(Brush(DrawingColors.CommentBorder(options.CommentColor)), CommentBorderWidth, new DashStyle([4, 2], 0)), ToRect(DragRect()));
+                break;
+            case Tool.Signature when _movingSignature is { } movingSignature:
+                DrawSignature(context, ((SignatureAnnotation)ToDisplay(movingSignature)).Translate(_current.X - _start.X, _current.Y - _start.Y), 1);
+                break;
+            case Tool.Signature when options.SelectedSignature is { } signature && Math.Abs(_current.X - _start.X) >= MinDragDistance:
+                var placedWidth = Math.Max(Signature.MinPlacedWidth, Math.Abs(_current.X - _start.X));
+                DrawSignature(context, SignatureAnnotation.Place(signature, Math.Min(_start.X, _current.X), _start.Y, placedWidth, point => point), 0.6);
                 break;
             case Tool.Text when _movingText is { } moving:
                 var shown = (TextAnnotation)ToDisplay(moving);

@@ -293,6 +293,23 @@ public sealed class PdfExporterTests : IDisposable
     }
 
     [Fact]
+    public void Save_Signature_IsInkWithAllStrokes()
+    {
+        var signature = new SignatureAnnotation(Guid.NewGuid(), Blue, 4,
+            [[new(new PdfPoint(100, 300), 0.5f), new(new PdfPoint(300, 300), 0.5f)], [new(new PdfPoint(100, 350), 0.5f), new(new PdfPoint(300, 350), 0.5f)]],
+            PressureSensitive: false);
+        var saved = SaveWith(document => document.AddAnnotation(document.Pages[1].Id, signature));
+
+        using var source = PdfSource.Open(saved, importSavedAnnotations: false);
+        var page = source.Render(2, scale: 1);
+        AssertBlue(page.PixelAt(200, 300));
+        AssertBlue(page.PixelAt(200, 350));
+        var ink = Assert.Single(AnnotationsOf(saved, 1));
+        Assert.Equal("/Ink", ink.Elements.GetName("/Subtype"));
+        Assert.Equal(2, ink.Elements.GetArray("/InkList")!.Elements.Count);
+    }
+
+    [Fact]
     public void Save_Ellipse_IsRenderedAsOutline()
     {
         var saved = SaveWith(document =>

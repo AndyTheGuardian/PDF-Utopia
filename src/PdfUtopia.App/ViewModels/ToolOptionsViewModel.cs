@@ -25,6 +25,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
         TextColor = settings.TextColor;
         Shape = settings.Shape;
         ArrowEnds = settings.ArrowEnds;
+        SelectedSignatureIndex = settings.SelectedSignature;
         TextSize = settings.TextSize;
         MarkerColor = settings.MarkerColor;
         FreehandWidth = settings.FreehandWidth;
@@ -43,7 +44,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
 
     /// <summary>Gewähltes Werkzeug.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Title), nameof(Hint), nameof(ShowColorPicker), nameof(ShowMarkerColors), nameof(ShowShapeKinds), nameof(ShowArrowEnds), nameof(ShowWidth),
+    [NotifyPropertyChangedFor(nameof(Title), nameof(Hint), nameof(ShowColorPicker), nameof(ShowMarkerColors), nameof(ShowShapeKinds), nameof(ShowArrowEnds), nameof(ShowSignatureOptions), nameof(ShowWidth),
         nameof(ShowFreehandOptions), nameof(ShowEraserOptions), nameof(CurrentColor), nameof(CurrentWidth), nameof(WidthMinimum),
         nameof(WidthMaximum), nameof(WidthLabel), nameof(WidthText), nameof(ShowPressureHint), nameof(ColorTarget))]
     public partial Tool Tool { get; set; } = Tool.Select;
@@ -72,6 +73,64 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(ShowArrowEnds))]
     public partial ShapeKind Shape { get; set; }
+
+    /// <summary>Gespeicherte Unterschriften zur Auswahl in der Optionsleiste (A49).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<SignatureChoice> Signatures { get; } = [];
+
+    /// <summary>Position der gewählten Unterschrift.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(SelectedSignature))]
+    public partial int SelectedSignatureIndex { get; set; }
+
+    /// <summary>Die gewählte Unterschrift oder <c>null</c>, wenn keine gespeichert ist.</summary>
+    public Core.Signatures.Signature? SelectedSignature =>
+        Signatures.Count == 0 ? null : Signatures[Math.Clamp(SelectedSignatureIndex, 0, Signatures.Count - 1)].Signature;
+
+    /// <summary>Ob die Optionsleiste die Unterschriften zeigt.</summary>
+    public bool ShowSignatureOptions => Tool == Tool.Signature;
+
+    /// <summary>Ob noch Platz für eine weitere Unterschrift ist.</summary>
+    public bool CanAddSignature => Signatures.Count < Core.Signatures.Signature.MaxCount;
+
+    /// <summary>Ob noch keine Unterschrift gespeichert ist.</summary>
+    public bool HasNoSignature => Signatures.Count == 0;
+
+    /// <summary>Wird ausgelöst, wenn das Werkzeug eine Unterschrift braucht, aber keine gespeichert ist.</summary>
+    public event EventHandler? SignatureDialogRequested;
+
+    /// <summary>
+    /// Übernimmt die gespeicherten Unterschriften; die Auswahl bleibt, soweit möglich.
+    /// </summary>
+    /// <param name="signatures">Die Unterschriften.</param>
+    public void SetSignatures(IReadOnlyList<Core.Signatures.Signature> signatures)
+    {
+        Signatures.Clear();
+        for (var i = 0; i < signatures.Count; i++)
+        {
+            Signatures.Add(new SignatureChoice(i, signatures[i]));
+        }
+
+        SelectSignature(Math.Clamp(SelectedSignatureIndex, 0, Math.Max(0, signatures.Count - 1)));
+        OnPropertyChanged(nameof(CanAddSignature));
+        OnPropertyChanged(nameof(HasNoSignature));
+        OnPropertyChanged(nameof(SelectedSignature));
+    }
+
+    /// <summary>
+    /// Wählt eine Unterschrift.
+    /// </summary>
+    /// <param name="index">Ihre Position.</param>
+    public void SelectSignature(int index)
+    {
+        SelectedSignatureIndex = index;
+        foreach (var choice in Signatures)
+        {
+            choice.IsSelected = choice.Index == index;
+        }
+    }
+
+    /// <summary>Bittet um den Unterschriften-Dialog (z. B. Klick auf die Seite ohne gespeicherte Unterschrift).</summary>
+    public void RequestSignatureDialog() => SignatureDialogRequested?.Invoke(this, EventArgs.Empty);
 
     /// <summary>Wo Pfeile ihre Spitzen tragen.</summary>
     [ObservableProperty]
@@ -268,6 +327,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
         CommentColor = CommentColor,
         TextColor = TextColor,
         Shape = Shape,
+        SelectedSignature = SelectedSignatureIndex,
         ArrowEnds = ArrowEnds,
         TextSize = TextAnnotation.ClampFontSize(TextSize),
         MarkerColor = MarkerColor,
@@ -286,11 +346,29 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     protected override void OnPropertyChanged(System.ComponentModel.PropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        if (e.PropertyName is nameof(FreehandColor) or nameof(RectangleColor) or nameof(CommentColor) or nameof(MarkerColor) or nameof(TextColor) or nameof(TextSize) or nameof(Shape) or nameof(ArrowEnds)
+        if (e.PropertyName is nameof(FreehandColor) or nameof(RectangleColor) or nameof(CommentColor) or nameof(MarkerColor) or nameof(TextColor) or nameof(TextSize) or nameof(Shape) or nameof(ArrowEnds) or nameof(SelectedSignatureIndex)
             or nameof(FreehandWidth) or nameof(RectangleWidth) or nameof(MarkerHeight) or nameof(Smoothing)
             or nameof(PressureSensitive) or nameof(EraserRadius))
         {
             Changed?.Invoke(this, EventArgs.Empty);
         }
     }
+}
+
+/// <summary>
+/// Eine gespeicherte Unterschrift zur Auswahl in der Optionsleiste.
+/// </summary>
+/// <param name="index">Position in der Liste.</param>
+/// <param name="signature">Die Unterschrift.</param>
+public sealed partial class SignatureChoice(int index, Core.Signatures.Signature signature) : ObservableObject
+{
+    /// <summary>Position in der Liste.</summary>
+    public int Index { get; } = index;
+
+    /// <summary>Die Unterschrift.</summary>
+    public Core.Signatures.Signature Signature { get; } = signature;
+
+    /// <summary>Ob sie gewählt ist.</summary>
+    [ObservableProperty]
+    public partial bool IsSelected { get; set; }
 }

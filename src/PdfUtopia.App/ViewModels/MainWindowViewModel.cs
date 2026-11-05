@@ -7,6 +7,7 @@ using PdfUtopia.App.Services;
 using PdfUtopia.Core.Geometry;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
+using PdfUtopia.Core.Signatures;
 using PdfUtopia.Pdf;
 using PdfUtopia.Pdf.Export;
 using PdfUtopia.Pdf.Rendering;
@@ -43,6 +44,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly ThemeService _theme;
     private readonly SettingsStore _settingsStore;
+    private readonly SignatureStore _signatureStore;
     private AppSettings _settings;
     private Avalonia.Threading.DispatcherTimer? _thumbnailRenderDelay;
 
@@ -59,12 +61,20 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _theme = theme;
         _settings = settingsStore.Load();
         ToolOptions = new ToolOptionsViewModel(_settings);
+        _signatureStore = new SignatureStore(SignatureStore.PathNextTo(settingsStore.FilePath));
+        ToolOptions.SetSignatures(_signatureStore.Load());
         ToolOptions.Changed += (_, _) => SaveSettings(ToolOptions.ApplyTo(_settings));
-        ToolOptions.PropertyChanged += (_, e) =>
+        ToolOptions.SignatureDialogRequested += async (_, _) => await EditSignaturesAsync(0);
+        ToolOptions.PropertyChanged += async (_, e) =>
         {
             if (e.PropertyName == nameof(ToolOptionsViewModel.Tool))
             {
                 OnPropertyChanged(nameof(CurrentTool));
+                // Ohne gespeicherte Unterschrift öffnet die Wahl des Werkzeugs gleich das Unterschriftenfeld
+                if (ToolOptions.Tool == Tool.Signature && ToolOptions.HasNoSignature)
+                {
+                    await EditSignaturesAsync(0);
+                }
             }
         };
         ColorPicker = new ColorPickerViewModel(_settings.PastelSaturation, _settings.CustomColors, CurrentColorOf);
@@ -434,6 +444,45 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <param name="page">Die angeklickte Seite.</param>
     [RelayCommand]
     private async Task ExtractPageAsync(PageThumbnailViewModel page) => await ExtractAsync(page.Position - 1);
+
+    /// <summary>Öffnet den Dialog „Unterschriften“ (A49).</summary>
+    [RelayCommand]
+    private async Task ManageSignaturesAsync() => await EditSignaturesAsync(ToolOptions.SelectedSignatureIndex);
+
+    /// <summary>Öffnet den Dialog „Unterschriften“ auf dem nächsten freien Platz.</summary>
+    [RelayCommand]
+    private async Task NewSignatureAsync() => await EditSignaturesAsync(ToolOptions.Signatures.Count);
+
+    /// <summary>Wählt eine Unterschrift in der Optionsleiste.</summary>
+    /// <param name="choice">Die Unterschrift.</param>
+    [RelayCommand]
+    private void SelectSignature(SignatureChoice choice) => ToolOptions.SelectSignature(choice.Index);
+
+    /// <summary>
+    /// Zeigt den Unterschriften-Dialog; Änderungen werden sofort gespeichert.
+    /// </summary>
+    private async Task EditSignaturesAsync(int startSlot)
+    {
+        var signatures = await _dialogs.EditSignaturesAsync(ToolOptions.Signatures.Select(choice => choice.Signature).ToList(), startSlot, SaveSignatures);
+        ToolOptions.SetSignatures(signatures);
+    }
+
+    /// <summary>
+    /// Speichert die Unterschriften; ein nicht beschreibbarer Ordner lässt das Programm bedienbar.
+    /// </summary>
+    private void SaveSignatures(IReadOnlyList<Signature> signatures)
+    {
+        try
+        {
+            _signatureStore.Save(signatures);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Unterschriften bleiben für diese Sitzung erhalten
+        }
+
+        ToolOptions.SetSignatures(signatures);
+    }
 
     /// <summary>Wählt alle Seiten der Seitenliste (Strg+A, A48).</summary>
     [RelayCommand]

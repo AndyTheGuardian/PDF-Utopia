@@ -35,6 +35,9 @@ public sealed class RoundTripTests : IDisposable
         new LineAnnotation(Guid.NewGuid(), "#1F9D55", 1, new PdfPoint(300, 760), new PdfPoint(500, 760), Arrow: ArrowStyle.None),
         new LineAnnotation(Guid.NewGuid(), "#C93434", 2, new PdfPoint(300, 780), new PdfPoint(500, 800), Arrow: ArrowStyle.Closed, Ends: ArrowEnds.Both),
         new EllipseAnnotation(Guid.NewGuid(), "#C93434", 2, new PdfRect(320, 600, 180, 90)),
+        new SignatureAnnotation(Guid.NewGuid(), "#1E3A8A", 1.5,
+            [[new(new PdfPoint(320, 700), 0.4f), new(new PdfPoint(380, 660), 0.8f), new(new PdfPoint(420, 700), 0.6f)],
+             [new(new PdfPoint(330, 715), 0.5f), new(new PdfPoint(460, 712), 0.5f)]], PressureSensitive: true),
     ];
 
     [Fact]

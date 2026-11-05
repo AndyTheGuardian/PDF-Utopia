@@ -1,5 +1,6 @@
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
+using PdfUtopia.Core.Signatures;
 using PdfUtopia.Pdf.Export;
 using PdfUtopia.Pdf.Rendering;
 
@@ -100,6 +101,15 @@ public interface IDialogService
     /// <param name="request">Quellen und Vorgaben.</param>
     /// <returns>Die Auswahl (die Datei geht an den Aufrufer über) oder <c>null</c> bei Abbruch.</returns>
     Task<InsertChoice?> AskPagesToInsertAsync(InsertRequest request);
+
+    /// <summary>
+    /// Zeigt den Dialog „Unterschriften“ (A49): bis zu fünf Unterschriften schreiben, benennen und löschen.
+    /// </summary>
+    /// <param name="signatures">Gespeicherte Unterschriften.</param>
+    /// <param name="startSlot">Zuerst gewählter Platz.</param>
+    /// <param name="persist">Speichert die Unterschriften nach jeder Änderung.</param>
+    /// <returns>Die Unterschriften nach dem Schließen.</returns>
+    Task<IReadOnlyList<Signature>> EditSignaturesAsync(IReadOnlyList<Signature> signatures, int startSlot, Action<IReadOnlyList<Signature>> persist);
 
     /// <summary>Zeigt die Einstellungen.</summary>
     /// <param name="current">Aktuelle Werte.</param>

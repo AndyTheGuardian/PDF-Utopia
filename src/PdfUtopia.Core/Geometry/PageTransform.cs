@@ -90,6 +90,11 @@ public static class PageTransform
             HighlightAnnotation highlight => highlight with { Bounds = Rotate(highlight.Bounds, rotation, width, height) },
             RectangleAnnotation rectangle => rectangle with { Bounds = Rotate(rectangle.Bounds, rotation, width, height) },
             CommentAnnotation comment => comment with { Bounds = Rotate(comment.Bounds, rotation, width, height) },
+            SignatureAnnotation signature => signature with
+            {
+                Strokes = signature.Strokes.Select(stroke => (IReadOnlyList<StrokePoint>)stroke
+                    .Select(point => point with { Position = Rotate(point.Position, rotation, width, height) }).ToList()).ToList(),
+            },
             LineAnnotation line => line with { Start = Rotate(line.Start, rotation, width, height), End = Rotate(line.End, rotation, width, height) },
             EllipseAnnotation ellipse => ellipse with { Bounds = Rotate(ellipse.Bounds, rotation, width, height) },
             TextAnnotation text => text with

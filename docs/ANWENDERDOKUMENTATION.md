@@ -141,7 +141,8 @@ dafür wäre ein eigenes Bundle nötig.
 | **Freihand** | freie Linie mit Maus oder Stift | Farbe (Farbwahl), Stärke 1–12, Glättung 0–100 %, druckempfindlich |
 | **Formen** | Rechteck, Ellipse, Linie, Pfeil mit offener oder geschlossener (gefüllter) Spitze aufziehen; Pfeilspitzen am Ende, am Anfang oder an beiden Enden; mit Umschalt rasten Linien in 15°-Schritten ein, Rechteck und Ellipse werden zu Quadrat und Kreis | Form, Lage der Pfeilspitze, Farbe (Farbwahl), Stärke 1–12 (gemeinsam für alle Formen); die Pfeilspitze wächst mit der Stärke |
 | **Text** | freien Text auf die Seite schreiben; klicken (Standardbreite 200 pt) oder die Breite aufziehen | Farbe (Farbwahl, Standard fast Schwarz), Schriftgröße 8–36 pt (Standard 12) |
-| **Radierer** | entfernt berührte Marker, Freihandlinien, Formen und Texte vollständig | Größe 2–40 |
+| **Unterschrift** | gespeicherte Unterschrift auf die Seite setzen: klicken (Breite 150 pt) oder Breite aufziehen; gesetzte Unterschrift ziehen zum Verschieben | Auswahl unter bis zu 5 gespeicherten Unterschriften, „+ Neue“, „Verwalten…“ |
+| **Radierer** | entfernt berührte Marker, Freihandlinien, Formen, Texte und Unterschriften vollständig | Größe 2–40 |
 
 Weitere Regeln:
 
@@ -164,6 +165,28 @@ Weitere Regeln:
   bearbeiteten. Geschrieben wird in Helvetica; Zeichen außerhalb des westeuropäischen Zeichensatzes erscheinen
   in der gespeicherten Datei als „?“ (E5). Auf einer gedrehten Seite steht neuer Text aufrecht und dreht sich
   danach mit der Seite. Gespeichert wird der Text als Standard-Annotation „FreeText“.
+
+### 5.1a Unterschrift
+
+Mit dem Werkzeug **Unterschrift** setzen Sie eine zuvor geschriebene Unterschrift auf die Seite. Ist noch keine
+gespeichert, öffnet die Wahl des Werkzeugs den Dialog **Unterschriften**:
+
+- Links stehen fünf Plätze mit Vorschau, Name und × zum Löschen, darunter „1 von 5“.
+- Rechts liegt das Unterschriftenfeld (weiß, mit Grundlinie und ×). Geschrieben wird mit Stift oder Maus; auf Wunsch
+  folgt die Strichstärke dem Andruck. Farben: Dunkelblau (Standard), Schwarz, Blau, Dunkelrot, Rot. „Feld leeren“
+  beginnt neu, **Speichern** legt die Unterschrift auf dem gewählten Platz ab.
+- Die Unterschriften werden als Linien (nicht als Bild) in `signatures.json` neben der Einstellungsdatei gespeichert
+  und verlassen den Rechner nicht.
+
+In der Optionsleiste wählen Sie die Unterschrift (Vorschau anklicken), legen mit **+ Neue** eine weitere an oder
+öffnen den Dialog mit **Verwalten…**. Über der Seite folgt eine blasse Vorschau dem Mauszeiger. Ein **Klick** setzt
+die Unterschrift 150 pt breit mittig auf den Klickpunkt, **Ziehen** bestimmt die Breite (das Seitenverhältnis
+bleibt). Eine gesetzte Unterschrift lässt sich mit dem Werkzeug verschieben und mit dem Radierer entfernen; jede
+Aktion ist ein Rückgängig-Schritt. Gespeichert wird sie als Standard-Annotation „Ink“ und bleibt in PDF Utopia
+bearbeitbar. In der Anmerkungsübersicht steht sie als „Unterschrift“ (Filter „Freihand“).
+
+> **Wichtig:** Das ist eine **sichtbare** Unterschrift wie auf Papier, **keine digitale (kryptografische)
+> Signatur**. Sie belegt nicht, wer unterschrieben hat, und nicht, dass das Dokument danach unverändert ist.
 
 ### 5.2 Kommentare
 
@@ -420,11 +443,15 @@ Rückgängig-Schritte sowie Farben und Einstellungen der Werkzeuge. Ist die Date
 ungültige Werte, startet PDF Utopia mit den Standardwerten bzw. ersetzt nur die ungültigen Werte. Zum
 Zurücksetzen aller Einstellungen genügt es, die Datei zu löschen, während PDF Utopia geschlossen ist.
 
+Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
+
 ---
 
 ## 8. Datenschutz und Sicherheit
 
 - PDF Utopia arbeitet vollständig lokal; es werden keine Daten übertragen.
+- Unterschriften werden nur lokal in `signatures.json` gespeichert (siehe 7) und lassen sich im Dialog
+  **Unterschriften** jederzeit löschen.
 - Passwörter werden nicht gespeichert. Sie werden nur für die geöffnete Datei im Arbeitsspeicher gehalten.
 - Beim Drucken entsteht eine **ungeschützte** temporäre Kopie im Temp-Ordner des Systems
   („PDF Utopia – *Name*.pdf“). Bei vertraulichen Dokumenten sollte sie nach dem Drucken gelöscht werden.

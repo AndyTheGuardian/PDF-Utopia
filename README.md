@@ -14,6 +14,7 @@ weiterbearbeiten.
   Glättung.
 - **Radierer:** als Werkzeug oder über das Radiererende des Stifts.
 - **Seiten:** per Drag & Drop umsortieren, drehen, löschen, leere Seiten einfügen – auch mehrere Seiten auf einmal (Strg/Umschalt+Klick).
+- **Unterschrift:** bis zu fünf Unterschriften mit Stift oder Maus schreiben und als Stempel auf Seiten setzen (sichtbar, keine digitale Signatur).
 - **Anmerkungsübersicht:** alle Anmerkungen nach Seiten, mit Filter; ein Klick springt hin.
 - **Lesezeichen:** Inhaltsverzeichnis der Datei als Baum zum Springen; beim Speichern bleibt es erhalten.
 - **Extrahieren:** Seitenauswahl wie `2`, `4-8` oder `2,4,8,13-15`, mit Vorschau.
