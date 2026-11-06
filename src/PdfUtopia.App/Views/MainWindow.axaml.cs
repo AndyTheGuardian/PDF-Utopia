@@ -1,3 +1,4 @@
+using Avalonia.VisualTree;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -55,7 +56,11 @@ public sealed partial class MainWindow : Window
                 PageListScroller.Focus();
             },
             (from, to) => ViewModel?.ActiveDocument?.MovePage(from, to));
-        AddHandler(DragDrop.DragLeaveEvent, (_, _) => _thumbnailDrag.HideInsertLine());
+        AddHandler(DragDrop.DragLeaveEvent, (_, _) =>
+        {
+            _thumbnailDrag.HideInsertLine();
+            _thumbnailDrag.UpdateAutoScroll(null);
+        });
         DataContextChanged += (_, _) => OnViewModelChanged();
     }
 
@@ -286,10 +291,12 @@ public sealed partial class MainWindow : Window
         if (isFile && IsOverPageList(e))
         {
             _thumbnailDrag.ShowInsertLine(e.GetPosition(ThumbnailList).Y);
+            _thumbnailDrag.UpdateAutoScroll(ThumbnailList.FindAncestorOfType<ScrollViewer>() is { } viewer ? e.GetPosition(viewer) : null);
         }
         else
         {
             _thumbnailDrag.HideInsertLine();
+            _thumbnailDrag.UpdateAutoScroll(null);
         }
     }
 
@@ -300,6 +307,7 @@ public sealed partial class MainWindow : Window
     private async void OnFileDrop(object? sender, DragEventArgs e)
     {
         _thumbnailDrag.HideInsertLine();
+        _thumbnailDrag.UpdateAutoScroll(null);
         var paths = e.DataTransfer.TryGetFiles()?.Select(item => item.TryGetLocalPath()).OfType<string>().ToList();
         if (paths is not { Count: > 0 } || ViewModel is not { } viewModel)
         {
@@ -371,6 +379,9 @@ public sealed partial class MainWindow : Window
     /// Setzt den Fokus in das Suchfeld (Menü „Suchen“, Strg+F).
     /// </summary>
     private void OnFindClick(object? sender, RoutedEventArgs e) => FocusSearch();
+
+    /// <summary>Farbwahl geschlossen: einem gerade bearbeiteten Text den Fokus zurückgeben (P10).</summary>
+    private void OnColorFlyoutClosed(object? sender, EventArgs e) => Editor.ResumeTextEditing();
 
     /// <summary>Schließt die Stempelauswahl, sobald ein Stempel gewählt oder „+ Eigener Text…“ angeklickt ist.</summary>
     private void OnStampChosen(object? sender, RoutedEventArgs e) =>

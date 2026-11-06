@@ -4,6 +4,7 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using PdfUtopia.App.Localization;
 using PdfUtopia.App.ViewModels;
 using PdfUtopia.Core.Annotations;
@@ -789,20 +790,25 @@ public sealed partial class PageEditor : Control
                 InvalidateVisual();
             }
         };
-        editor.KeyDown += (_, e) =>
+        // Esc vor dem Textfeld abfangen: es verarbeitet die Taste sonst selbst und die Bearbeitung bliebe offen
+        editor.AddHandler(KeyDownEvent, (_, e) =>
         {
             if (e.Key == Key.Escape)
             {
                 e.Handled = true;
                 CommitText();
             }
-        };
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
         editor.LostFocus += (_, _) =>
         {
-            if (editor == _textEditor)
+            // Erst nach dem Fokuswechsel prüfen, wohin er gegangen ist
+            Dispatcher.UIThread.Post(() =>
             {
-                CommitText();
-            }
+                if (editor == _textEditor && !editor.IsKeyboardFocusWithin && !FocusStaysWithTextOptions())
+                {
+                    CommitText();
+                }
+            }, DispatcherPriority.Input);
         };
         _textEditor = editor;
         ApplyTextStyle();
@@ -815,6 +821,41 @@ public sealed partial class PageEditor : Control
             editor.CaretIndex = editor.Text?.Length ?? 0;
         }, DispatcherPriority.Loaded);
         InvalidateVisual();
+    }
+
+    /// <summary>
+    /// Ob der Fokus beim Bearbeiten eines Textes nur zu Farbe oder Schriftgröße gewechselt ist (Optionsleiste,
+    /// Farbwahl im Aufklappfeld oder ein anderes Fenster). Dann bleibt die Bearbeitung offen, damit die Änderung für
+    /// den Text gilt (P10); ein Klick auf die Seite oder Speichern schließt sie ab.
+    /// </summary>
+    private bool FocusStaysWithTextOptions()
+    {
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not Visual focused)
+        {
+            return true;
+        }
+
+        return focused.GetSelfAndVisualAncestors().Any(visual =>
+            visual is Avalonia.Controls.Primitives.PopupRoot or Avalonia.Controls.Primitives.OverlayPopupHost
+            || (visual as Control)?.Name == "ToolOptionsBar");
+    }
+
+    /// <summary>
+    /// Gibt dem gerade bearbeiteten Text den Fokus zurück, z. B. nach dem Schließen der Farbwahl, damit man direkt
+    /// weitertippen kann (P10).
+    /// </summary>
+    public void ResumeTextEditing()
+    {
+        if (_textEditor is { } editor)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (editor == _textEditor)
+                {
+                    editor.Focus();
+                }
+            }, DispatcherPriority.Background);
+        }
     }
 
     /// <summary>
@@ -1118,6 +1159,7 @@ public sealed partial class PageEditor : Control
             _subscribed.PropertyChanged -= OnDocumentPropertyChanged;
             _subscribed.CurrentPageAnnotationsChanged -= OnAnnotationsChanged;
             _subscribed.AnnotationFocusRequested -= OnAnnotationFocusRequested;
+            _subscribed.CommitEditsRequested -= OnCommitEditsRequested;
             _subscribed.Document.Form.Changed -= OnFormValueChanged;
         }
 
@@ -1127,11 +1169,15 @@ public sealed partial class PageEditor : Control
             document.PropertyChanged += OnDocumentPropertyChanged;
             document.CurrentPageAnnotationsChanged += OnAnnotationsChanged;
             document.AnnotationFocusRequested += OnAnnotationFocusRequested;
+            document.CommitEditsRequested += OnCommitEditsRequested;
             document.Document.Form.Changed += OnFormValueChanged;
         }
 
         RebuildFormFields();
     }
+
+    /// <summary>Übernimmt einen gerade bearbeiteten Text vor dem Speichern, Extrahieren, Drucken oder Schließen.</summary>
+    private void OnCommitEditsRequested(object? sender, EventArgs e) => CommitText();
 
     /// <summary>
     /// Anmerkung aus der Übersicht angesprungen (A45): nach dem Seitenwechsel in den sichtbaren Bereich holen und
@@ -1220,6 +1266,12 @@ public sealed partial class PageEditor : Control
                 _editing = text with { ColorHex = options.TextColor, FontSize = TextAnnotation.ClampFontSize(options.TextSize) };
                 ApplyTextStyle();
                 InvalidateVisual();
+                // Nach der Schriftgröße direkt weitertippen können; die Farbwahl gibt den Fokus erst beim Schließen
+                // zurück, sonst ginge das Aufklappfeld gleich wieder zu
+                if (e.PropertyName == nameof(ToolOptionsViewModel.TextSize))
+                {
+                    ResumeTextEditing();
+                }
                 break;
         }
     }

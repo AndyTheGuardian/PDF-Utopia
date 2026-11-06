@@ -62,6 +62,14 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// <summary>Wird ausgelöst, wenn eine Anmerkung der angezeigten Seite sichtbar gemacht und hervorgehoben werden soll.</summary>
     public event EventHandler<Guid>? AnnotationFocusRequested;
 
+    /// <summary>Wird ausgelöst, bevor gespeichert, extrahiert, gedruckt oder geschlossen wird: laufende Eingaben übernehmen.</summary>
+    public event EventHandler? CommitEditsRequested;
+
+    /// <summary>
+    /// Übernimmt laufende Eingaben (z. B. einen gerade bearbeiteten Text), damit sie mitgespeichert werden.
+    /// </summary>
+    public void CommitEdits() => CommitEditsRequested?.Invoke(this, EventArgs.Empty);
+
     /// <summary>Anmerkungsübersicht (A45).</summary>
     public AnnotationListViewModel AnnotationList { get; }
 

@@ -84,6 +84,13 @@
     <Style Selector="Button.stampColor.selected">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     </Style>
+    <!-- Trenner der linken Leiste (P12): liegt über der Linie, beim Überfahren dezent in der Akzentfarbe -->
+    <Style Selector="GridSplitter.sidebarSplitter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="GridSplitter.sidebarSplitter:pointerover">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
     <Style Selector="Border.formBar">
       <Setter Property="Margin" Value="12,10,12,0" />
       <Setter Property="Padding" Value="12,6" />
@@ -369,7 +376,7 @@
     </Border>
 
     <!-- Werkzeugoptionen -->
-    <Border DockPanel.Dock="Top" Classes="bar" Background="{DynamicResource Surface2Brush}" Padding="12,6" MinHeight="40">
+    <Border x:Name="ToolOptionsBar" DockPanel.Dock="Top" Classes="bar" Background="{DynamicResource Surface2Brush}" Padding="12,6" MinHeight="40">
       <Grid ColumnDefinitions="Auto,*">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" DataContext="{Binding ToolOptions}" x:DataType="vm:ToolOptionsViewModel">
           <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -379,7 +386,7 @@
                     Background="{Binding CurrentColor, Converter={StaticResource HexToBrush}}" ToolTip.Tip="{Binding CurrentColor}"
                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PrepareColorPickerCommand}" CommandParameter="{Binding ColorTarget}">
               <Button.Flyout>
-                <Flyout Placement="BottomEdgeAlignedLeft">
+                <Flyout Placement="BottomEdgeAlignedLeft" Closed="OnColorFlyoutClosed">
                   <views:ColorPickerView DataContext="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ColorPicker}" />
                 </Flyout>
               </Button.Flyout>
@@ -575,6 +582,12 @@
 
     <!-- Statusleiste -->
     <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="12,4">
+      <!-- Alle Texte senkrecht mittig, damit sie neben Ansichtsknöpfen und Zoomfeld auf einer Grundlinie stehen (P15) -->
+      <Border.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+      </Border.Styles>
       <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="10">
           <TextBlock Classes="hint" Text="{Binding PageStatus}" />
@@ -846,7 +859,8 @@
           </DockPanel>
         </Border>
 
-        <GridSplitter Grid.Column="1" Width="5" Background="Transparent" ResizeDirection="Columns" DragCompleted="OnSidebarResized"
+        <GridSplitter Grid.Column="1" Classes="sidebarSplitter" Width="11" Margin="-6,0,0,0" ZIndex="1" ResizeDirection="Columns"
+                      DragCompleted="OnSidebarResized" Cursor="SizeWestEast"
                       ToolTip.Tip="{loc:T Sidebar.Resize}" />
         <DockPanel Grid.Column="2">
           <!-- Hinweis auf Seiten ohne Text (A53, Mockup v9) -->
@@ -878,7 +892,7 @@
           <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="32">
             <Border BoxShadow="0 1 3 0 #30000000, 0 8 24 0 #20000000">
               <StackPanel>
-                <controls:PageEditor Document="{Binding ActiveDocument}" Options="{Binding ToolOptions}" Zoom="{Binding Zoom}" HighlightFields="{Binding HighlightFormFields}" />
+                <controls:PageEditor x:Name="Editor" Document="{Binding ActiveDocument}" Options="{Binding ToolOptions}" Zoom="{Binding Zoom}" HighlightFields="{Binding HighlightFormFields}" />
                 <!-- Fußnoten auf der verlängerten Seite -->
                 <Border Background="#FCFCFD" BorderBrush="#C9CDD8" BorderThickness="0,2,0,0" Padding="40,12,40,18"
                         IsVisible="{Binding ActiveDocument.HasFootnotes, FallbackValue=False}">

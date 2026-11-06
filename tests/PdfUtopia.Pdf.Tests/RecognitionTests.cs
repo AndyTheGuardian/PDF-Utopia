@@ -67,6 +67,26 @@ public sealed class RecognitionTests : IDisposable
     }
 
     [Fact]
+    public void Save_RecognizedLines_AreReadBackInReadingOrder()
+    {
+        // Wörter einer Zeile mit unterschiedlich hohen Boxen (Großbuchstaben, Unterlängen) und eine zweite Zeile
+        RecognizedWord[] words =
+        [
+            new("Erste", new PdfRect(100, 600, 60, 18), 0, 0), new("gquälte", new PdfRect(166, 604, 70, 19), 0, 0),
+            new("Zeile.", new PdfRect(242, 601, 55, 16), 0, 0), new("Zweite", new PdfRect(100, 630, 70, 17), 0, 1),
+            new("Zeile", new PdfRect(176, 631, 50, 16), 0, 1),
+        ];
+        var saved = Save(document => document.SetRecognizedText(new Dictionary<int, RecognizedPage>
+        {
+            [document.Pages[1].Id] = new RecognizedPage(words, PageRotation.None),
+        }));
+
+        using var source = PdfSource.Open(saved);
+        var text = string.Join(' ', source.PageText(2).Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
+        Assert.Contains("Erste gquälte Zeile. Zweite Zeile", text);
+    }
+
+    [Fact]
     public void Save_RedactedWords_AreNotWritten()
     {
         var secret = new PdfRect(100, 600, 120, 16);

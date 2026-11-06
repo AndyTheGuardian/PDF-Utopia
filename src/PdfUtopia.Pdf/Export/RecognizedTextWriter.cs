@@ -18,16 +18,14 @@ namespace PdfUtopia.Pdf.Export;
 internal sealed record PageRecognizedText(int PageIndex, RecognizedPage Text, PageRotation Rotation, double Width, double Height);
 
 /// <summary>
-/// Schreibt erkannten Text als unsichtbare Textebene (Textmodus 3) in eine Seite (A53): je Wort eine Zeile in Helvetica,
-/// auf die Wortbreite gestreckt, damit Markieren, Kopieren und Suchen in jedem Betrachter an der richtigen Stelle wirken.
+/// Schreibt erkannten Text als unsichtbare Textebene (Textmodus 3) in eine Seite (A53): zeilenweise in Helvetica, jedes
+/// Wort auf seine Breite gestreckt, damit Markieren, Kopieren und Suchen in jedem Betrachter an der richtigen Stelle
+/// und in der richtigen Reihenfolge wirken.
 /// </summary>
 internal static class RecognizedTextWriter
 {
     /// <summary>Name der Schrift in den Seitenressourcen.</summary>
     private const string FontName = "/PUocr";
-
-    /// <summary>Anteil der Wortbox, um den die Grundlinie über dem unteren Rand liegt (Unterlängen).</summary>
-    private const double BaselineRatio = 0.2;
 
     /// <summary>
     /// Schreibt den Text in die Seite; der bisherige Seiteninhalt wird in q/Q eingeschlossen.
@@ -43,9 +41,9 @@ internal static class RecognizedTextWriter
         }
 
         var content = new ContentBuilder();
-        foreach (var word in text.Text.Words)
+        foreach (var line in text.Text.Words.GroupBy(word => word.Line))
         {
-            WriteWord(content, geometry, text, word);
+            WriteLine(content, geometry, text, line.ToList());
         }
 
         AddFont(page);
@@ -54,40 +52,65 @@ internal static class RecognizedTextWriter
     }
 
     /// <summary>
-    /// Ein Wort: Grundlinie und Leserichtung aus der Wortbox, unsichtbar, auf die Wortlänge gestreckt.
+    /// Eine Zeile: alle Wörter auf einer gemeinsamen Grundlinie in einer gemeinsamen Schriftgröße, damit Betrachter
+    /// sie beim Kopieren und Auslesen als eine Zeile in Leserichtung erkennen (P14). Jedes Wort steht an seiner
+    /// erkannten Stelle und ist auf seine Breite gestreckt.
     /// </summary>
-    private static void WriteWord(ContentBuilder content, PageGeometry geometry, PageRecognizedText text, RecognizedWord word)
+    private static void WriteLine(ContentBuilder content, PageGeometry geometry, PageRecognizedText text, IReadOnlyList<RecognizedWord> words)
     {
         var (across, along) = TextAnnotation.Axes(text.Text.Orientation);
-        var bounds = word.Bounds;
-        var horizontal = across.X != 0;
-        var (length, height) = horizontal ? (bounds.Width, bounds.Height) : (bounds.Height, bounds.Width);
-        if (length <= 0 || height <= 0)
+        // Lage der Zeile quer zur Leserichtung: oberster und unterster Rand aller Wörter
+        var corners = words.Select(word => Corners(word.Bounds)).ToList();
+        var top = corners.SelectMany(points => points).Min(point => Dot(point, along));
+        var bottom = corners.SelectMany(points => points).Max(point => Dot(point, along));
+        var height = bottom - top;
+        if (height <= 0)
         {
             return;
         }
 
-        // Ecke links unten in Leserichtung: kleinste Lage in Leserichtung, größte in Zeilenrichtung
-        PdfPoint[] corners = [new(bounds.X, bounds.Y), new(bounds.Right, bounds.Y), new(bounds.Right, bounds.Bottom), new(bounds.X, bounds.Bottom)];
-        var corner = corners.OrderBy(point => Dot(point, across)).ThenByDescending(point => Dot(point, along)).First();
-        var start = new PdfPoint(corner.X - along.X * height * BaselineRatio, corner.Y - along.Y * height * BaselineRatio);
-        var end = new PdfPoint(start.X + across.X * length, start.Y + across.Y * length);
+        // Ober- und Unterlänge der Helvetica füllen die Zeilenhöhe
+        var size = height * 1000 / (Helvetica.Ascent + Helvetica.Descent);
+        var baseline = top + size * Helvetica.Ascent / 1000;
+        content.Op($"BT 3 Tr {FontName} {ContentBuilder.N(size)} Tf");
+        for (var i = 0; i < words.Count; i++)
+        {
+            var from = corners[i].Min(point => Dot(point, across));
+            var to = corners[i].Max(point => Dot(point, across));
+            WriteWord(content, geometry, text, words[i].Text, Point(across, along, from, baseline), Point(across, along, to, baseline), size);
+        }
 
+        content.Op("ET");
+    }
+
+    /// <summary>
+    /// Ein Wort von <paramref name="start"/> bis <paramref name="end"/> auf der Grundlinie (Koordinaten der ungedrehten
+    /// Seite), unsichtbar und auf die Wortlänge gestreckt.
+    /// </summary>
+    private static void WriteWord(ContentBuilder content, PageGeometry geometry, PageRecognizedText text, string word, PdfPoint start, PdfPoint end, double size)
+    {
         var from = geometry.ToUser(PageTransform.Rotate(start, text.Rotation, text.Width, text.Height));
         var to = geometry.ToUser(PageTransform.Rotate(end, text.Rotation, text.Width, text.Height));
         var distance = from.DistanceTo(to);
-        var size = Math.Max(1, height * 0.95);
-        var natural = StandardFont.Width(word.Text, size);
+        var natural = StandardFont.Width(word, size);
         if (distance <= 0 || natural <= 0)
         {
             return;
         }
 
         var (dx, dy) = ((to.X - from.X) / distance, (to.Y - from.Y) / distance);
-        content.Op($"BT 3 Tr {FontName} {ContentBuilder.N(size)} Tf {ContentBuilder.N(Math.Clamp(100 * distance / natural, 1, 1000))} Tz "
+        content.Op($"{ContentBuilder.N(Math.Clamp(100 * distance / natural, 1, 1000))} Tz "
             + $"{ContentBuilder.N(dx)} {ContentBuilder.N(dy)} {ContentBuilder.N(-dy)} {ContentBuilder.N(dx)} {ContentBuilder.N(from.X)} {ContentBuilder.N(from.Y)} Tm "
-            + $"{StandardFont.ToPdfString(word.Text)} Tj ET");
+            + $"{StandardFont.ToPdfString(word)} Tj");
     }
+
+    /// <summary>Punkt aus Lage in Leserichtung und quer dazu (die Achsen stehen senkrecht aufeinander).</summary>
+    private static PdfPoint Point(PdfPoint across, PdfPoint along, double alongText, double acrossText) =>
+        new(across.X * alongText + along.X * acrossText, across.Y * alongText + along.Y * acrossText);
+
+    /// <summary>Ecken eines Rechtecks.</summary>
+    private static PdfPoint[] Corners(PdfRect rect) =>
+        [new(rect.X, rect.Y), new(rect.Right, rect.Y), new(rect.Right, rect.Bottom), new(rect.X, rect.Bottom)];
 
     /// <summary>Trägt Helvetica als Schrift in die Seitenressourcen ein.</summary>
     private static void AddFont(PdfPage page)

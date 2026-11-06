@@ -316,6 +316,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private async Task ExtractAsync(int? clickedIndex)
     {
         var document = ActiveDocument!;
+        document.CommitEdits();
         var preset = document.Selection.IsMultiple || clickedIndex is not null
             ? InsertPlacement.FormatSelection(document.TargetIndices(clickedIndex).Select(index => index + 1))
             : null;
@@ -396,6 +397,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private async Task PrintAsync()
     {
         var document = ActiveDocument!;
+        document.CommitEdits();
         var path = Path.Combine(Path.GetTempPath(), $"PDF Utopia – {Path.GetFileNameWithoutExtension(document.FileName)}.pdf");
         var options = new ExportOptions { FootnoteHeading = Loc.T("Footnotes.Heading"), PasswordMode = PasswordMode.Remove };
         if (!await ConfirmRedactionsAsync(document, document.Document.Pages.ToList(), Loc.T("Redact.Print")))
@@ -833,7 +835,13 @@ public sealed partial class MainWindowViewModel : ObservableObject
             // Unterschriften bleiben für diese Sitzung erhalten
         }
 
+        // Eine neu angelegte Unterschrift gleich wählen (P13)
+        var added = signatures.Count > ToolOptions.Signatures.Count;
         ToolOptions.SetSignatures(signatures);
+        if (added)
+        {
+            ToolOptions.SelectSignature(signatures.Count - 1);
+        }
     }
 
     /// <summary>Hervorhebung der Formularfelder gewählt: merken.</summary>
@@ -1084,6 +1092,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <returns><c>true</c>, wenn gespeichert wurde.</returns>
     private async Task<bool> SaveAsync(DocumentViewModel document)
     {
+        document.CommitEdits();
         if (!await ConfirmRedactionsAsync(document, document.Document.Pages.ToList(), Loc.T("Redact.Save"))
             || await AskSaveOptionsAsync(document) is not { } options)
         {
@@ -1134,6 +1143,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private async Task CloseAsync(DocumentViewModel document)
     {
+        document.CommitEdits();
         if (!await ConfirmCloseAsync(document))
         {
             return;
@@ -1154,6 +1164,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <returns><c>true</c>, wenn geschlossen werden darf.</returns>
     private async Task<bool> ConfirmCloseAsync(DocumentViewModel document)
     {
+        document.CommitEdits();
         if (!document.Document.IsModified)
         {
             return true;
