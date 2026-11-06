@@ -95,7 +95,7 @@ dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:Pub
 | `testdata/` | Erzeugte Test-PDFs, darunter eine passwortgeschützte, eine mit Lesezeichen und eine mit Formular |
 | `mockups/` | Abgenommene HTML-Mockups der Oberfläche |
 | `spikes/PressureProbe` | Prototyp zum Prüfen von Stift-Andruck und Radiererende |
-| `docs/` | Anwenderdokumentation, Benutzerhandbuch und Funktionsübersicht |
+| `docs/` | Anwender-, Benutzer- und Entwicklerdokumentation, Funktionsübersicht, Abnahme-Checkliste |
 | `SPECS.md` | Ursprüngliche Spezifikation |
 | `OFFENE-PUNKTE.md` | Getroffene Annahmen, bekannte Einschränkungen und erledigte Punkte |
 
@@ -105,6 +105,8 @@ dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:Pub
 - [Anwenderdokumentation](docs/ANWENDERDOKUMENTATION.md): Installation, Bedienkonzept, Tastenkürzel,
   Einstellungen, Datenschutz, Einschränkungen
 - [Funktionsübersicht](docs/FUNKTIONSUEBERSICHT.md): verdichteter Entwicklungsverlauf, alle Funktionen nach Phasen
+- [Entwicklerdokumentation](docs/ENTWICKLERDOKUMENTATION.md): Architektur, Kernkonzepte, Lesen und Schreiben von Dateien,
+  Oberfläche, Tests, neue Anmerkungsarten, Konventionen und Fallstricke
 - [Offene Punkte](OFFENE-PUNKTE.md): Entscheidungen und Annahmen aus der Entwicklung
 
 ## Verwendete Bibliotheken

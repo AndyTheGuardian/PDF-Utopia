@@ -1,6 +1,6 @@
 # PDF Utopia – Anwenderdokumentation
 
-Stand: 2026-11-03
+Stand: 2026-11-06
 
 Diese Dokumentation ist das Nachschlagewerk zu PDF Utopia: Voraussetzungen, Installation, Funktionsumfang,
 die Regeln hinter den Funktionen, gespeicherte Daten und bekannte Einschränkungen. Wie man die einzelnen
@@ -166,32 +166,29 @@ Weitere Regeln:
   in der gespeicherten Datei als „?“ (E5). Auf einer gedrehten Seite steht neuer Text aufrecht und dreht sich
   danach mit der Seite. Gespeichert wird der Text als Standard-Annotation „FreeText“.
 
-### 5.0 Formulare
+### 5.2 Unterschrift
 
-Enthält eine Datei ein PDF-Formular (AcroForm), zeigt PDF Utopia über der Seite den Hinweis „Dieses Dokument
-enthält ein Formular mit N Feldern.“; das × schließt ihn für dieses Dokument.
-Die Felder werden mit ihren aktuellen Werten angezeigt.
+Mit dem Werkzeug **Unterschrift** setzen Sie eine zuvor geschriebene Unterschrift auf die Seite. Ist noch keine
+gespeichert, öffnet die Wahl des Werkzeugs den Dialog **Unterschriften**:
 
-**Ausfüllen:** Im Werkzeug **Auswählen** lassen sich Textfelder (ein- und mehrzeilig, mit Höchstlänge),
-Kontrollkästchen, Optionsfelder, Klapplisten und Auswahllisten direkt auf der Seite bearbeiten. Mit einem anderen
-Werkzeug sind die Felder gesperrt, der Hinweis nennt dann „Zum Ausfüllen das Werkzeug ‚Auswählen‘ wählen“. Der
-Schalter **Felder hervorheben** in der Hinweisleiste hinterlegt die Felder dezent in der Akzentfarbe; die
-Einstellung wird gespeichert (Standard: an). **Tab** springt zum nächsten Feld der Seite, in Leserichtung von
-oben nach unten und links nach rechts. Schreibgeschützte Felder sind grau und nicht bearbeitbar. Text wird beim
-Verlassen des Felds übernommen. Jede Feldänderung ist ein Rückgängig-Schritt (Strg+Z).
+- Links stehen fünf Plätze mit Vorschau, Name und × zum Löschen, darunter „1 von 5“.
+- Rechts liegt das Unterschriftenfeld (weiß, mit Grundlinie und ×). Geschrieben wird mit Stift oder Maus; auf Wunsch
+  folgt die Strichstärke dem Andruck. Farben: Dunkelblau (Standard), Schwarz, Blau, Dunkelrot, Rot. „Feld leeren“
+  beginnt neu, **Speichern** legt die Unterschrift auf dem gewählten Platz ab.
+- Die Unterschriften werden als Linien (nicht als Bild) in `signatures.json` neben der Einstellungsdatei gespeichert
+  und verlassen den Rechner nicht.
 
-Beim **Speichern** und **Extrahieren** bleibt das Formular ausfüllbar: Felder gelöschter bzw. nicht extrahierter
-Seiten entfallen, gleichnamige Felder aus eingefügten Dateien werden umbenannt („Name_2“), damit sie keinen
-gemeinsamen Wert bekommen. Geänderte Werte bekommen ein neues Erscheinungsbild in Helvetica, damit jeder
-PDF-Betrachter sie zeigt; unveränderte Felder bleiben, wie sie waren.
+In der Optionsleiste wählen Sie die Unterschrift (Vorschau anklicken), legen mit **+ Neue** eine weitere an oder
+öffnen den Dialog mit **Verwalten…**. Über der Seite folgt eine blasse Vorschau dem Mauszeiger. Ein **Klick** setzt
+die Unterschrift 150 pt breit mittig auf den Klickpunkt, **Ziehen** bestimmt die Breite (das Seitenverhältnis
+bleibt). Eine gesetzte Unterschrift lässt sich mit dem Werkzeug verschieben und mit dem Radierer entfernen; jede
+Aktion ist ein Rückgängig-Schritt. Gespeichert wird sie als Standard-Annotation „Ink“ und bleibt in PDF Utopia
+bearbeitbar. In der Anmerkungsübersicht steht sie als „Unterschrift“ (Filter „Freihand“).
 
-Einschränkungen: Die Miniaturen zeigen bis zum Speichern die ursprünglichen Werte. Textfelder auf Seiten, die
-schon in der Datei gedreht sind, werden beim Bearbeiten nicht mitgedreht. Formulare eingefügter Seiten werden
-angezeigt, lassen sich aber erst nach Speichern und erneutem Öffnen ausfüllen. Nicht unterstützt werden
-XFA-Formulare, JavaScript (Berechnungen, Prüfungen, Formate), Schaltflächen mit Aktionen und digitale
-Signaturfelder; eigene Schriften des Formulars werden für neue Feldinhalte durch Helvetica ersetzt.
+> **Wichtig:** Das ist eine **sichtbare** Unterschrift wie auf Papier, **keine digitale (kryptografische)
+> Signatur**. Sie belegt nicht, wer unterschrieben hat, und nicht, dass das Dokument danach unverändert ist.
 
-### 5.0a Stempel und Bilder
+### 5.3 Stempel und Bilder
 
 Mit dem Werkzeug **Stempel** setzen Sie einen Stempel oder ein Bild auf die Seite. Die Optionsleiste enthält:
 
@@ -225,7 +222,33 @@ Standard-Annotation „Stamp“ mit eigenem Erscheinungsbild (Text in Helvetica,
 Zeichensatzes erscheinen als „?“, E5) und sind in PDF Utopia wieder bearbeitbar. In der Anmerkungsübersicht stehen
 sie unter „Formen“.
 
-### 5.0c Texterkennung
+### 5.4 Schwärzen
+
+Mit dem Werkzeug **Schwärzen** markieren Sie Bereiche, deren Inhalt beim Speichern endgültig entfernt wird:
+
+- **Bereich aufziehen:** Die Markierung erscheint rot gestrichelt und schraffiert; der Inhalt darunter bleibt bis zum
+  Speichern erkennbar, damit Sie prüfen können, was verschwindet. Eine angeklickte Markierung hat einen
+  durchgezogenen Rahmen; **Entf** entfernt sie, **Esc** hebt die Auswahl auf. Auch Radierer und Rückgängig wirken.
+- **Suchen und schwärzen:** Begriff in die Optionsleiste eingeben; daneben steht die Trefferzahl („13 Fundstellen auf
+  13 Seiten“). **Alle markieren** (oder Enter) legt über jede Fundstelle im Dokument eine Markierung – ein
+  Rückgängig-Schritt. Groß-/Kleinschreibung spielt keine Rolle. Gesucht wird nur in der Textebene; gescannte Seiten
+  ohne Text haben keine Treffer.
+- Die Optionsleiste zeigt rot, wie viele Bereiche im Dokument markiert sind; in der Anmerkungsübersicht stehen sie als
+  „Schwärzung“ unter „Formen“.
+
+**Anwenden:** Beim **Speichern unter**, **Extrahieren** und **Drucken** fragt der Dialog „Schwärzungen anwenden“
+nach, wenn die zu schreibenden Seiten Markierungen enthalten. Jede betroffene Seite wird dann mit Anmerkungen und
+Formularfeldern in 300 dpi als Bild gerendert, die Bereiche werden schwarz in die Bildpunkte geschrieben, und die
+Seite wird durch dieses Bild ersetzt. Dadurch bleibt unter der Schwärzung nichts übrig – auch kein kopierbarer Text.
+
+Folgen für die geschwärzten Seiten: Text ist nicht mehr auswählbar oder durchsuchbar; Formularfelder, Links und
+Anmerkungen (auch eigene) sind nur noch Teil des Bildes; die Seite ist danach ungedreht in ihrer angezeigten Größe
+gespeichert. Die Strukturinformationen des Dokuments (Tagged PDF) werden entfernt, weil sie Text enthalten können.
+Nicht geschwärzt werden Dokumenteigenschaften (Titel, Autor), Lesezeichen-Texte und Dateianhänge. Die Datei wird
+größer (etwa 0,1–2 MB je Seite, je nach Inhalt), und das Speichern dauert einige Sekunden je Seite. Die Originaldatei
+bleibt unverändert.
+
+### 5.5 Texterkennung
 
 Gescannte Seiten haben oft keine Textebene: Sie lassen sich nicht durchsuchen, markierter Text ist leer, und
 „Suchen und schwärzen“ findet nichts. Die **Texterkennung** (Bearbeiten → Texterkennung…) liest den Text solcher
@@ -253,55 +276,32 @@ Seiten mit dem freien Programm **Tesseract**.
 - **Grenzen:** Zeichen außerhalb des westeuropäischen Zeichensatzes erscheinen in der Textebene als „?“ (E5);
   Handschrift, sehr kleine oder schlecht gescannte Schrift werden unzuverlässig erkannt.
 
-### 5.0b Schwärzen
+### 5.6 Formulare
 
-Mit dem Werkzeug **Schwärzen** markieren Sie Bereiche, deren Inhalt beim Speichern endgültig entfernt wird:
+Enthält eine Datei ein PDF-Formular (AcroForm), zeigt PDF Utopia über der Seite den Hinweis „Dieses Dokument
+enthält ein Formular mit N Feldern.“; das × schließt ihn für dieses Dokument.
+Die Felder werden mit ihren aktuellen Werten angezeigt.
 
-- **Bereich aufziehen:** Die Markierung erscheint rot gestrichelt und schraffiert; der Inhalt darunter bleibt bis zum
-  Speichern erkennbar, damit Sie prüfen können, was verschwindet. Eine angeklickte Markierung hat einen
-  durchgezogenen Rahmen; **Entf** entfernt sie, **Esc** hebt die Auswahl auf. Auch Radierer und Rückgängig wirken.
-- **Suchen und schwärzen:** Begriff in die Optionsleiste eingeben; daneben steht die Trefferzahl („13 Fundstellen auf
-  13 Seiten“). **Alle markieren** (oder Enter) legt über jede Fundstelle im Dokument eine Markierung – ein
-  Rückgängig-Schritt. Groß-/Kleinschreibung spielt keine Rolle. Gesucht wird nur in der Textebene; gescannte Seiten
-  ohne Text haben keine Treffer.
-- Die Optionsleiste zeigt rot, wie viele Bereiche im Dokument markiert sind; in der Anmerkungsübersicht stehen sie als
-  „Schwärzung“ unter „Formen“.
+**Ausfüllen:** Im Werkzeug **Auswählen** lassen sich Textfelder (ein- und mehrzeilig, mit Höchstlänge),
+Kontrollkästchen, Optionsfelder, Klapplisten und Auswahllisten direkt auf der Seite bearbeiten. Mit einem anderen
+Werkzeug sind die Felder gesperrt, der Hinweis nennt dann „Zum Ausfüllen das Werkzeug ‚Auswählen‘ wählen“. Der
+Schalter **Felder hervorheben** in der Hinweisleiste hinterlegt die Felder dezent in der Akzentfarbe; die
+Einstellung wird gespeichert (Standard: an). **Tab** springt zum nächsten Feld der Seite, in Leserichtung von
+oben nach unten und links nach rechts. Schreibgeschützte Felder sind grau und nicht bearbeitbar. Text wird beim
+Verlassen des Felds übernommen. Jede Feldänderung ist ein Rückgängig-Schritt (Strg+Z).
 
-**Anwenden:** Beim **Speichern unter**, **Extrahieren** und **Drucken** fragt der Dialog „Schwärzungen anwenden“
-nach, wenn die zu schreibenden Seiten Markierungen enthalten. Jede betroffene Seite wird dann mit Anmerkungen und
-Formularfeldern in 300 dpi als Bild gerendert, die Bereiche werden schwarz in die Bildpunkte geschrieben, und die
-Seite wird durch dieses Bild ersetzt. Dadurch bleibt unter der Schwärzung nichts übrig – auch kein kopierbarer Text.
+Beim **Speichern** und **Extrahieren** bleibt das Formular ausfüllbar: Felder gelöschter bzw. nicht extrahierter
+Seiten entfallen, gleichnamige Felder aus eingefügten Dateien werden umbenannt („Name_2“), damit sie keinen
+gemeinsamen Wert bekommen. Geänderte Werte bekommen ein neues Erscheinungsbild in Helvetica, damit jeder
+PDF-Betrachter sie zeigt; unveränderte Felder bleiben, wie sie waren.
 
-Folgen für die geschwärzten Seiten: Text ist nicht mehr auswählbar oder durchsuchbar; Formularfelder, Links und
-Anmerkungen (auch eigene) sind nur noch Teil des Bildes; die Seite ist danach ungedreht in ihrer angezeigten Größe
-gespeichert. Die Strukturinformationen des Dokuments (Tagged PDF) werden entfernt, weil sie Text enthalten können.
-Nicht geschwärzt werden Dokumenteigenschaften (Titel, Autor), Lesezeichen-Texte und Dateianhänge. Die Datei wird
-größer (etwa 0,1–2 MB je Seite, je nach Inhalt), und das Speichern dauert einige Sekunden je Seite. Die Originaldatei
-bleibt unverändert.
+Einschränkungen: Die Miniaturen zeigen bis zum Speichern die ursprünglichen Werte. Textfelder auf Seiten, die
+schon in der Datei gedreht sind, werden beim Bearbeiten nicht mitgedreht. Formulare eingefügter Seiten werden
+angezeigt, lassen sich aber erst nach Speichern und erneutem Öffnen ausfüllen. Nicht unterstützt werden
+XFA-Formulare, JavaScript (Berechnungen, Prüfungen, Formate), Schaltflächen mit Aktionen und digitale
+Signaturfelder; eigene Schriften des Formulars werden für neue Feldinhalte durch Helvetica ersetzt.
 
-### 5.1a Unterschrift
-
-Mit dem Werkzeug **Unterschrift** setzen Sie eine zuvor geschriebene Unterschrift auf die Seite. Ist noch keine
-gespeichert, öffnet die Wahl des Werkzeugs den Dialog **Unterschriften**:
-
-- Links stehen fünf Plätze mit Vorschau, Name und × zum Löschen, darunter „1 von 5“.
-- Rechts liegt das Unterschriftenfeld (weiß, mit Grundlinie und ×). Geschrieben wird mit Stift oder Maus; auf Wunsch
-  folgt die Strichstärke dem Andruck. Farben: Dunkelblau (Standard), Schwarz, Blau, Dunkelrot, Rot. „Feld leeren“
-  beginnt neu, **Speichern** legt die Unterschrift auf dem gewählten Platz ab.
-- Die Unterschriften werden als Linien (nicht als Bild) in `signatures.json` neben der Einstellungsdatei gespeichert
-  und verlassen den Rechner nicht.
-
-In der Optionsleiste wählen Sie die Unterschrift (Vorschau anklicken), legen mit **+ Neue** eine weitere an oder
-öffnen den Dialog mit **Verwalten…**. Über der Seite folgt eine blasse Vorschau dem Mauszeiger. Ein **Klick** setzt
-die Unterschrift 150 pt breit mittig auf den Klickpunkt, **Ziehen** bestimmt die Breite (das Seitenverhältnis
-bleibt). Eine gesetzte Unterschrift lässt sich mit dem Werkzeug verschieben und mit dem Radierer entfernen; jede
-Aktion ist ein Rückgängig-Schritt. Gespeichert wird sie als Standard-Annotation „Ink“ und bleibt in PDF Utopia
-bearbeitbar. In der Anmerkungsübersicht steht sie als „Unterschrift“ (Filter „Freihand“).
-
-> **Wichtig:** Das ist eine **sichtbare** Unterschrift wie auf Papier, **keine digitale (kryptografische)
-> Signatur**. Sie belegt nicht, wer unterschrieben hat, und nicht, dass das Dokument danach unverändert ist.
-
-### 5.2 Kommentare
+### 5.7 Kommentare
 
 - **Absatz anklicken:** PDF Utopia erkennt Absätze aus der Textebene der Seite (Zeichen auf gleicher Höhe bilden
   Zeilen, eng aufeinanderfolgende, ähnlich ausgerichtete Zeilen einen Absatz). Beim Darüberfahren wird der
@@ -316,7 +316,7 @@ bearbeitbar. In der Anmerkungsübersicht steht sie als „Unterschrift“ (Filte
 - **Entfernen:** Mit der Maus über die Fußnotenzahl fahren – sie wird zum ×; ein Klick entfernt den Kommentar
   samt Fußnote, die übrigen werden neu nummeriert.
 
-### 5.3 Seiten
+### 5.8 Seiten
 
 - **Umsortieren** per Drag & Drop in der Seitenliste. Verschobene Seiten zeigen zusätzlich ihre ursprüngliche
   Seitennummer, z. B. „2 (Seite 14)“.
@@ -346,14 +346,14 @@ bearbeitbar. In der Anmerkungsübersicht steht sie als „Unterschrift“ (Filte
 - **Kontextmenü:** Rechtsklick auf eine Miniatur bietet Drehen, Löschen, Extrahieren und „Leere Seite danach
   einfügen“.
 
-### 5.4 Rückgängig und Wiederholen
+### 5.9 Rückgängig und Wiederholen
 
 Rückgängig machen lassen sich alle Änderungen am Dokument: Annotationen anlegen, ändern und entfernen
 (auch radieren), Fußnotentexte, Seiten verschieben, drehen und löschen. Die Anzahl der Schritte ist einstellbar
 (1–500, Standard 50); ältere Schritte werden verworfen. Ein neuer Schritt verwirft alle wiederholbaren Schritte.
 Einstellungen (Farben, Theme, Sprache …) gehören nicht zum Verlauf.
 
-### 5.5 Seiten extrahieren
+### 5.10 Seiten extrahieren
 
 Die Eingabe besteht aus einzelnen Seiten und Bereichen, durch Kommas getrennt, z. B. `2`, `4-8` oder
 `2,4,8,13-15`. Es gelten diese Regeln:
@@ -371,7 +371,7 @@ Die Seitennummern beziehen sich auf die **aktuelle Seitenliste** links – also 
 Extrahierte Seiten übernehmen ihre Drehung und ihre Annotationen. Der Dialog zeigt während der Eingabe eine
 Vorschau der neuen Datei und alle Hinweise.
 
-### 5.5a Seiten aus anderer PDF-Datei einfügen
+### 5.11 Seiten aus anderer PDF-Datei einfügen
 
 Das Gegenstück zum Extrahieren: **Einfügen** (Werkzeugleiste), **Datei → Seiten einfügen…** oder **Strg+I**.
 Alternativ eine PDF-Datei aus dem Dateimanager **auf die Seitenliste ziehen**; eine Linie zeigt, wo die Seiten
@@ -381,7 +381,7 @@ hinkommen. Wird die Datei woanders im Fenster abgelegt, öffnet sie sich wie bis
 |---|---|
 | Quelle | eine Datei („Datei wählen…“) oder ein anderes geöffnetes Dokument. Bei einem geöffneten Dokument wird der zuletzt **gespeicherte** Stand eingefügt; hat es ungespeicherte Änderungen, weist der Dialog darauf hin. |
 | Passwort | erscheint nur bei geschützten Dateien. Es wird nur zum Lesen gebraucht. Bei geöffneten Dokumenten ist es schon bekannt. |
-| Seiten der Quelle | Eingabe wie beim Extrahieren (Regeln in 5.5); vorgewählt sind alle Seiten (z. B. `1-13`). Ein Klick auf eine Miniatur nimmt die Seite in die Auswahl auf oder heraus. Die Knöpfe **Alle**, **Keine** und **Umkehren** wählen alle Seiten, heben die Auswahl auf oder kehren sie um. |
+| Seiten der Quelle | Eingabe wie beim Extrahieren (Regeln in 5.10); vorgewählt sind alle Seiten (z. B. `1-13`). Ein Klick auf eine Miniatur nimmt die Seite in die Auswahl auf oder heraus. Die Knöpfe **Alle**, **Keine** und **Umkehren** wählen alle Seiten, heben die Auswahl auf oder kehren sie um. |
 | Einfügen | **nach der aktuellen Seite** (Standard), am Anfang, am Ende oder nach einer bestimmten Seite. Darunter steht, welche Positionen die neuen Seiten bekommen. |
 
 Nach dem Einfügen wird die erste neue Seite angezeigt. Das Einfügen ist **ein** Rückgängig-Schritt. Die Seiten
@@ -389,7 +389,7 @@ bringen ihre Anmerkungen mit: von PDF Utopia gespeicherte sind danach bearbeitba
 unverändert sichtbar. Eingefügte Seiten lassen sich wie alle anderen umsortieren, drehen, löschen, bearbeiten,
 extrahieren und durchsuchen. Gespeichert wird mit dem Passwortschutz des aktuellen Dokuments.
 
-### 5.6 Speichern
+### 5.12 Speichern
 
 - Es wird immer **„Speichern unter“** verwendet; das Original bleibt unverändert, solange Sie es nicht als Ziel
   wählen. Auch das Speichern über die geöffnete Datei funktioniert.
@@ -407,7 +407,7 @@ extrahieren und durchsuchen. Gespeichert wird mit dem Passwortschutz des aktuell
 - Gespeichert wird erst in eine temporäre Datei, die dann das Ziel ersetzt – ein Fehler beim Schreiben lässt
   eine vorhandene Datei unversehrt.
 
-### 5.7 Wie Annotationen in der PDF-Datei stehen
+### 5.13 Wie Annotationen in der PDF-Datei stehen
 
 Kommentare, Marker, Freihandlinien, Formen und Texte werden als **echte PDF-Annotationen** gespeichert
 (Square, Circle, Line, Highlight, Ink, FreeText) – mit eigenem Erscheinungsbild, damit sie in jedem PDF-Betrachter
@@ -420,12 +420,12 @@ bearbeitbar. Die Seitenverlängerung wird dabei zurückgenommen und beim nächst
 wächst also nicht bei jedem Speichern. Annotationen anderer Programme bleiben unverändert erhalten und werden
 mit angezeigt, sind aber in PDF Utopia nicht bearbeitbar.
 
-### 5.8 Drucken
+### 5.14 Drucken
 
 PDF Utopia speichert das Dokument mit allen Änderungen als temporäre, ungeschützte PDF-Datei und öffnet sie im
 PDF-Betrachter des Systems. Gedruckt wird dort über dessen Druckdialog.
 
-### 5.9 Suche
+### 5.15 Suche
 
 Gesucht wird im Text aller Seiten, ohne Unterscheidung von Groß- und Kleinschreibung. Das Suchfeld zeigt die
 Anzahl der Treffer; **Enter** springt zur nächsten Seite mit Treffern; **×** oder **Esc** beendet die Suche.
@@ -433,7 +433,7 @@ Treffer werden auf der Seite in der Akzentfarbe hinterlegt. Die Deckkraft wird j
 Text darauf gut lesbar bleibt; sehr helle Farben bekommen zusätzlich einen Rahmen. Gescannte Seiten ohne
 Textebene liefern keine Treffer.
 
-### 5.10 Ansichten und Zoom
+### 5.16 Ansichten und Zoom
 
 | Ansicht | Wirkung |
 |---|---|
@@ -448,20 +448,7 @@ wieder eine gewählt wird. Der Zoom lässt sich auch direkt in das Feld zwischen
 Verlassen des Felds ohne Enter stellen den aktuellen Zoom wieder her. Zoomen gibt es nur in der Statusleiste,
 im Menü **Ansicht** und per Tastatur, nicht mehr in der Werkzeugleiste.
 
-### 5.10b Lesezeichen
-
-Hat die Datei Lesezeichen (Inhaltsverzeichnis), erscheint in der linken Leiste der Reiter **Lesezeichen**. Er zeigt
-die Lesezeichen als Baum; die erste Ebene ist aufgeklappt, tiefere Ebenen wie in der Datei vorgegeben. Ein Klick
-zeigt die Zielseite – auch nach Umsortieren oder Einfügen von Seiten. Das Lesezeichen des Kapitels, in dem die
-angezeigte Seite liegt, ist markiert. Lesezeichen, deren Zielseite gelöscht wurde, und Gliederungspunkte ohne Ziel
-sind ausgegraut.
-
-Beim **Speichern** und **Extrahieren** bleiben die Lesezeichen erhalten und zeigen auf die neue Seitenfolge.
-Lesezeichen gelöschter (bzw. nicht extrahierter) Seiten entfallen, ihre Unterpunkte rücken an ihre Stelle;
-Gliederungspunkte ohne Ziel bleiben, solange sie Unterpunkte haben. Lesezeichen lassen sich nicht anlegen oder
-umbenennen.
-
-### 5.10a Anmerkungsübersicht
+### 5.17 Anmerkungsübersicht
 
 Der Reiter **Anmerkungen** in der linken Leiste erscheint, sobald das Dokument Anmerkungen hat; ohne Anmerkungen
 zeigt die Leiste nur die Seitenliste, und nach dem Entfernen der letzten Anmerkung kehrt sie dorthin zurück. Er
@@ -483,13 +470,26 @@ Freihand, Formen, Text). Ein Klick zeigt die Seite, holt die Anmerkung in den si
 Übersicht folgt jeder Änderung, auch Rückgängig, Umsortieren und eingefügten Seiten. Anmerkungen anderer
 Programme erscheinen nicht, weil sie nicht bearbeitbar sind.
 
-### 5.11 Mehrere Dokumente
+### 5.18 Lesezeichen
+
+Hat die Datei Lesezeichen (Inhaltsverzeichnis), erscheint in der linken Leiste der Reiter **Lesezeichen**. Er zeigt
+die Lesezeichen als Baum; die erste Ebene ist aufgeklappt, tiefere Ebenen wie in der Datei vorgegeben. Ein Klick
+zeigt die Zielseite – auch nach Umsortieren oder Einfügen von Seiten. Das Lesezeichen des Kapitels, in dem die
+angezeigte Seite liegt, ist markiert. Lesezeichen, deren Zielseite gelöscht wurde, und Gliederungspunkte ohne Ziel
+sind ausgegraut.
+
+Beim **Speichern** und **Extrahieren** bleiben die Lesezeichen erhalten und zeigen auf die neue Seitenfolge.
+Lesezeichen gelöschter (bzw. nicht extrahierter) Seiten entfallen, ihre Unterpunkte rücken an ihre Stelle;
+Gliederungspunkte ohne Ziel bleiben, solange sie Unterpunkte haben. Lesezeichen lassen sich nicht anlegen oder
+umbenennen.
+
+### 5.19 Mehrere Dokumente
 
 Jedes Dokument öffnet in einem eigenen Tab. Eine bereits geöffnete Datei wird nicht doppelt geöffnet – ihr Tab
 wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten Änderungen fragt PDF Utopia:
 **Speichern**, **Verwerfen** oder **Abbrechen**.
 
-### 5.12 Erscheinungsbild, Sprache und Farben
+### 5.20 Erscheinungsbild, Sprache und Farben
 
 - **Design:** System, Hell oder Dunkel (Menü **Ansicht** oder Einstellungen). Das helle Design verzichtet auf
   reines Weiß, das dunkle ist neutral grau; die PDF-Seite selbst bleibt immer weiß.
