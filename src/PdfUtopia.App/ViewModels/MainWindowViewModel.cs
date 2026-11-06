@@ -63,6 +63,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _settings = settingsStore.Load();
         ToolOptions = new ToolOptionsViewModel(_settings);
         HighlightFormFields = _settings.HighlightFormFields;
+        ViewMode = _settings.ViewMode;
+        FirstPageAlone = _settings.FirstPageAlone;
+        _layoutLoaded = true;
         _signatureStore = new SignatureStore(SignatureStore.PathNextTo(settingsStore.FilePath));
         ToolOptions.SetSignatures(_signatureStore.Load());
         ToolOptions.Changed += (_, _) => SaveSettings(ToolOptions.ApplyTo(_settings));
@@ -137,6 +140,18 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <summary>Ob Formularfelder hervorgehoben werden (A50, Mockup v6); wird gespeichert.</summary>
     [ObservableProperty]
     public partial bool HighlightFormFields { get; set; }
+
+    /// <summary>Seitenansicht (A55); gilt für alle Dokumente und wird gespeichert.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDoubleView))]
+    public partial PageViewMode ViewMode { get; set; }
+
+    /// <summary>Bei Doppelseite: erste Seite allein rechts (A55); wird gespeichert.</summary>
+    [ObservableProperty]
+    public partial bool FirstPageAlone { get; set; }
+
+    /// <summary>Ob eine Doppelseiten-Ansicht gewählt ist („Erste Seite einzeln“ ist dann wählbar).</summary>
+    public bool IsDoubleView => PageLayout.IsDouble(ViewMode);
 
     /// <summary>
     /// Hinweis über der Seite bei Formularen: mit dem Werkzeug „Auswählen“ wie man ausfüllt, sonst dass man dafür
@@ -735,8 +750,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
             return;
         }
 
-        var (width, height) = document.CurrentDisplaySize;
-        PlaceImage(document, loaded, new PdfPoint(width / 2, height / 2));
+        var page = document.CurrentView;
+        var (width, height) = page.DisplaySize;
+        PlaceImage(page, loaded, new PdfPoint(width / 2, height / 2));
     }
 
     /// <summary>
@@ -770,15 +786,16 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// Setzt ein Bild in Standardbreite mit der Mitte auf einen Punkt der Anzeige, schaltet auf das Werkzeug „Stempel“
     /// und wählt das Bild, damit es gleich verschoben werden kann (Drag &amp; Drop, Zwischenablage).
     /// </summary>
-    /// <param name="document">Das Dokument.</param>
+    /// <param name="page">Die Seite (sie wird zur aktuellen Seite).</param>
     /// <param name="loaded">Das Bild.</param>
-    /// <param name="display">Mitte in Anzeige-Koordinaten der aktuellen Seite.</param>
-    public void PlaceImage(DocumentViewModel document, LoadedImage loaded, PdfPoint display)
+    /// <param name="display">Mitte in Anzeige-Koordinaten der Seite.</param>
+    public void PlaceImage(PageViewModel page, LoadedImage loaded, PdfPoint display)
     {
         ReportShrunk(loaded);
-        var image = document.PlaceBox(ImageAnnotation.Create(loaded.Image, display, ImageAnnotation.DefaultWidth));
+        page.Document.Activate(page.Index);
+        var image = page.PlaceBox(ImageAnnotation.Create(loaded.Image, display, ImageAnnotation.DefaultWidth));
         ToolOptions.Tool = Tool.Stamp;
-        document.SelectedBox = image.Id;
+        page.Document.SelectedBox = image.Id;
     }
 
     /// <summary>Meldet in der Statusleiste, dass ein Bild verkleinert wurde (F36).</summary>
@@ -855,6 +872,41 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Hervorhebung der Formularfelder gewählt: merken.</summary>
     partial void OnHighlightFormFieldsChanged(bool value) => SaveSettings(_settings with { HighlightFormFields = value });
+
+    /// <summary>Seitenansicht gewählt: auf alle Dokumente anwenden und merken (A55).</summary>
+    partial void OnViewModeChanged(PageViewMode value) => ApplyLayout();
+
+    /// <summary>„Erste Seite einzeln“ umgeschaltet: auf alle Dokumente anwenden und merken (A55).</summary>
+    partial void OnFirstPageAloneChanged(bool value) => ApplyLayout();
+
+    /// <summary>Wählt eine Seitenansicht (Statusleiste, Menü „Ansicht“).</summary>
+    /// <param name="mode">Die Ansicht.</param>
+    [RelayCommand]
+    private void SetViewMode(PageViewMode mode) => ViewMode = mode;
+
+    /// <summary>Schaltet „Erste Seite einzeln“ um.</summary>
+    [RelayCommand]
+    private void ToggleFirstPageAlone() => FirstPageAlone = !FirstPageAlone;
+
+    /// <summary>Ob Seitenansicht und „Erste Seite einzeln“ aus den Einstellungen übernommen sind.</summary>
+    private bool _layoutLoaded;
+
+    /// <summary>Wendet die Seitenansicht auf alle Dokumente an und speichert sie.</summary>
+    private void ApplyLayout()
+    {
+        // Beim Laden noch nicht speichern: sonst überschreibt der erste Wert den noch nicht gesetzten zweiten
+        if (!_layoutLoaded)
+        {
+            return;
+        }
+
+        foreach (var document in Documents)
+        {
+            document.SetLayout(ViewMode, FirstPageAlone);
+        }
+
+        SaveSettings(_settings with { ViewMode = ViewMode, FirstPageAlone = FirstPageAlone });
+    }
 
     /// <summary>Wählt alle Seiten der Seitenliste (Strg+A, A48).</summary>
     [RelayCommand]
@@ -1056,7 +1108,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             try
             {
                 var source = await Task.Run(() => PdfSource.Open(fullPath, password));
-                Add(new DocumentViewModel(source, _settings.UndoLimit, ThumbnailScale));
+                Add(new DocumentViewModel(source, _settings.UndoLimit, ThumbnailScale, ViewMode, FirstPageAlone));
                 return;
             }
             catch (PdfOpenException exception) when (exception.Error == PdfOpenError.PasswordRequired)

@@ -56,7 +56,20 @@ ein Mockup) vorgelegt und erst nach Freigabe umgesetzt.
    - 7b: Ausfüllen direkt auf der Seite (Text, Kästchen, Optionen, Listen), mit Schalter „Felder hervorheben“,
      Tab-Reihenfolge und Rückgängig je Feld.
 
+8. **Bild und Stempel:** Vorlagen und eigene Stempel mit Datum/Name, Bilder per Datei, Drag & Drop oder
+   Zwischenablage; Verschieben, Größe und Drehung mit Griffen.
+9. **Schwärzen:** Bereiche und Suchtreffer markieren; beim Speichern werden die Seiten als Bild neu aufgebaut.
+10. **Texterkennung:** Tesseract erkennt Text in Scans; er ist durchsuchbar und wird als unsichtbare Textebene
+    gespeichert.
+
+## Phase 4 – Seitenansichten
+
+Entwickelt im Branch `feature/seitenansichten` (A55, Mockup v10).
+
+11. **Seitenansichten:** Einzelseite, Fortlaufend, Doppelseite und Doppelseite fortlaufend, umschaltbar in der
+    Statusleiste und im Menü „Ansicht“; „Erste Seite einzeln“ für Doppelseiten. Bearbeiten auf jeder sichtbaren
+    Seite, Fußnoten unter jeder Seite, nur sichtbare Seiten werden aufgebaut.
+
 ## Noch offen
 
-- Funktion 8 Bild/Stempel, 9 Schwärzen, 10 Texterkennung.
 - Lizenzfrage (F24) und der Test des Radiererendes am Stift (A27), siehe `OFFENE-PUNKTE.md`.

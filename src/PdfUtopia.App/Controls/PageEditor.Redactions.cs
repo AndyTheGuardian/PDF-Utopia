@@ -36,14 +36,14 @@ public sealed partial class PageEditor
         if (IsDrag())
         {
             var redaction = new RedactionAnnotation(Guid.NewGuid(), ToPage(DragRect()));
-            document.AddAnnotation(redaction);
+            Page!.AddAnnotation(redaction);
             document.SelectedBox = redaction.Id;
         }
     }
 
     /// <summary>Oberste Markierung an einer Anzeigeposition.</summary>
     private RedactionAnnotation? RedactionAt(PdfPoint display) =>
-        Document?.CurrentAnnotations.OfType<RedactionAnnotation>()
+        Annotations.OfType<RedactionAnnotation>()
             .LastOrDefault(redaction => Contains(((RedactionAnnotation)ToDisplay(redaction)).Bounds, display));
 
     /// <summary>

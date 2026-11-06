@@ -55,7 +55,7 @@ public sealed partial class PageEditor
     /// <summary>Angeklickter Stempel bzw. angeklicktes Bild der Seite (Anzeige-Koordinaten) oder <c>null</c>.</summary>
     private BoxAnnotation? SelectedBoxDisplay =>
         Options?.Tool == Tool.Stamp && Document is { SelectedBox: { } id } document
-            && document.CurrentAnnotations.FirstOrDefault(annotation => annotation.Id == id) is BoxAnnotation box
+            && Annotations.FirstOrDefault(annotation => annotation.Id == id) is BoxAnnotation box
             ? (BoxAnnotation)ToDisplay(box)
             : null;
 
@@ -127,10 +127,10 @@ public sealed partial class PageEditor
         switch (gesture)
         {
             case BoxGesture.Move or BoxGesture.Resize or BoxGesture.Rotate when preview is not null && _current.DistanceTo(_start) >= 0.5:
-                document.Document.UpdateAnnotation(document.CurrentPage.Id, document.ToPage(preview));
+                document.Document.UpdateAnnotation(PageId, Page!.ToPage(preview));
                 break;
             case BoxGesture.Place:
-                var placed = document.PlaceBox(preview ?? NewBox(_start, DefaultBoxWidth(options)));
+                var placed = Page!.PlaceBox(preview ?? NewBox(_start, DefaultBoxWidth(options)));
                 options.PendingImage = null;
                 document.SelectedBox = placed.Id;
                 break;
@@ -167,7 +167,7 @@ public sealed partial class PageEditor
     /// Oberster Stempel bzw. oberstes Bild an einer Anzeigeposition.
     /// </summary>
     private BoxAnnotation? BoxAt(PdfPoint display) =>
-        Document?.CurrentAnnotations.OfType<BoxAnnotation>().LastOrDefault(box => ((BoxAnnotation)ToDisplay(box)).Contains(display, TextHitMargin));
+        Annotations.OfType<BoxAnnotation>().LastOrDefault(box => ((BoxAnnotation)ToDisplay(box)).Contains(display, TextHitMargin));
 
     /// <summary>
     /// Was unter dem Zeiger liegt: Griffe der Auswahl, eine Anmerkung oder nichts.
@@ -297,9 +297,9 @@ public sealed partial class PageEditor
             return;
         }
 
-        if (e.Key == Key.Delete && document.SelectedBox is { } id && document.CurrentAnnotations.Any(annotation => annotation.Id == id))
+        if (e.Key == Key.Delete && document.SelectedBox is { } id && Annotations.Any(annotation => annotation.Id == id))
         {
-            document.Document.RemoveAnnotation(document.CurrentPage.Id, id);
+            document.Document.RemoveAnnotation(PageId, id);
             document.SelectedBox = null;
             e.Handled = true;
         }
@@ -325,7 +325,7 @@ public sealed partial class PageEditor
     private async void OnImageDrop(object? sender, DragEventArgs e)
     {
         var path = e.DataTransfer.TryGetFiles()?.Select(file => file.TryGetLocalPath()).FirstOrDefault(path => path is not null && ImageLoader.IsSupported(path));
-        if (path is null || Document is not { } document || TopLevel.GetTopLevel(this)?.DataContext is not MainWindowViewModel main)
+        if (path is null || Page is not { } page || TopLevel.GetTopLevel(this)?.DataContext is not MainWindowViewModel main)
         {
             return;
         }
@@ -334,7 +334,7 @@ public sealed partial class PageEditor
         var position = e.GetPosition(this);
         if (await main.LoadImageAsync(path) is { } loaded)
         {
-            main.PlaceImage(document, loaded, new PdfPoint(position.X, position.Y));
+            main.PlaceImage(page, loaded, new PdfPoint(position.X, position.Y));
         }
     }
 }

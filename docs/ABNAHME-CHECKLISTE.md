@@ -117,6 +117,22 @@ und bearbeitbar ist (außer bei Schwärzen – dort ist das Ergebnis endgültig)
 | 10.5 | Speichern, in anderem Betrachter Text markieren/kopieren | Text liegt unsichtbar unter dem Bild, in Leserichtung | ☐ |
 | 10.6 | Tesseract vorübergehend nicht auffindbar (z. B. anderer Rechner) | Dialog „Tesseract nicht gefunden“ mit Installationsweg | ☐ |
 
+## 11. Seitenansichten (Funktion 11, A55) – abgenommen am 2026-11-06
+
+| Nr. | Schritte | Erwartet | ✓ |
+|---|---|---|---|
+| 11.1 | `testdatei.pdf` öffnen, in der Statusleiste nacheinander **Einzelseite**, **Fortlaufend**, **Doppelseite**, **Doppelseite fortlaufend** | Eine Seite / alle untereinander / ein Paar / alle Paare; Seite 1 steht bei Doppelseite allein rechts | ✓ |
+| 11.2 | Menü **Ansicht → Erste Seite einzeln** ausschalten | Paare 1\|2, 3\|4 …; Eintrag nur bei Doppelseite wählbar | ✓ |
+| 11.3 | **Fortlaufend**: mit dem Mausrad scrollen | Statusleiste und Seitenliste folgen der Seite, die die Ansicht füllt; Rahmen um die aktuelle Seite | ✓ |
+| 11.4 | **Fortlaufend**: Miniatur von Seite 10 anklicken, dann **Bild↓**, **Ende**, **Pos1** | Ansicht scrollt jeweils zu der Seite | ✓ |
+| 11.5 | **Doppelseite**: Mausrad am unteren Rand, **Bild↓** / **Bild↑** | Das Paar wird durch das nächste bzw. vorige ersetzt | ✓ |
+| 11.6 | Mit Freihand auf der nicht umrandeten Seite eines Paars zeichnen | Strich erscheint, diese Seite wird aktuell (Rahmen, Statusleiste) | ✓ |
+| 11.7 | **Fortlaufend**: Kommentar auf einer Seite setzen | Fußnote steht unter dieser Seite | ✓ |
+| 11.8 | **Fortlaufend**: aktuelle Seite drehen | Zoom bleibt, die Seite bleibt im Blick | ✓ |
+| 11.9 | Anmerkung einer weit entfernten Seite in der Anmerkungsübersicht anklicken | Ansicht scrollt dorthin, Anmerkung blinkt kurz | ✓ |
+| 11.10 | Fenster schmal ziehen | Ansichtsknöpfe zeigen nur Symbole mit Tooltip; breit wieder mit Namen | ✓ |
+| 11.11 | PDF Utopia neu starten | Gewählte Ansicht und „Erste Seite einzeln“ sind erhalten | ✓ |
+
 ## Ergebnis
 
 - [ ] Alle Punkte bestanden bzw. Abweichungen gemeldet und behoben

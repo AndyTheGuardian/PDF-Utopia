@@ -17,16 +17,18 @@ using BezierSegment = PdfUtopia.Core.Drawing.BezierSegment;
 namespace PdfUtopia.App.Controls;
 
 /// <summary>
-/// Zeigt die aktuelle Seite mit ihren Annotationen und nimmt Eingaben für Marker, Freihand, Formen,
+/// Zeigt eine Seite mit ihren Annotationen und nimmt Eingaben für Marker, Freihand, Formen,
 /// Kommentar, Text und Radierer entgegen. Text wird in einem eingeblendeten Textfeld geschrieben (A43). Die Größe entspricht der angezeigten Seite in Punkten; der Zoom wird von
 /// außen über eine Layout-Transformation angewandt, die Seite aber passend zum Zoom scharf gerendert.
 /// Eingaberegeln aus dem Mockup-Test (A12): nicht an Zeiger-ID oder Gerätetyp gebunden, nur bei Kontakt.
+/// Jeder Editor gehört zu einer Seite (A55); wer auf einer anderen als der aktuellen Seite zu arbeiten beginnt, macht
+/// sie damit zur aktuellen Seite.
 /// </summary>
 public sealed partial class PageEditor : Control
 {
-    /// <summary>Angezeigtes Dokument.</summary>
-    public static readonly StyledProperty<DocumentViewModel?> DocumentProperty =
-        AvaloniaProperty.Register<PageEditor, DocumentViewModel?>(nameof(Document));
+    /// <summary>Angezeigte Seite.</summary>
+    public static readonly StyledProperty<PageViewModel?> PageProperty =
+        AvaloniaProperty.Register<PageEditor, PageViewModel?>(nameof(Page));
 
     /// <summary>Werkzeug und Werkzeugeinstellungen.</summary>
     public static readonly StyledProperty<ToolOptionsViewModel?> OptionsProperty =
@@ -60,6 +62,7 @@ public sealed partial class PageEditor : Control
     private Guid? _hoveredBadge;
     private PdfRect? _suggestedParagraph;
     private DocumentViewModel? _subscribed;
+    private PageViewModel? _subscribedPage;
     private ToolOptionsViewModel? _subscribedOptions;
     private TextAnnotation? _movingText;
     private SignatureAnnotation? _movingSignature;
@@ -76,8 +79,8 @@ public sealed partial class PageEditor : Control
 
     static PageEditor()
     {
-        AffectsMeasure<PageEditor>(DocumentProperty);
-        AffectsRender<PageEditor>(DocumentProperty, OptionsProperty);
+        AffectsMeasure<PageEditor>(PageProperty);
+        AffectsRender<PageEditor>(PageProperty, OptionsProperty);
         FocusableProperty.OverrideDefaultValue<PageEditor>(true);
     }
 
@@ -90,12 +93,27 @@ public sealed partial class PageEditor : Control
         InitializeImageDrop();
     }
 
-    /// <summary>Angezeigtes Dokument.</summary>
-    public DocumentViewModel? Document
+    /// <summary>Angezeigte Seite.</summary>
+    public PageViewModel? Page
     {
-        get => GetValue(DocumentProperty);
-        set => SetValue(DocumentProperty, value);
+        get => GetValue(PageProperty);
+        set => SetValue(PageProperty, value);
     }
+
+    /// <summary>Dokument der Seite.</summary>
+    public DocumentViewModel? Document => Page?.Document;
+
+    /// <summary>Annotationen der Seite.</summary>
+    private IReadOnlyList<Annotation> Annotations => Page?.Annotations ?? [];
+
+    /// <summary>Kennung der Seite.</summary>
+    private int PageId => Page!.PageId;
+
+    /// <summary>Drehung der Seite aus der Bearbeitung.</summary>
+    private PdfUtopia.Core.Pages.PageRotation Rotation => Page!.Page.Rotation;
+
+    /// <summary>Größe der ungedrehten Seite.</summary>
+    private (double Width, double Height) PageSize => Page!.PageSize;
 
     /// <summary>Werkzeug und Werkzeugeinstellungen.</summary>
     public ToolOptionsViewModel? Options
@@ -114,14 +132,14 @@ public sealed partial class PageEditor : Control
     /// <inheritdoc />
     protected override Size MeasureOverride(Size availableSize)
     {
-        if (Document is null)
+        if (Page is null)
         {
             return default;
         }
 
         _textEditor?.Measure(Size.Infinity);
         MeasureFormFields();
-        var (width, height) = Document.CurrentDisplaySize;
+        var (width, height) = Page!.DisplaySize;
         return new Size(width, height);
     }
 
@@ -143,11 +161,15 @@ public sealed partial class PageEditor : Control
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
-        if (change.Property == DocumentProperty)
+        if (change.Property == PageProperty)
         {
+            // Container der Ansicht werden für andere Seiten wiederverwendet: Eingaben der bisherigen Seite abschließen
             CommitText();
-            Subscribe(Document);
+            _gesture = null;
+            (change.OldValue as PageViewModel)?.ReleaseBitmap();
+            Subscribe(Page);
             RequestRender();
+            TakePendingFocus();
         }
         else if (change.Property == OptionsProperty)
         {
@@ -174,6 +196,7 @@ public sealed partial class PageEditor : Control
         }
 
         RequestRender();
+        TakePendingFocus();
     }
 
     /// <inheritdoc />
@@ -184,6 +207,10 @@ public sealed partial class PageEditor : Control
         {
             application.ResourcesChanged -= OnApplicationResourcesChanged;
         }
+
+        // Seite nicht mehr zu sehen: Eingaben übernehmen, Bild freigeben
+        CommitText();
+        Page?.ReleaseBitmap();
     }
 
     /// <summary>
@@ -200,19 +227,19 @@ public sealed partial class PageEditor : Control
     {
         var bounds = new Rect(Bounds.Size);
         context.FillRectangle(Brushes.White, bounds);
-        if (Document is not { } document)
+        if (Page is not { } view)
         {
             return;
         }
 
-        if (document.CurrentBitmap is { } bitmap)
+        if (view.Bitmap is { } bitmap)
         {
             context.DrawImage(bitmap, bounds);
         }
 
-        DrawSearchHits(context, document);
+        DrawSearchHits(context, view);
 
-        foreach (var annotation in document.CurrentAnnotations.Where(annotation =>
+        foreach (var annotation in Annotations.Where(annotation =>
                      annotation.Id != _editing?.Id && annotation.Id != _movingText?.Id && annotation.Id != _movingSignature?.Id
                      && annotation.Id != _boxPreview?.Id))
         {
@@ -245,9 +272,15 @@ public sealed partial class PageEditor : Control
         var point = e.GetCurrentPoint(this);
         var display = ToPoint(point.Position);
         _constrain = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
+        // Auf einer anderen sichtbaren Seite arbeiten: sie wird zur aktuellen Seite (A55)
+        if (Page is { Index: >= 0 and var index } && index != Document.CurrentIndex)
+        {
+            Document.Activate(index);
+        }
+
         if (_hoveredBadge is { } badge && point.Properties.IsLeftButtonPressed)
         {
-            Document.Document.RemoveAnnotation(Document.CurrentPage.Id, badge);
+            Document.Document.RemoveAnnotation(PageId, badge);
             _hoveredBadge = null;
             e.Handled = true;
             return;
@@ -408,25 +441,25 @@ public sealed partial class PageEditor : Control
         switch (tool)
         {
             case Tool.Freehand when _recorder.End() is { } points:
-                document.AddAnnotation(new InkAnnotation(Guid.NewGuid(), options.FreehandColor, options.FreehandWidth, points,
+                Page!.AddAnnotation(new InkAnnotation(Guid.NewGuid(), options.FreehandColor, options.FreehandWidth, points,
                     options.Smoothing / 100.0, options.PressureSensitive));
                 options.PenReportedNoPressure = _recorder.PenWithoutPressure;
                 break;
             case Tool.Marker when Math.Abs(_current.X - _start.X) >= MinDragDistance:
-                document.AddAnnotation(new HighlightAnnotation(Guid.NewGuid(), options.MarkerColor, ToPage(MarkerBand())));
+                Page!.AddAnnotation(new HighlightAnnotation(Guid.NewGuid(), options.MarkerColor, ToPage(MarkerBand())));
                 break;
             case Tool.Shape when DraggedShape(options, Guid.NewGuid(), toPage: true) is { } shape:
-                document.AddAnnotation(shape);
+                Page!.AddAnnotation(shape);
                 break;
             case Tool.Comment when IsDrag():
-                document.AddAnnotation(new CommentAnnotation(Guid.NewGuid(), options.CommentColor, ToPage(DragRect()), Loc.T("Comment.New")));
+                Page!.AddAnnotation(new CommentAnnotation(Guid.NewGuid(), options.CommentColor, ToPage(DragRect()), Loc.T("Comment.New")));
                 break;
             case Tool.Comment when ParagraphAt(_start) is { } paragraph && !IsCommented(paragraph):
                 // Klick ohne Ziehen: erkannten Absatz kommentieren (F21)
-                document.AddAnnotation(new CommentAnnotation(Guid.NewGuid(), options.CommentColor, paragraph, Loc.T("Comment.New")));
+                Page!.AddAnnotation(new CommentAnnotation(Guid.NewGuid(), options.CommentColor, paragraph, Loc.T("Comment.New")));
                 break;
             case Tool.Eraser when _eraserHits.Count > 0:
-                document.RemoveAnnotations(_eraserHits.ToList());
+                Page!.RemoveAnnotations(_eraserHits.ToList());
                 break;
             case Tool.Text:
                 FinishText(document, options);
@@ -457,7 +490,7 @@ public sealed partial class PageEditor : Control
         _eraserPath.Add(display);
         var page = ToPage(display);
         var radius = Options?.EraserRadius ?? EraserHitTest.DefaultRadius;
-        foreach (var hit in Document!.CurrentAnnotations.Where(annotation => EraserHitTest.IsErasable(annotation) && EraserHitTest.Hits(annotation, page, radius)))
+        foreach (var hit in Annotations.Where(annotation => EraserHitTest.IsErasable(annotation) && EraserHitTest.Hits(annotation, page, radius)))
         {
             _eraserHits.Add(hit.Id);
         }
@@ -469,7 +502,7 @@ public sealed partial class PageEditor : Control
     private void UpdateHover(PdfPoint display, bool eraserEnd)
     {
         var previous = _hoveredBadge;
-        _hoveredBadge = Document?.CurrentAnnotations.OfType<CommentAnnotation>()
+        _hoveredBadge = Annotations.OfType<CommentAnnotation>()
             .Select(comment => (Id: comment.Id, Bounds: ((CommentAnnotation)ToDisplay(comment)).Bounds))
             .Where(item => new PdfPoint(item.Bounds.Right, item.Bounds.Y).DistanceTo(display) <= BadgeRadius)
             .Select(item => (Guid?)item.Id)
@@ -647,7 +680,7 @@ public sealed partial class PageEditor : Control
         }
 
         var pen = new Pen(new SolidColorBrush(Color.Parse("#6B7280")), 1, new DashStyle([3, 2], 0));
-        var framed = Document.CurrentAnnotations.OfType<TextAnnotation>().Where(text => text.Id == _hoveredText && text.Id != _editing?.Id);
+        var framed = Annotations.OfType<TextAnnotation>().Where(text => text.Id == _hoveredText && text.Id != _editing?.Id);
         foreach (var text in _editing is { } editing ? framed.Append(editing) : framed)
         {
             context.DrawRectangle(null, pen, ToRect(Inflate(((TextAnnotation)ToDisplay(text)).Bounds, TextHitMargin)), 2, 2);
@@ -658,7 +691,7 @@ public sealed partial class PageEditor : Control
     /// Gesetzte Unterschrift an einer Anzeigeposition (die oberste) oder <c>null</c>.
     /// </summary>
     private SignatureAnnotation? SignatureAt(PdfPoint display) =>
-        Document?.CurrentAnnotations.OfType<SignatureAnnotation>()
+        Annotations.OfType<SignatureAnnotation>()
             .LastOrDefault(signature => Contains(Inflate(((SignatureAnnotation)ToDisplay(signature)).Bounds, TextHitMargin), display));
 
     /// <summary>
@@ -700,7 +733,7 @@ public sealed partial class PageEditor : Control
             }
 
             var (from, to) = (ToPage(_start), ToPage(_current));
-            document.Document.UpdateAnnotation(document.CurrentPage.Id, existing.Translate(to.X - from.X, to.Y - from.Y));
+            document.Document.UpdateAnnotation(PageId, existing.Translate(to.X - from.X, to.Y - from.Y));
             return;
         }
 
@@ -711,14 +744,14 @@ public sealed partial class PageEditor : Control
 
         var width = dragged ? Math.Max(Signature.MinPlacedWidth, Math.Abs(_current.X - _start.X)) : Signature.DefaultPlacedWidth;
         var (left, top) = dragged ? (Math.Min(_start.X, _current.X), _start.Y) : (_start.X - width / 2, _start.Y - signature.HeightFor(width) / 2);
-        document.AddAnnotation(SignatureAnnotation.Place(signature, left, top, width, ToPage));
+        Page!.AddAnnotation(SignatureAnnotation.Place(signature, left, top, width, ToPage));
     }
 
     /// <summary>
     /// Text an einer Anzeigeposition (der oberste) oder <c>null</c>.
     /// </summary>
     private TextAnnotation? TextAt(PdfPoint display) =>
-        Document?.CurrentAnnotations.OfType<TextAnnotation>()
+        Annotations.OfType<TextAnnotation>()
             .LastOrDefault(text => Contains(Inflate(((TextAnnotation)ToDisplay(text)).Bounds, TextHitMargin), display));
 
     /// <summary>
@@ -737,12 +770,12 @@ public sealed partial class PageEditor : Control
 
             var anchor = ((TextAnnotation)ToDisplay(existing)).Anchor;
             var target = new PdfPoint(anchor.X + _current.X - _start.X, anchor.Y + _current.Y - _start.Y);
-            document.Document.UpdateAnnotation(document.CurrentPage.Id, existing with { Anchor = ToPage(target) });
+            document.Document.UpdateAnnotation(PageId, existing with { Anchor = ToPage(target) });
             return;
         }
 
         var fontSize = TextAnnotation.ClampFontSize(options.TextSize);
-        var (displayWidth, _) = document.CurrentDisplaySize;
+        var (displayWidth, _) = Page!.DisplaySize;
         var drag = DragRect();
         var (left, top, width) = Math.Abs(_current.X - _start.X) >= MinDragDistance
             ? (drag.X, drag.Y, Math.Max(TextAnnotation.MinWidth, drag.Width))
@@ -750,7 +783,7 @@ public sealed partial class PageEditor : Control
             : (_start.X, _start.Y - fontSize * TextAnnotation.LineSpacing / 2,
                 Math.Clamp(displayWidth - _start.X - 8, TextAnnotation.MinWidth, TextAnnotation.DefaultWidth));
         var text = new TextAnnotation(Guid.NewGuid(), options.TextColor, ToPage(new PdfPoint(left, top)), width, fontSize, string.Empty,
-            document.CurrentPage.Rotation);
+            Rotation);
         BeginTextEdit(text, isNew: true);
     }
 
@@ -762,7 +795,7 @@ public sealed partial class PageEditor : Control
         CommitText();
         _editing = text;
         _editingIsNew = isNew;
-        _editingPageId = Document!.CurrentPage.Id;
+        _editingPageId = PageId;
         var editor = new TextBox
         {
             Text = text.Text,
@@ -951,7 +984,7 @@ public sealed partial class PageEditor : Control
         var border = DrawingColors.CommentBorder(comment.ColorHex);
         DrawRounded(context, new SolidColorBrush(WithAlpha(comment.ColorHex, CommentFillAlpha)), new Pen(Brush(border), CommentBorderWidth), rect);
 
-        var number = Document!.Document.Annotations.FootnoteNumber(Document.CurrentPage.Id, comment.Id) ?? 0;
+        var number = Document!.Document.Annotations.FootnoteNumber(PageId, comment.Id) ?? 0;
         var hovered = _hoveredBadge == comment.Id;
         var center = new Point(rect.Right, rect.Top);
         var radius = hovered ? BadgeRadius * 1.12 : BadgeRadius;
@@ -965,9 +998,9 @@ public sealed partial class PageEditor : Control
     /// <summary>
     /// Hinterlegt die Fundstellen der Suche halbtransparent in der Akzentfarbe (E7).
     /// </summary>
-    private void DrawSearchHits(DrawingContext context, DocumentViewModel document)
+    private void DrawSearchHits(DrawingContext context, PageViewModel view)
     {
-        var hits = document.CurrentSearchHits;
+        var hits = view.SearchHits;
         if (hits.Count == 0)
         {
             return;
@@ -980,10 +1013,10 @@ public sealed partial class PageEditor : Control
         var (opacity, outline) = DrawingColors.SearchHighlight(accent);
         var fill = new SolidColorBrush(Color.Parse(accent), opacity);
         var pen = outline is null ? null : new Pen(Brush(outline), 1);
-        var (width, height) = document.CurrentPageSize;
+        var (width, height) = view.PageSize;
         foreach (var hit in hits)
         {
-            context.DrawRectangle(fill, pen, ToRect(PageTransform.Rotate(hit, document.CurrentPage.Rotation, width, height)), 2, 2);
+            context.DrawRectangle(fill, pen, ToRect(PageTransform.Rotate(hit, view.Page.Rotation, width, height)), 2, 2);
         }
     }
 
@@ -997,8 +1030,8 @@ public sealed partial class PageEditor : Control
             return;
         }
 
-        var (width, height) = Document!.CurrentPageSize;
-        var display = PageTransform.Rotate(paragraph, Document.CurrentPage.Rotation, width, height);
+        var (width, height) = PageSize;
+        var display = PageTransform.Rotate(paragraph, Rotation, width, height);
         DrawRounded(context, null, new Pen(Brush(DrawingColors.CommentBorder(options.CommentColor)), 2, new DashStyle([3, 2], 0)), ToRect(display));
     }
 
@@ -1022,7 +1055,7 @@ public sealed partial class PageEditor : Control
         }
 
         var page = ToPage(display);
-        return Document.CurrentTextBlocks.Where(block => page.X >= block.X && page.X <= block.Right && page.Y >= block.Y && page.Y <= block.Bottom)
+        return Page!.TextBlocks.Where(block => page.X >= block.X && page.X <= block.Right && page.Y >= block.Y && page.Y <= block.Bottom)
             .Select(block => (PdfRect?)block)
             .FirstOrDefault();
     }
@@ -1031,7 +1064,7 @@ public sealed partial class PageEditor : Control
     /// Ob ein Absatz schon kommentiert ist.
     /// </summary>
     private bool IsCommented(PdfRect paragraph) =>
-        Document!.CurrentAnnotations.OfType<CommentAnnotation>().Any(comment => comment.Bounds == paragraph);
+        Annotations.OfType<CommentAnnotation>().Any(comment => comment.Bounds == paragraph);
 
     /// <summary>
     /// Vorschau der laufenden Eingabe.
@@ -1142,38 +1175,65 @@ public sealed partial class PageEditor : Control
     /// </summary>
     private void RequestRender()
     {
-        if (Document is { } document)
+        // Nur sichtbare Seiten rendern; nicht mehr angezeigte haben ihr Bild freigegeben
+        if (Page is { } view && this.IsAttachedToVisualTree())
         {
             var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1;
-            _ = document.RenderCurrentAsync(Math.Max(0.25, Zoom * scaling));
+            _ = view.RenderAsync(Math.Max(0.25, Zoom * scaling));
         }
     }
 
     /// <summary>
     /// Reagiert auf Seitenwechsel, neue Bitmap und geänderte Annotationen.
     /// </summary>
-    private void Subscribe(DocumentViewModel? document)
+    private void Subscribe(PageViewModel? page)
     {
         if (_subscribed is not null)
         {
             _subscribed.PropertyChanged -= OnDocumentPropertyChanged;
-            _subscribed.CurrentPageAnnotationsChanged -= OnAnnotationsChanged;
-            _subscribed.AnnotationFocusRequested -= OnAnnotationFocusRequested;
             _subscribed.CommitEditsRequested -= OnCommitEditsRequested;
             _subscribed.Document.Form.Changed -= OnFormValueChanged;
         }
 
-        _subscribed = document;
-        if (document is not null)
+        if (_subscribedPage is not null)
         {
-            document.PropertyChanged += OnDocumentPropertyChanged;
-            document.CurrentPageAnnotationsChanged += OnAnnotationsChanged;
-            document.AnnotationFocusRequested += OnAnnotationFocusRequested;
-            document.CommitEditsRequested += OnCommitEditsRequested;
-            document.Document.Form.Changed += OnFormValueChanged;
+            _subscribedPage.PropertyChanged -= OnPagePropertyChanged;
+            _subscribedPage.Changed -= OnAnnotationsChanged;
+            _subscribedPage.FocusRequested -= OnAnnotationFocusRequested;
+        }
+
+        _subscribedPage = page;
+        _subscribed = page?.Document;
+        if (page is not null)
+        {
+            page.PropertyChanged += OnPagePropertyChanged;
+            page.Changed += OnAnnotationsChanged;
+            page.FocusRequested += OnAnnotationFocusRequested;
+            page.Document.PropertyChanged += OnDocumentPropertyChanged;
+            page.Document.CommitEditsRequested += OnCommitEditsRequested;
+            page.Document.Document.Form.Changed += OnFormValueChanged;
         }
 
         RebuildFormFields();
+        InvalidateMeasure();
+    }
+
+    /// <summary>Neu gerenderte Seite zeichnen.</summary>
+    private void OnPagePropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(PageViewModel.Bitmap))
+        {
+            InvalidateVisual();
+        }
+    }
+
+    /// <summary>Eine angeforderte Hervorhebung ausführen, die vor dem Anlegen dieses Editors kam.</summary>
+    private void TakePendingFocus()
+    {
+        if (this.IsAttachedToVisualTree() && Page?.TakePendingFocus() is { } id)
+        {
+            OnAnnotationFocusRequested(Page, id);
+        }
     }
 
     /// <summary>Übernimmt einen gerade bearbeiteten Text vor dem Speichern, Extrahieren, Drucken oder Schließen.</summary>
@@ -1185,7 +1245,8 @@ public sealed partial class PageEditor : Control
     /// </summary>
     private void OnAnnotationFocusRequested(object? sender, Guid id) => Dispatcher.UIThread.Post(() =>
     {
-        if (Document?.CurrentAnnotations.FirstOrDefault(annotation => annotation.Id == id) is not { } annotation)
+        Page?.TakePendingFocus();
+        if (Annotations.FirstOrDefault(annotation => annotation.Id == id) is not { } annotation)
         {
             return;
         }
@@ -1210,7 +1271,7 @@ public sealed partial class PageEditor : Control
         }
 
         var elapsed = DateTime.UtcNow - _flashStart;
-        if (elapsed >= FlashDuration || Document?.CurrentAnnotations.FirstOrDefault(annotation => annotation.Id == id) is not { } annotation)
+        if (elapsed >= FlashDuration || Annotations.FirstOrDefault(annotation => annotation.Id == id) is not { } annotation)
         {
             _flashId = null;
             _flashTimer?.Stop();
@@ -1281,17 +1342,15 @@ public sealed partial class PageEditor : Control
     /// </summary>
     private void OnDocumentPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName is nameof(DocumentViewModel.CurrentBitmap) or nameof(DocumentViewModel.SelectedBox))
+        if (e.PropertyName == nameof(DocumentViewModel.SelectedBox))
         {
             InvalidateVisual();
         }
         else if (e.PropertyName == nameof(DocumentViewModel.CurrentIndex))
         {
+            // Andere Seite aktuell: Text dieser Seite abschließen, Stempel-Auswahl aufheben
             CommitText();
             Document?.SelectedBox = null;
-            RebuildFormFields();
-            InvalidateMeasure();
-            RequestRender();
         }
     }
 
@@ -1315,8 +1374,8 @@ public sealed partial class PageEditor : Control
     /// <summary>Anzeigepunkt → Punkt auf der ungedrehten Seite.</summary>
     private PdfPoint ToPage(PdfPoint display)
     {
-        var (width, height) = Document!.CurrentPageSize;
-        return PageTransform.Unrotate(display, Document.CurrentPage.Rotation, width, height);
+        var (width, height) = PageSize;
+        return PageTransform.Unrotate(display, Rotation, width, height);
     }
 
     /// <summary>Anzeige-Rechteck → Rechteck auf der ungedrehten Seite.</summary>
@@ -1326,8 +1385,8 @@ public sealed partial class PageEditor : Control
     /// <summary>Annotation der ungedrehten Seite → Anzeige.</summary>
     private Annotation ToDisplay(Annotation annotation)
     {
-        var (width, height) = Document!.CurrentPageSize;
-        return PageTransform.Rotate(annotation, Document.CurrentPage.Rotation, width, height);
+        var (width, height) = PageSize;
+        return PageTransform.Rotate(annotation, Rotation, width, height);
     }
 
     /// <summary>Vergrößert ein Rechteck auf allen Seiten.</summary>

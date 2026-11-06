@@ -8,7 +8,9 @@ namespace PdfUtopia.App.Services;
 
 /// <summary>
 /// Rendert Seiten eines Dokuments als Avalonia-Bitmaps und merkt sich die Ergebnisse je Quelldatei, Seite, Drehung
-/// und Maßstab. Gerendert wird im Hintergrund, damit die Oberfläche bei großen Dateien flüssig bleibt.
+/// und Maßstab. Gerendert wird im Hintergrund, damit die Oberfläche bei großen Dateien flüssig bleibt. Angezeigte
+/// Bitmaps werden festgehalten (<see cref="Pin"/>): Fallen sie aus dem Zwischenspeicher, werden sie erst freigegeben,
+/// wenn keine Seite sie mehr zeigt (mehrere Seiten gleichzeitig, A55).
 /// </summary>
 /// <param name="sourceOf">Liefert die Quelldatei zu <see cref="PageEntry.SourceIndex"/> (eingefügte Seiten, A41).</param>
 public sealed class PageRenderer(Func<int, PdfSource> sourceOf) : IDisposable
@@ -17,6 +19,7 @@ public sealed class PageRenderer(Func<int, PdfSource> sourceOf) : IDisposable
 
     private readonly Dictionary<(int Source, int Page, PageRotation Rotation, double Scale), Bitmap> _cache = [];
     private readonly LinkedList<(int, int, PageRotation, double)> _order = new();
+    private readonly Dictionary<Bitmap, int> _pinned = [];
 
     /// <summary>
     /// Rendert eine Seite.
@@ -41,6 +44,36 @@ public sealed class PageRenderer(Func<int, PdfSource> sourceOf) : IDisposable
     }
 
     /// <summary>
+    /// Hält eine angezeigte Bitmap fest, damit sie nicht freigegeben wird, solange eine Seite sie zeigt.
+    /// </summary>
+    /// <param name="bitmap">Die Bitmap.</param>
+    public void Pin(Bitmap bitmap) => _pinned[bitmap] = _pinned.GetValueOrDefault(bitmap) + 1;
+
+    /// <summary>
+    /// Gibt eine festgehaltene Bitmap wieder frei; ist sie nicht mehr im Zwischenspeicher, wird sie entsorgt.
+    /// </summary>
+    /// <param name="bitmap">Die Bitmap.</param>
+    public void Unpin(Bitmap bitmap)
+    {
+        if (!_pinned.TryGetValue(bitmap, out var count))
+        {
+            return;
+        }
+
+        if (count > 1)
+        {
+            _pinned[bitmap] = count - 1;
+            return;
+        }
+
+        _pinned.Remove(bitmap);
+        if (!_cache.ContainsValue(bitmap))
+        {
+            bitmap.Dispose();
+        }
+    }
+
+    /// <summary>
     /// Wandelt gerenderte Pixel in eine Bitmap.
     /// </summary>
     /// <param name="page">Die Pixel (BGRA, vormultipliziert).</param>
@@ -60,12 +93,13 @@ public sealed class PageRenderer(Func<int, PdfSource> sourceOf) : IDisposable
     /// <inheritdoc />
     public void Dispose()
     {
-        foreach (var bitmap in _cache.Values)
+        foreach (var bitmap in _cache.Values.Concat(_pinned.Keys).Distinct())
         {
             bitmap.Dispose();
         }
 
         _cache.Clear();
+        _pinned.Clear();
         _order.Clear();
     }
 
@@ -79,7 +113,7 @@ public sealed class PageRenderer(Func<int, PdfSource> sourceOf) : IDisposable
         while (_order.Count > MaxCachedPages && _order.First is { } oldest)
         {
             _order.RemoveFirst();
-            if (_cache.Remove(oldest.Value, out var removed))
+            if (_cache.Remove(oldest.Value, out var removed) && !_pinned.ContainsKey(removed))
             {
                 removed.Dispose();
             }

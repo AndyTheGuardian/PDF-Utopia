@@ -450,6 +450,31 @@ Textebene liefern keine Treffer.
 
 ### 5.16 Ansichten und Zoom
 
+**Seitenansichten (A55):** Wie die Seiten angeordnet sind, wählen die vier Knöpfe in der Statusleiste links neben
+„Volle Höhe“ oder das Menü **Ansicht**:
+
+| Seitenansicht | Wirkung |
+|---|---|
+| **Einzelseite** | eine Seite; beim Blättern wird sie durch die nächste ersetzt (Standard) |
+| **Fortlaufend** | alle Seiten untereinander; man scrollt durch das ganze Dokument |
+| **Doppelseite** | zwei Seiten nebeneinander; beim Blättern wird das Paar durch das nächste ersetzt |
+| **Doppelseite fortlaufend** | alle Seitenpaare untereinander |
+
+- **Erste Seite einzeln** (Menü **Ansicht**, nur bei den Doppelseiten wählbar, standardmäßig an): Seite 1 steht
+  allein rechts wie ein Buchdeckel, danach folgen die Paare 2|3, 4|5 usw. Ohne diese Option beginnen die Paare mit
+  1|2. Eine letzte Seite ohne Partner steht links.
+- Die Wahl gilt für alle Dokumente und bleibt nach einem Neustart erhalten.
+- Ist zu wenig Platz in der Statusleiste, zeigen die Knöpfe nur ihre Symbole; der Name erscheint als Tooltip.
+- Sind mehrere Seiten zu sehen, hat die **aktuelle Seite** einen Rahmen in der Akzentfarbe. Auf sie wirken Drehen,
+  Löschen, „Leere Seite einfügen“ und die Seitenangabe in der Statusleiste; die Seitenliste hebt sie hervor.
+- In allen Ansichten lässt sich mit jedem Werkzeug auf jeder sichtbaren Seite arbeiten. Wer auf einer anderen Seite
+  klickt oder zeichnet, macht sie damit zur aktuellen Seite.
+- In den fortlaufenden Ansichten wird beim Scrollen die Seite aktuell, die den größten Teil der Ansicht einnimmt.
+  Ein Klick auf eine Miniatur, ein Lesezeichen oder einen Eintrag der Anmerkungsübersicht scrollt zu dieser Seite.
+- Fußnoten von Kommentaren stehen in jeder Ansicht unter ihrer Seite.
+
+**Zoom-Ansichten:**
+
 | Ansicht | Wirkung |
 |---|---|
 | **Volle Höhe** | die Seitenhöhe füllt den Anzeigebereich |
@@ -457,7 +482,8 @@ Textebene liefern keine Treffer.
 | **Ganze Seite** | die ganze Seite ist sichtbar (Standard) |
 
 Die gewählte Ansicht wird bei jeder Größenänderung des Fensters – auch beim Maximieren –, beim Seitenwechsel
-und beim Drehen neu angewandt. Zoomen mit + oder − (Schritte von 10 %, 30–400 %) schaltet die Ansicht ab, bis
+und beim Drehen neu angewandt. Bei den Doppelseiten bezieht sie sich auf das ganze Seitenpaar. In den fortlaufenden
+Ansichten richtet sie sich nach der größten Seite bzw. dem größten Paar, damit der Zoom beim Scrollen gleich bleibt. Zoomen mit + oder − (Schritte von 10 %, 30–400 %) schaltet die Ansicht ab, bis
 wieder eine gewählt wird. Der Zoom lässt sich auch direkt in das Feld zwischen − und + eintippen, z. B. `150`,
 `150 %` oder `87,5`; **Enter** übernimmt den Wert (begrenzt auf 30–400 %). Ungültige Eingaben, **Esc** oder das
 Verlassen des Felds ohne Enter stellen den aktuellen Zoom wieder her. Zoomen gibt es nur in der Statusleiste,
@@ -553,8 +579,8 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 | Strg+F | Suchfeld |
 | Enter (im Suchfeld) | nächste Seite mit Treffern |
 | Esc (im Suchfeld) | Suche beenden |
-| ← / → oder Bild↑ / Bild↓ | vorige / nächste Seite |
-| ↑ / ↓ | scrollen; am oberen bzw. unteren Rand vorige / nächste Seite |
+| ← / → oder Bild↑ / Bild↓ | vorige / nächste Seite (bei Doppelseite: voriges / nächstes Paar) |
+| ↑ / ↓ | scrollen; bei Einzel- und Doppelseite am oberen bzw. unteren Rand vorige / nächste Seite bzw. Paar |
 | Pos1 / Ende | erste / letzte Seite |
 
 Die Blättertasten wirken nicht, solange ein Textfeld (z. B. eine Fußnote oder das Suchfeld), ein Schieberegler,
@@ -575,7 +601,8 @@ PDF Utopia speichert seine Einstellungen bei jeder Änderung in einer JSON-Datei
 | macOS | `~/Library/Application Support/PDF Utopia/settings.json` |
 
 Gespeichert werden Design, Sprache, Akzentfarbe, Pastell-Sättigung, eigene Farben, Anzahl der
-Rückgängig-Schritte, der Name für Stempel, eigene Stempel sowie Farben und Einstellungen der Werkzeuge. Ist die Datei beschädigt oder enthält
+Rückgängig-Schritte, der Name für Stempel, eigene Stempel, die Seitenansicht mit „Erste Seite einzeln“ sowie Farben
+und Einstellungen der Werkzeuge. Ist die Datei beschädigt oder enthält
 ungültige Werte, startet PDF Utopia mit den Standardwerten bzw. ersetzt nur die ungültigen Werte. Zum
 Zurücksetzen aller Einstellungen genügt es, die Datei zu löschen, während PDF Utopia geschlossen ist.
 
