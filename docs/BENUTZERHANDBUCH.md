@@ -187,6 +187,22 @@ Enthält eine Datei ein Formular, steht über der Seite ein Hinweis mit der Anza
 > **Tipp:** Der Schalter **Felder hervorheben** im Hinweis hinterlegt alle Felder farbig. Ein falscher Eintrag
 > lässt sich mit Strg+Z zurücknehmen. Graue Felder sind schreibgeschützt.
 
+### Stempeln und Bilder einfügen
+1. Werkzeug **Stempel** wählen.
+2. Im Klappfeld links in der Optionsleiste einen Stempel wählen, z. B. **Genehmigt** – oder mit **+ Eigener Text…**
+   einen eigenen anlegen.
+3. Bei Bedarf **Datum** und **Name** anhaken (den Namen tragen Sie unter **Einstellungen** ein) und eine Farbe wählen.
+4. Auf die Seite klicken – oder waagerecht ziehen, um die Größe zu bestimmen.
+
+Ein Bild fügen Sie über **Bild…** ein (danach auf die Seite klicken), ziehen eine PNG- oder JPEG-Datei aus dem
+Dateimanager auf die Seite oder drücken **Strg+V**, wenn ein Bild in der Zwischenablage liegt.
+
+Zum Ändern den Stempel oder das Bild anklicken:
+- in der Fläche ziehen = verschieben,
+- an einer Ecke ziehen = Größe ändern,
+- am runden Griff oben ziehen = drehen (in 15°-Schritten, mit **Umschalt** stufenlos),
+- **Entf** = löschen.
+
 ### Unterschreiben
 1. Werkzeug **Unterschrift** wählen. Beim ersten Mal öffnet sich der Dialog **Unterschriften**.
 2. Im weißen Feld mit Stift oder Maus unterschreiben, einen **Namen** vergeben (z. B. „Unterschrift“ oder „Kürzel“),

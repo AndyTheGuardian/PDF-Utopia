@@ -180,6 +180,39 @@ public sealed class DialogService(Window owner) : IDialogService
         await new SignatureDialog(this, signatures, startSlot, persist).ShowAsync();
 
     /// <inheritdoc />
+    public async Task<string?> PickImageFileAsync()
+    {
+        var files = await Owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = Loc.T("Stamp.ImageTitle"),
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType(Loc.T("Stamp.ImageFiles"))
+                {
+                    Patterns = ["*.png", "*.jpg", "*.jpeg"], MimeTypes = ["image/png", "image/jpeg"], AppleUniformTypeIdentifiers = ["public.png", "public.jpeg"],
+                },
+            ],
+        });
+        return files.Select(file => file.TryGetLocalPath()).OfType<string>().FirstOrDefault();
+    }
+
+    /// <inheritdoc />
+    public async Task<CustomStamp?> AskCustomStampAsync(string detail) => await new StampDialog(this, detail).ShowAsync();
+
+    /// <inheritdoc />
+    public async Task<LoadedImage?> ReadClipboardImageAsync()
+    {
+        if (Owner.Clipboard is not { } clipboard)
+        {
+            return null;
+        }
+
+        using var bitmap = await Avalonia.Input.Platform.ClipboardExtensions.TryGetBitmapAsync(clipboard);
+        return bitmap is null ? null : ImageLoader.FromBitmap(bitmap);
+    }
+
+    /// <inheritdoc />
     public async Task<SettingsChoice?> EditSettingsAsync(SettingsChoice current)
     {
         var theme = new ComboBox
@@ -192,6 +225,7 @@ public sealed class DialogService(Window owner) : IDialogService
         {
             Minimum = UndoHistory.MinLimit, Maximum = UndoHistory.MaxLimit, Value = current.UndoLimit, Increment = 1, FormatString = "0", MinWidth = 160,
         };
+        var userName = new TextBox { Text = current.UserName, MinWidth = 160, MaxLength = 60 };
         var content = new StackPanel
         {
             Spacing = 8,
@@ -199,12 +233,14 @@ public sealed class DialogService(Window owner) : IDialogService
             {
                 Labeled(Loc.T("Settings.Theme"), theme), Labeled(Loc.T("Settings.Language"), language),
                 Labeled(Loc.T("Settings.UndoSteps"), undo), new TextBlock { Text = Loc.T("Settings.UndoHelp"), Classes = { "hint" } },
+                Labeled(Loc.T("Settings.UserName"), userName), new TextBlock { Text = Loc.T("Settings.UserNameHelp"), Classes = { "hint" } },
             },
         };
         var dialog = CreateDialog(Loc.T("Settings.Title"), content);
         AddButtons(dialog, (Loc.T("Dialog.Cancel"), false), (Loc.T("Dialog.Ok"), true));
         return await dialog.ShowDialog<bool>(Owner)
-            ? new SettingsChoice((ThemePreference)theme.SelectedIndex, (UiLanguage)language.SelectedIndex, UndoHistory.ClampLimit((int)(undo.Value ?? current.UndoLimit)))
+            ? new SettingsChoice((ThemePreference)theme.SelectedIndex, (UiLanguage)language.SelectedIndex, UndoHistory.ClampLimit((int)(undo.Value ?? current.UndoLimit)),
+                (userName.Text ?? string.Empty).Trim())
             : null;
     }
 

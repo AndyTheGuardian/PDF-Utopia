@@ -26,6 +26,9 @@ public enum Tool
     /// <summary>Unterschrift (A49).</summary>
     Signature,
 
+    /// <summary>Stempel und Bilder (A51).</summary>
+    Stamp,
+
     /// <summary>Radierer (Objekt-Radierer).</summary>
     Eraser,
 }

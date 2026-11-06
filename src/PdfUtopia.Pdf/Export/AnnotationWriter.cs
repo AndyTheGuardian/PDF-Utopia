@@ -4,6 +4,7 @@ using PdfSharp.Pdf.Annotations;
 using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Drawing;
 using PdfUtopia.Core.Geometry;
+using PdfUtopia.Core.Images;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Theming;
 
@@ -25,6 +26,9 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
     /// <summary>Daten einer eigenen Annotation als JSON (für späteres Bearbeiten, F23).</summary>
     public const string DataKey = "/PdfUtopiaData";
 
+    /// <summary>Verweis auf das Bild einer Bild-Annotation (zum Wiedereinlesen, A51).</summary>
+    public const string ImageKey = "/PdfUtopiaImage";
+
     /// <summary>Seiteneintrag: Verlängerung für Fußnoten und die Dateidrehung, auf die sie sich bezieht.</summary>
     public const string ExtensionKey = "/PdfUtopiaExtension";
 
@@ -41,6 +45,9 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
 
     private readonly PdfReference _regularFont = CreateFont(document, "/Helvetica");
     private readonly PdfReference _boldFont = CreateFont(document, "/Helvetica-Bold");
+
+    // Bilder, die mehrfach gesetzt sind, werden nur einmal eingebettet
+    private readonly Dictionary<ImageData, PdfReference> _images = new(ReferenceEqualityComparer.Instance);
 
     /// <summary>
     /// Schreibt alle Annotationen einer Seite.
@@ -66,6 +73,8 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
                 TextAnnotation text => Text(geometry, text),
                 LineAnnotation line => Line(geometry, line),
                 EllipseAnnotation ellipse => Ellipse(geometry, ellipse),
+                StampAnnotation stamp => Stamp(geometry, stamp),
+                ImageAnnotation image => Image(geometry, image),
                 _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
             };
             dictionary.Elements.SetString("/NM", annotation.Id.ToString());
@@ -287,6 +296,131 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
     }
 
     /// <summary>
+    /// Stempel (A51) als Standard-Annotation „Stamp“: doppelter Rahmen, Text in Helvetica, um die Mitte gedreht.
+    /// </summary>
+    private RawAnnotation Stamp(PageGeometry geometry, StampAnnotation stamp)
+    {
+        var layout = stamp.Layout;
+        var bounds = stamp.Envelope;
+        var content = BoxContent(bounds, stamp);
+        var scale = stamp.Bounds.Width / layout.Width;
+        // Natürliche Größe, Ursprung links unten des Stempels
+        content.Transform(scale, 0, 0, scale, -stamp.Bounds.Width / 2, -stamp.Bounds.Height / 2);
+        var (width, height) = (layout.Width, layout.Height);
+        content.Save().GraphicsState("/GSf").FillColor(stamp.ColorHex)
+            .RoundedRectangle(StampLayout.OuterInset, StampLayout.OuterInset, width - 2 * StampLayout.OuterInset, height - 2 * StampLayout.OuterInset, StampLayout.OuterRadius)
+            .Fill().Restore()
+            .StrokeColor(stamp.ColorHex).LineWidth(StampLayout.OuterStroke)
+            .RoundedRectangle(StampLayout.OuterInset, StampLayout.OuterInset, width - 2 * StampLayout.OuterInset, height - 2 * StampLayout.OuterInset, StampLayout.OuterRadius)
+            .Stroke()
+            .LineWidth(StampLayout.InnerStroke)
+            .RoundedRectangle(StampLayout.InnerInset, StampLayout.InnerInset, width - 2 * StampLayout.InnerInset, height - 2 * StampLayout.InnerInset, StampLayout.InnerRadius)
+            .Stroke()
+            .FillColor(stamp.ColorHex).Text(layout.LabelLeft, height - layout.LabelBaseline, layout.Label, StampLayout.LabelSize, bold: true);
+        if (layout.HasDetail)
+        {
+            content.Text(layout.DetailLeft, height - layout.DetailBaseline, layout.Detail, StampLayout.DetailSize);
+        }
+
+        content.Restore();
+        var states = new Dictionary<string, PdfDictionary> { ["/GSf"] = Opacity(StampLayout.FillOpacity) };
+        var annotation = Create("/Stamp", geometry, bounds, stamp.ColorHex, Appearance(geometry, bounds, content, states, withFonts: true));
+        annotation.Elements["/Contents"] = new PdfString(string.IsNullOrEmpty(stamp.Detail) ? stamp.Label : $"{stamp.Label} {stamp.Detail}", PdfStringEncoding.Unicode);
+        return annotation;
+    }
+
+    /// <summary>
+    /// Bild (A51) als Standard-Annotation „Stamp“, dessen Erscheinungsbild das Bild zeigt, um die Mitte gedreht.
+    /// </summary>
+    private RawAnnotation Image(PageGeometry geometry, ImageAnnotation image)
+    {
+        var bounds = image.Envelope;
+        var content = BoxContent(bounds, image)
+            .Transform(image.Bounds.Width, 0, 0, image.Bounds.Height, -image.Bounds.Width / 2, -image.Bounds.Height / 2)
+            .Op("/Im0 Do").Restore();
+        var picture = ImageObject(image.Image);
+        var xObjects = new Dictionary<string, PdfReference> { ["/Im0"] = picture };
+        var annotation = Create("/Stamp", geometry, bounds, image.ColorHex, Appearance(geometry, bounds, content, xObjects: xObjects));
+        annotation.Elements[ImageKey] = picture;
+        return annotation;
+    }
+
+    /// <summary>
+    /// Beginnt das Erscheinungsbild eines Stempels oder Bildes: Ursprung in der Mitte, um den Winkel gedreht
+    /// (y nach oben). Der Aufrufer schließt mit <see cref="ContentBuilder.Restore"/> ab.
+    /// </summary>
+    private static ContentBuilder BoxContent(PdfRect bounds, BoxAnnotation box)
+    {
+        var center = Local(bounds, box.Center);
+        // Im Uhrzeigersinn auf der Seite; lokal zeigt y nach oben, daher das umgekehrte Vorzeichen von sin
+        var (sin, cos) = Math.SinCos(box.Angle * Math.PI / 180);
+        return new ContentBuilder().Save().Transform(cos, -sin, sin, cos, center.X, center.Y);
+    }
+
+    /// <summary>
+    /// Bild-XObject: JPEG unverändert, sonst Flate-komprimierte Bildpunkte mit Deckkraftebene (SMask).
+    /// </summary>
+    private PdfReference ImageObject(ImageData image)
+    {
+        if (_images.TryGetValue(image, out var existing))
+        {
+            return existing;
+        }
+
+        PdfDictionary picture;
+        if (image.Encoding == ImageEncoding.Jpeg)
+        {
+            var components = JpegInfo.Read(image.Data)?.Components ?? 3;
+            picture = ImageDictionary(image, components == 1 ? "/DeviceGray" : components == 4 ? "/DeviceCMYK" : "/DeviceRGB", "/DCTDecode", image.Data);
+        }
+        else
+        {
+            picture = ImageDictionary(image, "/DeviceRGB", "/FlateDecode", Deflate(image.Data));
+            if (image.Alpha is { } alpha)
+            {
+                var mask = ImageDictionary(image, "/DeviceGray", "/FlateDecode", Deflate(alpha));
+                document.Internals.AddObject(mask);
+                picture.Elements["/SMask"] = mask.Reference;
+            }
+        }
+
+        document.Internals.AddObject(picture);
+        _images[image] = picture.Reference!;
+        return picture.Reference!;
+    }
+
+    /// <summary>
+    /// Wörterbuch eines Bild-XObjects mit 8 Bit je Kanal.
+    /// </summary>
+    private PdfDictionary ImageDictionary(ImageData image, string colorSpace, string filter, byte[] data)
+    {
+        var picture = new PdfDictionary(document);
+        picture.Elements.SetName("/Type", "/XObject");
+        picture.Elements.SetName("/Subtype", "/Image");
+        picture.Elements.SetInteger("/Width", image.PixelWidth);
+        picture.Elements.SetInteger("/Height", image.PixelHeight);
+        picture.Elements.SetName("/ColorSpace", colorSpace);
+        picture.Elements.SetInteger("/BitsPerComponent", 8);
+        picture.Elements.SetName("/Filter", filter);
+        picture.CreateStream(data);
+        return picture;
+    }
+
+    /// <summary>
+    /// Komprimiert Daten im zlib-Format (PDF-Filter „FlateDecode“).
+    /// </summary>
+    private static byte[] Deflate(byte[] data)
+    {
+        using var output = new MemoryStream();
+        using (var zlib = new System.IO.Compression.ZLibStream(output, System.IO.Compression.CompressionLevel.Optimal))
+        {
+            zlib.Write(data);
+        }
+
+        return output.ToArray();
+    }
+
+    /// <summary>
     /// Überschrift des Fußnotenbereichs mit gestrichelter Trennlinie.
     /// </summary>
     private RawAnnotation Heading(PageGeometry geometry, PdfRect bounds)
@@ -381,23 +515,25 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
     /// </summary>
     private PdfReference Appearance(
         PageGeometry geometry, PdfRect displayBounds, ContentBuilder content,
-        IReadOnlyDictionary<string, PdfDictionary>? graphicsStates = null, bool withFonts = false)
+        IReadOnlyDictionary<string, PdfDictionary>? graphicsStates = null, bool withFonts = false,
+        IReadOnlyDictionary<string, PdfReference>? xObjects = null)
     {
         var form = new PdfDictionary(document);
         form.Elements.SetName("/Type", "/XObject");
         form.Elements.SetName("/Subtype", "/Form");
         form.Elements["/BBox"] = Numbers([0, 0, displayBounds.Width, displayBounds.Height]);
         form.Elements["/Matrix"] = Numbers(geometry.AppearanceMatrix());
-        form.Elements["/Resources"] = Resources(graphicsStates, withFonts);
+        form.Elements["/Resources"] = Resources(graphicsStates, withFonts, xObjects);
         form.CreateStream(content.ToBytes());
         document.Internals.AddObject(form);
         return form.Reference!;
     }
 
     /// <summary>
-    /// Ressourcen eines Erscheinungsbildes: Grafikzustände und Schriften.
+    /// Ressourcen eines Erscheinungsbildes: Grafikzustände, Schriften und Bilder.
     /// </summary>
-    private PdfDictionary Resources(IReadOnlyDictionary<string, PdfDictionary>? graphicsStates, bool withFonts)
+    private PdfDictionary Resources(
+        IReadOnlyDictionary<string, PdfDictionary>? graphicsStates, bool withFonts, IReadOnlyDictionary<string, PdfReference>? xObjects)
     {
         var resources = new PdfDictionary(document);
         if (graphicsStates is { Count: > 0 })
@@ -417,6 +553,17 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
             fonts.Elements[StandardFont.Regular] = _regularFont;
             fonts.Elements[StandardFont.Bold] = _boldFont;
             resources.Elements["/Font"] = fonts;
+        }
+
+        if (xObjects is { Count: > 0 })
+        {
+            var objects = new PdfDictionary(document);
+            foreach (var (name, reference) in xObjects)
+            {
+                objects.Elements[name] = reference;
+            }
+
+            resources.Elements["/XObject"] = objects;
         }
 
         return resources;

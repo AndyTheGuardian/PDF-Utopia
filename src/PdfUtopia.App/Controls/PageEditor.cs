@@ -83,7 +83,11 @@ public sealed partial class PageEditor : Control
     /// <summary>
     /// Initialisiert den Editor; Text auf der Seite wird in Graustufen geglättet wie die gerenderte Seite.
     /// </summary>
-    public PageEditor() => TextOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
+    public PageEditor()
+    {
+        TextOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
+        InitializeImageDrop();
+    }
 
     /// <summary>Angezeigtes Dokument.</summary>
     public DocumentViewModel? Document
@@ -208,7 +212,8 @@ public sealed partial class PageEditor : Control
         DrawSearchHits(context, document);
 
         foreach (var annotation in document.CurrentAnnotations.Where(annotation =>
-                     annotation.Id != _editing?.Id && annotation.Id != _movingText?.Id && annotation.Id != _movingSignature?.Id))
+                     annotation.Id != _editing?.Id && annotation.Id != _movingText?.Id && annotation.Id != _movingSignature?.Id
+                     && annotation.Id != _boxPreview?.Id))
         {
             var display = ToDisplay(annotation);
             using (context.PushOpacity(_eraserHits.Contains(annotation.Id) ? 0.2 : 1))
@@ -220,6 +225,7 @@ public sealed partial class PageEditor : Control
         DrawSuggestion(context);
         DrawTextFrames(context);
         DrawSignatureGhost(context);
+        DrawBoxOverlay(context);
         DrawFlash(context);
         DrawGesture(context);
         DrawEraserCursor(context);
@@ -340,7 +346,11 @@ public sealed partial class PageEditor : Control
         _eraserHits.Clear();
         _movingText = tool == Tool.Text ? TextAt(display) : null;
         _movingSignature = tool == Tool.Signature ? SignatureAt(display) : null;
-        if (tool == Tool.Freehand)
+        if (tool == Tool.Stamp)
+        {
+            BeginBox(display);
+        }
+        else if (tool == Tool.Freehand)
         {
             _recorder.Begin(sample with { Position = ToPage(display), IsEraser = false });
         }
@@ -369,6 +379,9 @@ public sealed partial class PageEditor : Control
                     Erase(sample.Position);
                 }
 
+                break;
+            case Tool.Stamp:
+                ContinueBox();
                 break;
         }
 
@@ -414,6 +427,9 @@ public sealed partial class PageEditor : Control
                 break;
             case Tool.Signature:
                 FinishSignature(document, options);
+                break;
+            case Tool.Stamp:
+                FinishBox(document, options);
                 break;
         }
 
@@ -475,6 +491,7 @@ public sealed partial class PageEditor : Control
         var erasing = eraserEnd || Options?.Tool == Tool.Eraser;
         Cursor = _hoveredBadge is not null ? new Cursor(StandardCursorType.Hand)
             : erasing ? new Cursor(StandardCursorType.None)
+            : Options?.Tool == Tool.Stamp ? UpdateBoxHover(display)
             : _hoveredText is not null || _overSignature ? new Cursor(StandardCursorType.SizeAll)
             : Options?.Tool == Tool.Text ? new Cursor(StandardCursorType.Ibeam)
             : Options?.Tool is Tool.Select or null ? Cursor.Default
@@ -519,6 +536,9 @@ public sealed partial class PageEditor : Control
             case EllipseAnnotation ellipse:
                 var bounds = ToRect(ellipse.Bounds);
                 context.DrawEllipse(null, new Pen(Brush(ellipse.ColorHex), ellipse.Width), bounds.Center, bounds.Width / 2, bounds.Height / 2);
+                break;
+            case BoxAnnotation box:
+                BoxRenderer.Draw(context, box);
                 break;
         }
     }
@@ -1198,13 +1218,14 @@ public sealed partial class PageEditor : Control
     /// </summary>
     private void OnDocumentPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(DocumentViewModel.CurrentBitmap))
+        if (e.PropertyName is nameof(DocumentViewModel.CurrentBitmap) or nameof(DocumentViewModel.SelectedBox))
         {
             InvalidateVisual();
         }
         else if (e.PropertyName == nameof(DocumentViewModel.CurrentIndex))
         {
             CommitText();
+            Document?.SelectedBox = null;
             RebuildFormFields();
             InvalidateMeasure();
             RequestRender();

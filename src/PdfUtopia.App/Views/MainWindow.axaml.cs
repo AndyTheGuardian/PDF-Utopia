@@ -372,6 +372,11 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void OnFindClick(object? sender, RoutedEventArgs e) => FocusSearch();
 
+    /// <summary>Schließt die Stempelauswahl, sobald ein Stempel gewählt oder „+ Eigener Text…“ angeklickt ist.</summary>
+    private void OnStampChosen(object? sender, RoutedEventArgs e) =>
+        // Erst nach dem Befehl schließen; sonst verliert die Schaltfläche ihre Bindung, bevor er ausgeführt wird
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => StampPicker.Flyout?.Hide());
+
     /// <summary>
     /// Strg+F setzt den Fokus in das Suchfeld.
     /// </summary>

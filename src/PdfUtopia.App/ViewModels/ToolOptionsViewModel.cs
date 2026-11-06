@@ -2,6 +2,8 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using PdfUtopia.App.Localization;
 using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Drawing;
+using PdfUtopia.Core.Geometry;
+using PdfUtopia.Core.Images;
 using PdfUtopia.Core.Settings;
 using PdfUtopia.Core.Theming;
 
@@ -34,6 +36,12 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
         Smoothing = settings.Smoothing;
         PressureSensitive = settings.PressureSensitive;
         EraserRadius = settings.EraserRadius;
+        StampColor = settings.StampColor;
+        StampDate = settings.StampDate;
+        StampName = settings.StampName;
+        UserName = settings.UserName;
+        SelectedStampIndex = settings.SelectedStamp;
+        SetCustomStamps(settings.CustomStamps);
     }
 
     /// <summary>Wird bei jeder dauerhaft zu speichernden Änderung ausgelöst.</summary>
@@ -44,7 +52,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
 
     /// <summary>Gewähltes Werkzeug.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Title), nameof(Hint), nameof(ShowColorPicker), nameof(ShowMarkerColors), nameof(ShowShapeKinds), nameof(ShowArrowEnds), nameof(ShowSignatureOptions), nameof(ShowWidth),
+    [NotifyPropertyChangedFor(nameof(Title), nameof(Hint), nameof(ShowColorPicker), nameof(ShowMarkerColors), nameof(ShowShapeKinds), nameof(ShowArrowEnds), nameof(ShowSignatureOptions), nameof(ShowStampOptions), nameof(ShowWidth),
         nameof(ShowFreehandOptions), nameof(ShowEraserOptions), nameof(CurrentColor), nameof(CurrentWidth), nameof(WidthMinimum),
         nameof(WidthMaximum), nameof(WidthLabel), nameof(WidthText), nameof(ShowPressureHint), nameof(ColorTarget))]
     public partial Tool Tool { get; set; } = Tool.Select;
@@ -131,6 +139,154 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
 
     /// <summary>Bittet um den Unterschriften-Dialog (z. B. Klick auf die Seite ohne gespeicherte Unterschrift).</summary>
     public void RequestSignatureDialog() => SignatureDialogRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Stempel zur Auswahl: die Vorlagen, dahinter die eigenen (A51).</summary>
+    public System.Collections.ObjectModel.ObservableCollection<StampChoice> Stamps { get; } = [];
+
+    /// <summary>Eigene Stempel.</summary>
+    public IReadOnlyList<Core.Settings.CustomStamp> CustomStamps { get; private set; } = [];
+
+    /// <summary>Vorlagen in der Auswahl.</summary>
+    public IReadOnlyList<StampChoice> PresetChoices => Stamps.Where(choice => !choice.IsCustom).ToList();
+
+    /// <summary>Eigene Stempel in der Auswahl.</summary>
+    public IReadOnlyList<StampChoice> CustomChoices => Stamps.Where(choice => choice.IsCustom).ToList();
+
+    /// <summary>Ob es eigene Stempel gibt.</summary>
+    public bool HasCustomStamps => CustomStamps.Count > 0;
+
+    /// <summary>Stempelfarben zur Auswahl; die gewählte ist markiert.</summary>
+    public IReadOnlyList<StampColorChoice> StampColorChoices { get; } = StampAnnotation.Colors.Select(hex => new StampColorChoice(hex)).ToList();
+
+    /// <summary>Position des gewählten Stempels.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StampPreview))]
+    public partial int SelectedStampIndex { get; set; }
+
+    /// <summary>Farbe des nächsten Stempels.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StampPreview))]
+    public partial string StampColor { get; set; }
+
+    /// <summary>Ob Stempel das Datum tragen.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StampPreview))]
+    public partial bool StampDate { get; set; }
+
+    /// <summary>Ob Stempel den Namen tragen.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StampPreview), nameof(ShowNoNameHint))]
+    public partial bool StampName { get; set; }
+
+    /// <summary>Name für Stempel (aus den Einstellungen).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(StampPreview), nameof(ShowNoNameHint))]
+    public partial string UserName { get; set; }
+
+    /// <summary>Gewähltes Bild, das mit dem nächsten Klick gesetzt wird, oder <c>null</c>.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(HasPendingImage), nameof(PendingImageText))]
+    public partial PendingImage? PendingImage { get; set; }
+
+    /// <summary>Wählbare Stempelfarben.</summary>
+    public IReadOnlyList<string> StampColors => StampAnnotation.Colors;
+
+    /// <summary>Ob die Optionsleiste die Stempel zeigt.</summary>
+    public bool ShowStampOptions => Tool == Tool.Stamp;
+
+    /// <summary>Ob ein Bild auf das Setzen wartet.</summary>
+    public bool HasPendingImage => PendingImage is not null;
+
+    /// <summary>Hinweis zum wartenden Bild.</summary>
+    public string PendingImageText => PendingImage is { } image ? Loc.F("Stamp.ImagePending", image.Name) : string.Empty;
+
+    /// <summary>Hinweis, dass „Name“ angehakt, aber kein Name eingetragen ist.</summary>
+    public bool ShowNoNameHint => StampName && string.IsNullOrWhiteSpace(UserName);
+
+    /// <summary>Der gewählte Stempel.</summary>
+    public StampChoice? SelectedStamp => Stamps.Count == 0 ? null : Stamps[Math.Clamp(SelectedStampIndex, 0, Stamps.Count - 1)];
+
+    /// <summary>Vorschau des nächsten Stempels (mit Datum und Name, in der gewählten Farbe).</summary>
+    public StampAnnotation StampPreview => CreateStamp(new PdfPoint(0, 0), StampAnnotation.DefaultWidth, 0);
+
+    /// <summary>
+    /// Übernimmt die eigenen Stempel und baut die Auswahl neu auf (auch nach einem Sprachwechsel).
+    /// </summary>
+    /// <param name="customStamps">Die eigenen Stempel.</param>
+    public void SetCustomStamps(IReadOnlyList<Core.Settings.CustomStamp> customStamps)
+    {
+        CustomStamps = customStamps;
+        Stamps.Clear();
+        foreach (var (key, color) in StampAnnotation.Presets)
+        {
+            Stamps.Add(new StampChoice(Stamps.Count, Loc.T($"Stamp.{key}"), color, isCustom: false));
+        }
+
+        foreach (var stamp in customStamps)
+        {
+            Stamps.Add(new StampChoice(Stamps.Count, stamp.Text, stamp.ColorHex, isCustom: true));
+        }
+
+        var index = Math.Clamp(SelectedStampIndex, 0, Stamps.Count - 1);
+        SelectedStampIndex = index;
+        foreach (var choice in Stamps)
+        {
+            choice.IsSelected = choice.Index == index;
+        }
+
+        OnPropertyChanged(nameof(SelectedStamp));
+        OnPropertyChanged(nameof(StampPreview));
+        OnPropertyChanged(nameof(PresetChoices));
+        OnPropertyChanged(nameof(CustomChoices));
+        OnPropertyChanged(nameof(HasCustomStamps));
+    }
+
+    /// <summary>
+    /// Markiert die gewählte Stempelfarbe.
+    /// </summary>
+    /// <param name="value">Die neue Farbe.</param>
+    partial void OnStampColorChanged(string value)
+    {
+        foreach (var choice in StampColorChoices)
+        {
+            choice.IsSelected = string.Equals(choice.ColorHex, value, StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
+    /// <summary>
+    /// Wählt einen Stempel; die Farbe wird seine Standardfarbe.
+    /// </summary>
+    /// <param name="index">Seine Position.</param>
+    public void SelectStamp(int index)
+    {
+        SelectedStampIndex = Math.Clamp(index, 0, Stamps.Count - 1);
+        foreach (var choice in Stamps)
+        {
+            choice.IsSelected = choice.Index == SelectedStampIndex;
+        }
+
+        StampColor = Stamps[SelectedStampIndex].ColorHex;
+        OnPropertyChanged(nameof(SelectedStamp));
+    }
+
+    /// <summary>
+    /// Zweite Stempelzeile aus Datum und Name, je nach Häkchen.
+    /// </summary>
+    /// <param name="today">Heutiges Datum.</param>
+    /// <returns>Die Zeile oder leer.</returns>
+    public string StampDetail(DateTime today) => StampAnnotation.DetailLine(
+        StampDate ? today.ToString(Loc.Language == Core.Settings.UiLanguage.German ? "dd.MM.yyyy" : "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture) : null,
+        StampName ? UserName : null);
+
+    /// <summary>
+    /// Erzeugt den gewählten Stempel.
+    /// </summary>
+    /// <param name="center">Mitte.</param>
+    /// <param name="width">Breite.</param>
+    /// <param name="angle">Drehung in Grad.</param>
+    /// <returns>Der Stempel mit neuer Kennung.</returns>
+    public StampAnnotation CreateStamp(PdfPoint center, double width, double angle) =>
+        StampAnnotation.Create(SelectedStamp?.Text ?? string.Empty, StampDetail(DateTime.Today), StampColor, center, width, angle);
 
     /// <summary>Wo Pfeile ihre Spitzen tragen.</summary>
     [ObservableProperty]
@@ -328,6 +484,10 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
         TextColor = TextColor,
         Shape = Shape,
         SelectedSignature = SelectedSignatureIndex,
+        SelectedStamp = SelectedStampIndex,
+        StampColor = StampColor,
+        StampDate = StampDate,
+        StampName = StampName,
         ArrowEnds = ArrowEnds,
         TextSize = TextAnnotation.ClampFontSize(TextSize),
         MarkerColor = MarkerColor,
@@ -347,6 +507,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     {
         base.OnPropertyChanged(e);
         if (e.PropertyName is nameof(FreehandColor) or nameof(RectangleColor) or nameof(CommentColor) or nameof(MarkerColor) or nameof(TextColor) or nameof(TextSize) or nameof(Shape) or nameof(ArrowEnds) or nameof(SelectedSignatureIndex)
+            or nameof(SelectedStampIndex) or nameof(StampColor) or nameof(StampDate) or nameof(StampName)
             or nameof(FreehandWidth) or nameof(RectangleWidth) or nameof(MarkerHeight) or nameof(Smoothing)
             or nameof(PressureSensitive) or nameof(EraserRadius))
         {
@@ -367,6 +528,59 @@ public sealed partial class SignatureChoice(int index, Core.Signatures.Signature
 
     /// <summary>Die Unterschrift.</summary>
     public Core.Signatures.Signature Signature { get; } = signature;
+
+    /// <summary>Ob sie gewählt ist.</summary>
+    [ObservableProperty]
+    public partial bool IsSelected { get; set; }
+}
+
+/// <summary>
+/// Ein Stempel zur Auswahl: Vorlage oder eigener Stempel.
+/// </summary>
+/// <param name="index">Position in der Liste.</param>
+/// <param name="text">Stempeltext.</param>
+/// <param name="colorHex">Standardfarbe.</param>
+/// <param name="isCustom">Ob es ein eigener Stempel ist (löschbar).</param>
+public sealed partial class StampChoice(int index, string text, string colorHex, bool isCustom) : ObservableObject
+{
+    /// <summary>Position in der Liste.</summary>
+    public int Index { get; } = index;
+
+    /// <summary>Stempeltext.</summary>
+    public string Text { get; } = text;
+
+    /// <summary>Standardfarbe.</summary>
+    public string ColorHex { get; } = colorHex;
+
+    /// <summary>Ob es ein eigener Stempel ist.</summary>
+    public bool IsCustom { get; } = isCustom;
+
+    /// <summary>Vorschau ohne Datum und Name.</summary>
+    public StampAnnotation Preview { get; } = StampAnnotation.Create(text, string.Empty, colorHex, new PdfPoint(0, 0), StampAnnotation.DefaultWidth);
+
+    /// <summary>Ob er gewählt ist.</summary>
+    [ObservableProperty]
+    public partial bool IsSelected { get; set; }
+}
+
+/// <summary>
+/// Gewähltes Bild, das noch auf die Seite gesetzt wird.
+/// </summary>
+/// <param name="Image">Die Bilddaten.</param>
+/// <param name="Name">Dateiname.</param>
+public sealed record PendingImage(ImageData Image, string Name);
+
+/// <summary>
+/// Eine Stempelfarbe zur Auswahl.
+/// </summary>
+/// <param name="colorHex">Die Farbe.</param>
+public sealed partial class StampColorChoice(string colorHex) : ObservableObject
+{
+    /// <summary>Die Farbe.</summary>
+    public string ColorHex { get; } = colorHex;
+
+    /// <summary>Name der Farbe als Tooltip.</summary>
+    public string Name => Loc.T($"Stamp.Color.{ColorHex.TrimStart('#')}");
 
     /// <summary>Ob sie gewählt ist.</summary>
     [ObservableProperty]

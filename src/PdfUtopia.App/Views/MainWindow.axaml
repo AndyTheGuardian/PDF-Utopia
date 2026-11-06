@@ -23,6 +23,7 @@
     <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
     <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
     <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}" />
+    <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteImageCommand}" />
     <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
     <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding ZoomInCommand}" />
     <KeyBinding Gesture="Ctrl+Add" Command="{Binding ZoomInCommand}" />
@@ -75,6 +76,12 @@
     </Style>
     <Style Selector="Button.sigChip.selected">
       <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <Style Selector="Button.stampColor">
+      <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.stampColor.selected">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     </Style>
     <Style Selector="Border.formBar">
@@ -316,6 +323,9 @@
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Signature}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconSignature}" /><TextBlock Text="{loc:T Tool.Signature}" /></StackPanel>
             </RadioButton>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Stamp}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconStamp}" /><TextBlock Text="{loc:T Tool.Stamp}" /></StackPanel>
+            </RadioButton>
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Eraser}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconEraser}" /><TextBlock Text="{loc:T Tool.Eraser}" /></StackPanel>
             </RadioButton>
@@ -426,6 +436,80 @@
             <Button Content="{loc:T Signature.Manage}" VerticalAlignment="Center"
                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ManageSignaturesCommand}" />
           </StackPanel>
+          <!-- Stempel und Bild (A51, Mockup v7): Auswahl als Klappfeld, Datum/Name, Farbe, Bild -->
+          <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding ShowStampOptions}" VerticalAlignment="Center">
+            <Button x:Name="StampPicker" Classes="sigChip" Padding="6,2" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <controls:StampPreview Stamp="{Binding StampPreview}" Width="96" Height="24" />
+                <TextBlock Text="▾" Foreground="#555555" VerticalAlignment="Center" />
+              </StackPanel>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedLeft">
+                  <StackPanel Spacing="6" Width="324">
+                    <TextBlock Text="{loc:T Stamp.Presets}" Classes="hint" FontSize="11" />
+                    <ItemsControl ItemsSource="{Binding PresetChoices}">
+                      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:StampChoice">
+                          <Button Classes="sigChip" Classes.selected="{Binding IsSelected}" Width="156" Height="40" Click="OnStampChosen"
+                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectStampCommand}" CommandParameter="{Binding}">
+                            <controls:StampPreview Stamp="{Binding Preview}" Width="140" Height="28" />
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{loc:T Stamp.Custom}" Classes="hint" FontSize="11" IsVisible="{Binding HasCustomStamps}" Margin="0,4,0,0" />
+                    <ItemsControl ItemsSource="{Binding CustomChoices}" IsVisible="{Binding HasCustomStamps}">
+                      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:StampChoice">
+                          <Grid Width="156" Height="40">
+                            <Button Classes="sigChip" Classes.selected="{Binding IsSelected}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Click="OnStampChosen"
+                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectStampCommand}" CommandParameter="{Binding}">
+                              <controls:StampPreview Stamp="{Binding Preview}" Width="128" Height="28" />
+                            </Button>
+                            <Button Content="×" Padding="5,0" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,2,0"
+                                    Background="Transparent" Foreground="#666666" ToolTip.Tip="{loc:T Stamp.Delete}"
+                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteStampCommand}" CommandParameter="{Binding}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="{loc:T Stamp.New}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0" Click="OnStampChosen"
+                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NewStampCommand}" />
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <CheckBox Content="{loc:T Stamp.Date}" IsChecked="{Binding StampDate}" VerticalAlignment="Center" />
+            <CheckBox Content="{loc:T Stamp.Name}" IsChecked="{Binding StampName}" VerticalAlignment="Center" />
+            <Border IsVisible="{Binding ShowNoNameHint}" Background="{DynamicResource WarnBackgroundBrush}" CornerRadius="6" Padding="9,3" VerticalAlignment="Center">
+              <TextBlock Text="{loc:T Stamp.NoName}" Foreground="{DynamicResource WarnTextBrush}" FontSize="12" />
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <TextBlock Text="{loc:T Options.Color}" Classes="hint" VerticalAlignment="Center" />
+              <ItemsControl ItemsSource="{Binding StampColorChoices}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:StampColorChoice">
+                    <Button Classes="stampColor" Classes.selected="{Binding IsSelected}" Width="22" Height="22" CornerRadius="11" Padding="0" BorderThickness="2"
+                            Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}" ToolTip.Tip="{Binding Name}"
+                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SetStampColorCommand}" CommandParameter="{Binding ColorHex}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <Button Content="{loc:T Stamp.Image}" IsVisible="{Binding !HasPendingImage}" VerticalAlignment="Center"
+                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ChooseImageCommand}" />
+            <Border IsVisible="{Binding HasPendingImage}" Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBorderBrush}"
+                    BorderThickness="1" CornerRadius="7" Padding="8,2,2,2" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="{Binding PendingImageText}" VerticalAlignment="Center" FontSize="12" />
+                <Button Content="×" Padding="6,0" Background="Transparent" ToolTip.Tip="{loc:T Stamp.ImageCancel}"
+                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CancelImageCommand}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowArrowEnds}" VerticalAlignment="Center">
             <TextBlock Text="{loc:T Options.ArrowEnds}" Classes="hint" VerticalAlignment="Center" Margin="0,0,4,0" />
             <RadioButton Classes="fit" GroupName="arrowEnds" ToolTip.Tip="{loc:T ArrowEnds.End}"
@@ -475,6 +559,8 @@
           <TextBlock Classes="hint" Text="{Binding ActiveDocument.SelectionStatus, FallbackValue=''}" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold" />
         </StackPanel>
         <TextBlock Grid.Column="1" Classes="hint" Margin="18,0,0,0" Text="{Binding UndoStatus}" />
+        <TextBlock Grid.Column="3" Classes="hint" Margin="18,0,0,0" Text="{Binding StatusNotice}" Foreground="{DynamicResource AccentTextBrush}"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="18,0,0,0" IsVisible="{Binding HasDocument}">
           <TextBlock Classes="hint" Text="{Binding ActiveDocument.FileName, FallbackValue=''}" />
           <TextBlock Classes="hint" Text=" · " />

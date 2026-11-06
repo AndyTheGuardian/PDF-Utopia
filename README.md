@@ -14,6 +14,7 @@ weiterbearbeiten.
   Glättung.
 - **Radierer:** als Werkzeug oder über das Radiererende des Stifts.
 - **Seiten:** per Drag & Drop umsortieren, drehen, löschen, leere Seiten einfügen – auch mehrere Seiten auf einmal (Strg/Umschalt+Klick).
+- **Stempel und Bilder:** Vorlagen wie „Genehmigt“ oder eigene Texte, wahlweise mit Datum und Name; PNG/JPEG per Dialog, Drag & Drop oder Strg+V; verschieben, Größe ändern und drehen.
 - **Unterschrift:** bis zu fünf Unterschriften mit Stift oder Maus schreiben und als Stempel auf Seiten setzen (sichtbar, keine digitale Signatur).
 - **Anmerkungsübersicht:** alle Anmerkungen nach Seiten, mit Filter; ein Klick springt hin.
 - **Formulare:** direkt auf der Seite ausfüllen (Text, Kästchen, Optionen, Listen); sie bleiben beim Speichern ausfüllbar.

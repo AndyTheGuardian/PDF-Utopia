@@ -107,6 +107,24 @@ public sealed record AppSettings
     /// <summary>Gewählte Unterschrift (Position in der Liste, A49).</summary>
     public int SelectedSignature { get; init; }
 
+    /// <summary>Gewählter Stempel: Position der Vorlage, dahinter die eigenen Stempel (A51).</summary>
+    public int SelectedStamp { get; init; }
+
+    /// <summary>Farbe des nächsten Stempels.</summary>
+    public string StampColor { get; init; } = StampAnnotation.Presets[0].ColorHex;
+
+    /// <summary>Ob Stempel das Datum tragen.</summary>
+    public bool StampDate { get; init; } = true;
+
+    /// <summary>Ob Stempel den Namen tragen.</summary>
+    public bool StampName { get; init; }
+
+    /// <summary>Name für Stempel (F35).</summary>
+    public string UserName { get; init; } = string.Empty;
+
+    /// <summary>Eigene Stempel (F34).</summary>
+    public IReadOnlyList<CustomStamp> CustomStamps { get; init; } = [];
+
     /// <summary>Standardbreite der linken Leiste.</summary>
     public const double DefaultSidebarWidth = 220;
 
@@ -143,6 +161,11 @@ public sealed record AppSettings
         Smoothing = Math.Clamp(Smoothing, 0, 100),
         EraserRadius = EraserHitTest.ClampRadius(EraserRadius),
         SelectedSignature = Math.Clamp(SelectedSignature, 0, Signatures.Signature.MaxCount - 1),
+        CustomStamps = (CustomStamps ?? []).Where(stamp => stamp is not null && !string.IsNullOrWhiteSpace(stamp.Text))
+            .Select(stamp => new CustomStamp(Shorten(stamp.Text.Trim(), StampAnnotation.MaxTextLength), ValidColor(stamp.ColorHex, StampAnnotation.Colors[2])))
+            .Take(CustomStamp.MaxCount).ToList(),
+        StampColor = ValidColor(StampColor, StampAnnotation.Presets[0].ColorHex),
+        UserName = (UserName ?? string.Empty).Trim(),
         SidebarWidth = double.IsFinite(SidebarWidth) ? Math.Clamp(SidebarWidth, MinSidebarWidth, MaxSidebarWidth) : DefaultSidebarWidth,
     };
 
@@ -154,9 +177,23 @@ public sealed record AppSettings
     public UiLanguage ResolveLanguage(string systemLanguageName) =>
         Language ?? (string.Equals(systemLanguageName, "de", StringComparison.OrdinalIgnoreCase) ? UiLanguage.German : UiLanguage.English);
 
+    /// <summary>Kürzt einen Text auf eine Höchstlänge.</summary>
+    private static string Shorten(string text, int maxLength) => text.Length <= maxLength ? text : text[..maxLength];
+
     /// <summary>
     /// Gültige Farbe oder Ersatz.
     /// </summary>
     private static string ValidColor(string? hex, string fallback) =>
         AccentPalette.IsValidHex(hex) ? AccentPalette.Normalize(hex!) : fallback;
+}
+
+/// <summary>
+/// Eigener Stempel (F34).
+/// </summary>
+/// <param name="Text">Stempeltext (höchstens 30 Zeichen).</param>
+/// <param name="ColorHex">Farbe.</param>
+public sealed record CustomStamp(string Text, string ColorHex)
+{
+    /// <summary>Höchstzahl eigener Stempel.</summary>
+    public const int MaxCount = 10;
 }

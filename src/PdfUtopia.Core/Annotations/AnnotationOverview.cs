@@ -51,6 +51,12 @@ public enum AnnotationLabel
 
     /// <summary>Unterschrift (A49).</summary>
     Signature,
+
+    /// <summary>Stempel (A51).</summary>
+    Stamp,
+
+    /// <summary>Bild (A51).</summary>
+    Image,
 }
 
 /// <summary>
@@ -133,6 +139,8 @@ public static class AnnotationOverview
             EllipseAnnotation => (AnnotationCategory.Shape, AnnotationLabel.Ellipse, string.Empty),
             LineAnnotation line => (AnnotationCategory.Shape, line.Arrow == ArrowStyle.None ? AnnotationLabel.Line : AnnotationLabel.Arrow, string.Empty),
             TextAnnotation textAnnotation => (AnnotationCategory.Text, AnnotationLabel.Text, Shorten(textAnnotation.Text)),
+            StampAnnotation stamp => (AnnotationCategory.Shape, AnnotationLabel.Stamp, Shorten(stamp.Label)),
+            ImageAnnotation => (AnnotationCategory.Shape, AnnotationLabel.Image, string.Empty),
             _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
         };
         return new AnnotationEntry(index, page, annotation, category, label, null, text);

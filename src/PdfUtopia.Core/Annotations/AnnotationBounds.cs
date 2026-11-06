@@ -23,6 +23,7 @@ public static class AnnotationBounds
         CommentAnnotation comment => comment.Bounds,
         TextAnnotation text => text.Bounds,
         SignatureAnnotation signature => Inflate(signature.Bounds, signature.Width),
+        BoxAnnotation box => box.Envelope,
         _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
     };
 

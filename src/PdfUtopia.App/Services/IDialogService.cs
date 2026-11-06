@@ -55,7 +55,8 @@ public sealed record InsertChoice(PdfSource Source, IReadOnlyList<int> Pages, in
 /// <param name="Theme">Erscheinungsbild.</param>
 /// <param name="Language">Sprache.</param>
 /// <param name="UndoLimit">Höchstzahl der Rückgängig-Schritte.</param>
-public sealed record SettingsChoice(ThemePreference Theme, UiLanguage Language, int UndoLimit);
+/// <param name="UserName">Name für Stempel (F35).</param>
+public sealed record SettingsChoice(ThemePreference Theme, UiLanguage Language, int UndoLimit, string UserName);
 
 /// <summary>
 /// Dialoge und Dateiauswahl, entkoppelt vom ViewModel (testbar, austauschbar).
@@ -110,6 +111,25 @@ public interface IDialogService
     /// <param name="persist">Speichert die Unterschriften nach jeder Änderung.</param>
     /// <returns>Die Unterschriften nach dem Schließen.</returns>
     Task<IReadOnlyList<Signature>> EditSignaturesAsync(IReadOnlyList<Signature> signatures, int startSlot, Action<IReadOnlyList<Signature>> persist);
+
+    /// <summary>
+    /// Wählt ein Bild (PNG oder JPEG) zum Einfügen (A51).
+    /// </summary>
+    /// <returns>Der Pfad oder <c>null</c> bei Abbruch.</returns>
+    Task<string?> PickImageFileAsync();
+
+    /// <summary>
+    /// Fragt nach Text und Farbe eines eigenen Stempels (A51).
+    /// </summary>
+    /// <param name="detail">Zweite Zeile (Datum, Name) für die Vorschau.</param>
+    /// <returns>Der Stempel oder <c>null</c> bei Abbruch.</returns>
+    Task<CustomStamp?> AskCustomStampAsync(string detail);
+
+    /// <summary>
+    /// Liest ein Bild aus der Zwischenablage (A51).
+    /// </summary>
+    /// <returns>Das Bild oder <c>null</c>, wenn die Zwischenablage keines enthält.</returns>
+    Task<LoadedImage?> ReadClipboardImageAsync();
 
     /// <summary>Zeigt die Einstellungen.</summary>
     /// <param name="current">Aktuelle Werte.</param>

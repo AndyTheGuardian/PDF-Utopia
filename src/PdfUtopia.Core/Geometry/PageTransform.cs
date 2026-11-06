@@ -102,6 +102,12 @@ public static class PageTransform
                 Anchor = Rotate(text.Anchor, rotation, width, height),
                 Orientation = (PageRotation)(((int)text.Orientation - (int)rotation + 360) % 360),
             },
+            // Stempel und Bilder: Mitte wandert mit, die Drehung kommt zur eigenen hinzu
+            BoxAnnotation box => box with
+            {
+                Bounds = BoxAnnotation.Centered(Rotate(box.Center, rotation, width, height), box.Bounds.Width, box.Bounds.Height),
+                Angle = BoxAnnotation.NormalizeAngle(box.Angle + (int)rotation),
+            },
             _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
         };
     }

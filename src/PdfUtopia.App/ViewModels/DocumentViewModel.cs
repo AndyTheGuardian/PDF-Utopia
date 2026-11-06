@@ -356,6 +356,39 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// <param name="annotation">Die Annotation.</param>
     public void AddAnnotation(Annotation annotation) => Document.AddAnnotation(CurrentPage.Id, annotation);
 
+    /// <summary>Angeklickter Stempel bzw. angeklicktes Bild der aktuellen Seite (Griffe zum Ändern, A51).</summary>
+    [ObservableProperty]
+    public partial Guid? SelectedBox { get; set; }
+
+    /// <summary>
+    /// Setzt einen Stempel oder ein Bild, das in Anzeige-Koordinaten angelegt wurde, auf die aktuelle Seite.
+    /// </summary>
+    /// <param name="display">Stempel oder Bild in Anzeige-Koordinaten.</param>
+    /// <returns>Die gesetzte Anmerkung (Koordinaten der ungedrehten Seite).</returns>
+    public BoxAnnotation PlaceBox(BoxAnnotation display)
+    {
+        var page = ToPage(display);
+        AddAnnotation(page);
+        return page;
+    }
+
+    /// <summary>
+    /// Rechnet einen Stempel oder ein Bild aus der Anzeige auf die ungedrehte aktuelle Seite um.
+    /// </summary>
+    /// <param name="display">In Anzeige-Koordinaten.</param>
+    /// <returns>In Koordinaten der ungedrehten Seite.</returns>
+    public BoxAnnotation ToPage(BoxAnnotation display)
+    {
+        var (width, height) = CurrentPageSize;
+        var rotation = CurrentPage.Rotation;
+        var center = PageTransform.Unrotate(display.Center, rotation, width, height);
+        return display with
+        {
+            Bounds = BoxAnnotation.Centered(center, display.Bounds.Width, display.Bounds.Height),
+            Angle = BoxAnnotation.NormalizeAngle(display.Angle - (int)rotation),
+        };
+    }
+
     /// <summary>
     /// Entfernt Annotationen der angezeigten Seite als einen Schritt.
     /// </summary>

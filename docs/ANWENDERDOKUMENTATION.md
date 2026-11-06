@@ -191,6 +191,40 @@ angezeigt, lassen sich aber erst nach Speichern und erneutem Öffnen ausfüllen.
 XFA-Formulare, JavaScript (Berechnungen, Prüfungen, Formate), Schaltflächen mit Aktionen und digitale
 Signaturfelder; eigene Schriften des Formulars werden für neue Feldinhalte durch Helvetica ersetzt.
 
+### 5.0a Stempel und Bilder
+
+Mit dem Werkzeug **Stempel** setzen Sie einen Stempel oder ein Bild auf die Seite. Die Optionsleiste enthält:
+
+- **Stempelauswahl** (Klappfeld mit Vorschau): die Vorlagen Genehmigt, Geprüft, Erledigt, Entwurf, Vertraulich,
+  Abgelehnt und Kopie, darunter Ihre eigenen Stempel (× löscht) und **+ Eigener Text…**. Der Dialog „Eigener
+  Stempel“ nimmt einen Text mit höchstens 30 Zeichen und eine Farbe auf; eigene Stempel werden in den Einstellungen
+  gespeichert (höchstens zehn).
+- **Datum** und **Name**: Der Stempel trägt darunter das heutige Datum und/oder den Namen aus den Einstellungen
+  („Name für Stempel“). Ist kein Name eingetragen, weist die Leiste darauf hin.
+- **Farbe**: Grün, Rot, Blau, Schwarz. Beim Wählen eines Stempels gilt seine Standardfarbe.
+- **Bild…**: wählt ein PNG- oder JPEG-Bild, das mit dem nächsten Klick gesetzt wird; × verwirft es.
+
+Gesetzt wird wie bei der Unterschrift: Ein blasses Abbild folgt dem Mauszeiger, ein **Klick** setzt den Stempel
+150 pt (Bilder 200 pt) breit mittig auf den Klickpunkt, **Ziehen** bestimmt die Breite; das Seitenverhältnis bleibt.
+Bilder lassen sich außerdem per **Drag & Drop** einer PNG- oder JPEG-Datei auf die Seite oder mit **Strg+V** aus der
+Zwischenablage einfügen; PDF Utopia wechselt dann zum Werkzeug „Stempel“. Bilder mit mehr als 2000 Pixeln an der
+längsten Kante werden verkleinert, die Statusleiste meldet das. JPEG-Bilder in erlaubter Größe werden unverändert
+eingebettet, Transparenz bleibt erhalten.
+
+Ein angeklickter Stempel bzw. ein angeklicktes Bild erhält einen gestrichelten Rahmen in der Akzentfarbe mit vier
+Eckgriffen und einem runden **Drehgriff** darüber:
+
+- **Ziehen** in der Fläche verschiebt.
+- **Eckgriffe** ändern die Größe; die gegenüberliegende Ecke bleibt stehen, das Seitenverhältnis bleibt.
+- Der **Drehgriff** dreht um die Mitte und rastet in 15°-Schritten ein; mit gedrückter **Umschalttaste** stufenlos.
+- **Entf** löscht, **Esc** hebt die Auswahl auf (bzw. verwirft ein gewähltes, noch nicht gesetztes Bild).
+
+Jede Aktion ist ein Rückgängig-Schritt; der Radierer entfernt Stempel und Bilder ebenfalls. Auf einer gedrehten Seite
+steht ein neuer Stempel aufrecht und dreht sich danach mit der Seite. Gespeichert werden beide als
+Standard-Annotation „Stamp“ mit eigenem Erscheinungsbild (Text in Helvetica, Zeichen außerhalb des westeuropäischen
+Zeichensatzes erscheinen als „?“, E5) und sind in PDF Utopia wieder bearbeitbar. In der Anmerkungsübersicht stehen
+sie unter „Formen“.
+
 ### 5.1a Unterschrift
 
 Mit dem Werkzeug **Unterschrift** setzen Sie eine zuvor geschriebene Unterschrift auf die Seite. Ist noch keine
@@ -439,6 +473,9 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 | Strg+Z | Rückgängig |
 | Strg+Y oder Strg+Umschalt+Z | Wiederholen |
 | Strg+Plus / Strg+Minus | Vergrößern / Verkleinern |
+| Strg+V | Bild aus der Zwischenablage einfügen |
+| Entf / Esc (Werkzeug „Stempel“) | angeklickten Stempel bzw. angeklicktes Bild löschen / Auswahl aufheben |
+| Umschalt beim Drehen | stufenlos drehen statt in 15°-Schritten |
 | Strg+F | Suchfeld |
 | Enter (im Suchfeld) | nächste Seite mit Treffern |
 | Esc (im Suchfeld) | Suche beenden |
@@ -464,7 +501,7 @@ PDF Utopia speichert seine Einstellungen bei jeder Änderung in einer JSON-Datei
 | macOS | `~/Library/Application Support/PDF Utopia/settings.json` |
 
 Gespeichert werden Design, Sprache, Akzentfarbe, Pastell-Sättigung, eigene Farben, Anzahl der
-Rückgängig-Schritte sowie Farben und Einstellungen der Werkzeuge. Ist die Datei beschädigt oder enthält
+Rückgängig-Schritte, der Name für Stempel, eigene Stempel sowie Farben und Einstellungen der Werkzeuge. Ist die Datei beschädigt oder enthält
 ungültige Werte, startet PDF Utopia mit den Standardwerten bzw. ersetzt nur die ungültigen Werte. Zum
 Zurücksetzen aller Einstellungen genügt es, die Datei zu löschen, während PDF Utopia geschlossen ist.
 
@@ -495,6 +532,7 @@ Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
 | – | Annotationen anderer Programme werden angezeigt, sind aber nicht bearbeitbar. |
 | – | Beim Speichern einer geschützten Fremddatei geht ein abweichendes Besitzerpasswort verloren; es wird durch das eingegebene Passwort ersetzt. |
 | – | Die Absatzerkennung kann bei Spalten, Tabellen oder ungewöhnlichem Satz danebenliegen; dann einen Bereich aufziehen. |
+| – | Eingefügte Bilder werden nur als PNG oder JPEG gelesen; Bilder über 2000 Pixel werden verkleinert. Stempel und Bilder zeigt die Seitenminiatur erst nach dem Speichern und erneuten Öffnen. |
 | – | Beim Einfügen von Seiten werden Lesezeichen und Verknüpfungen der eingefügten Datei nicht übernommen; ihre Formularfelder schon (gleichnamige werden umbenannt). Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 
 ---

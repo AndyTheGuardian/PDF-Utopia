@@ -173,13 +173,13 @@ public sealed partial class AnnotationListItem : ObservableObject
     public string NumberPrefix => Entry?.FootnoteNumber is { } number ? $"{number} " : string.Empty;
 
     /// <summary>
-    /// Beschreibung: Kommentar- und Textinhalt direkt, Markierungen mit markiertem Text, sonst die Art.
+    /// Beschreibung: Kommentar- und Textinhalt direkt, Markierungen und Stempel mit ihrem Text, sonst die Art.
     /// </summary>
     public string Description => Entry switch
     {
         null => string.Empty,
         { Label: AnnotationLabel.Comment or AnnotationLabel.Text } entry => entry.Text,
-        { Label: AnnotationLabel.Highlight, Text.Length: > 0 } entry => $"{Loc.T("Annotations.Label.Highlight")}: „{entry.Text}“",
+        { Label: AnnotationLabel.Highlight or AnnotationLabel.Stamp, Text.Length: > 0 } entry => $"{Loc.T($"Annotations.Label.{entry.Label}")}: „{entry.Text}“",
         { } entry => Loc.T($"Annotations.Label.{entry.Label}"),
     };
 

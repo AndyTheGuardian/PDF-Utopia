@@ -38,6 +38,7 @@ public sealed class RoundTripTests : IDisposable
         new SignatureAnnotation(Guid.NewGuid(), "#1E3A8A", 1.5,
             [[new(new PdfPoint(320, 700), 0.4f), new(new PdfPoint(380, 660), 0.8f), new(new PdfPoint(420, 700), 0.6f)],
              [new(new PdfPoint(330, 715), 0.5f), new(new PdfPoint(460, 712), 0.5f)]], PressureSensitive: true),
+        new StampAnnotation(Guid.NewGuid(), "#B91C1C", new PdfRect(380, 40, 160, 40), 20, "Vertraulich", "06.11.2026 · A. Muster"),
     ];
 
     [Fact]

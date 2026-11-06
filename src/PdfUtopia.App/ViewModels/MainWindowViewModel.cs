@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfUtopia.App.Localization;
 using PdfUtopia.App.Services;
+using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Geometry;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
@@ -472,6 +473,171 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private void SelectSignature(SignatureChoice choice) => ToolOptions.SelectSignature(choice.Index);
 
+    /// <summary>Wählt einen Stempel in der Optionsleiste (A51).</summary>
+    /// <param name="choice">Der Stempel.</param>
+    [RelayCommand]
+    private void SelectStamp(StampChoice choice)
+    {
+        ToolOptions.SelectStamp(choice.Index);
+        ToolOptions.PendingImage = null;
+    }
+
+    /// <summary>Setzt die Farbe des nächsten Stempels.</summary>
+    /// <param name="hex">Die Farbe.</param>
+    [RelayCommand]
+    private void SetStampColor(string hex) => ToolOptions.StampColor = hex;
+
+    /// <summary>Legt einen eigenen Stempel an und wählt ihn.</summary>
+    [RelayCommand]
+    private async Task NewStampAsync()
+    {
+        if (await _dialogs.AskCustomStampAsync(ToolOptions.StampDetail(DateTime.Today)) is not { } stamp)
+        {
+            return;
+        }
+
+        SaveCustomStamps([.. ToolOptions.CustomStamps, stamp]);
+        ToolOptions.SelectStamp(ToolOptions.Stamps.Count - 1);
+        ToolOptions.PendingImage = null;
+    }
+
+    /// <summary>Löscht einen eigenen Stempel.</summary>
+    /// <param name="choice">Der Stempel.</param>
+    [RelayCommand]
+    private void DeleteStamp(StampChoice choice)
+    {
+        if (!choice.IsCustom)
+        {
+            return;
+        }
+
+        var customIndex = choice.Index - StampAnnotation.Presets.Count;
+        var selected = ToolOptions.SelectedStampIndex;
+        SaveCustomStamps(ToolOptions.CustomStamps.Where((_, i) => i != customIndex).ToList());
+        if (selected == choice.Index)
+        {
+            ToolOptions.SelectStamp(0);
+        }
+        else if (selected > choice.Index)
+        {
+            ToolOptions.SelectStamp(selected - 1);
+        }
+    }
+
+    /// <summary>Wählt ein Bild, das mit dem nächsten Klick auf die Seite gesetzt wird (A51).</summary>
+    [RelayCommand]
+    private async Task ChooseImageAsync()
+    {
+        if (await _dialogs.PickImageFileAsync() is not { } path)
+        {
+            return;
+        }
+
+        if (await LoadImageAsync(path) is { } loaded)
+        {
+            ToolOptions.PendingImage = new PendingImage(loaded.Image, Path.GetFileName(path));
+        }
+    }
+
+    /// <summary>Verwirft das gewählte, noch nicht gesetzte Bild.</summary>
+    [RelayCommand]
+    private void CancelImage() => ToolOptions.PendingImage = null;
+
+    /// <summary>Fügt ein Bild aus der Zwischenablage mittig auf der aktuellen Seite ein (Strg+V).</summary>
+    [RelayCommand]
+    private async Task PasteImageAsync()
+    {
+        if (ActiveDocument is not { } document || await _dialogs.ReadClipboardImageAsync() is not { } loaded)
+        {
+            return;
+        }
+
+        var (width, height) = document.CurrentDisplaySize;
+        PlaceImage(document, loaded, new PdfPoint(width / 2, height / 2));
+    }
+
+    /// <summary>
+    /// Liest eine Bilddatei; meldet nicht lesbare Bilder und eine Verkleinerung.
+    /// </summary>
+    /// <param name="path">Pfad der Datei.</param>
+    /// <returns>Das Bild oder <c>null</c>.</returns>
+    public async Task<LoadedImage?> LoadImageAsync(string path)
+    {
+        LoadedImage? loaded = null;
+        try
+        {
+            loaded = ImageLoader.FromBytes(await File.ReadAllBytesAsync(path));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // wie ein nicht lesbares Bild behandeln
+        }
+
+        if (loaded is null)
+        {
+            await _dialogs.ShowMessageAsync(Loc.T("Stamp.ImageTitle"), Loc.F("Stamp.ImageFailed", Path.GetFileName(path)));
+            return null;
+        }
+
+        ReportShrunk(loaded);
+        return loaded;
+    }
+
+    /// <summary>
+    /// Setzt ein Bild in Standardbreite mit der Mitte auf einen Punkt der Anzeige, schaltet auf das Werkzeug „Stempel“
+    /// und wählt das Bild, damit es gleich verschoben werden kann (Drag &amp; Drop, Zwischenablage).
+    /// </summary>
+    /// <param name="document">Das Dokument.</param>
+    /// <param name="loaded">Das Bild.</param>
+    /// <param name="display">Mitte in Anzeige-Koordinaten der aktuellen Seite.</param>
+    public void PlaceImage(DocumentViewModel document, LoadedImage loaded, PdfPoint display)
+    {
+        ReportShrunk(loaded);
+        var image = document.PlaceBox(ImageAnnotation.Create(loaded.Image, display, ImageAnnotation.DefaultWidth));
+        ToolOptions.Tool = Tool.Stamp;
+        document.SelectedBox = image.Id;
+    }
+
+    /// <summary>Meldet in der Statusleiste, dass ein Bild verkleinert wurde (F36).</summary>
+    private void ReportShrunk(LoadedImage loaded)
+    {
+        if (loaded.WasShrunk)
+        {
+            ShowStatusNotice(Loc.F("Stamp.ImageShrunk", loaded.Image.PixelWidth, loaded.Image.PixelHeight, loaded.OriginalWidth, loaded.OriginalHeight));
+        }
+    }
+
+    /// <summary>Kurzer Hinweis in der Statusleiste.</summary>
+    [ObservableProperty]
+    public partial string StatusNotice { get; set; } = string.Empty;
+
+    private Avalonia.Threading.DispatcherTimer? _noticeTimer;
+
+    /// <summary>
+    /// Zeigt einen Hinweis einige Sekunden lang in der Statusleiste.
+    /// </summary>
+    /// <param name="text">Der Hinweis.</param>
+    private void ShowStatusNotice(string text)
+    {
+        StatusNotice = text;
+        _noticeTimer?.Stop();
+        _noticeTimer = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromSeconds(6), Avalonia.Threading.DispatcherPriority.Background, (_, _) =>
+        {
+            StatusNotice = string.Empty;
+            _noticeTimer?.Stop();
+        });
+        _noticeTimer.Start();
+    }
+
+    /// <summary>
+    /// Speichert die eigenen Stempel und baut die Auswahl neu auf.
+    /// </summary>
+    private void SaveCustomStamps(IReadOnlyList<CustomStamp> stamps)
+    {
+        SaveSettings(_settings with { CustomStamps = stamps });
+        ToolOptions.SetCustomStamps(_settings.CustomStamps);
+    }
+
     /// <summary>
     /// Zeigt den Unterschriften-Dialog; Änderungen werden sofort gespeichert.
     /// </summary>
@@ -635,6 +801,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (Loc.Language != language)
         {
             Loc.Language = language;
+            ToolOptions.SetCustomStamps(ToolOptions.CustomStamps);
             LanguageChanged?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -643,13 +810,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenSettingsAsync()
     {
-        var choice = await _dialogs.EditSettingsAsync(new SettingsChoice(_settings.Theme, Loc.Language, _settings.UndoLimit));
+        var choice = await _dialogs.EditSettingsAsync(new SettingsChoice(_settings.Theme, Loc.Language, _settings.UndoLimit, _settings.UserName));
         if (choice is null)
         {
             return;
         }
 
-        SaveSettings(_settings with { UndoLimit = choice.UndoLimit });
+        SaveSettings(_settings with { UndoLimit = choice.UndoLimit, UserName = choice.UserName });
+        ToolOptions.UserName = _settings.UserName;
         foreach (var document in Documents)
         {
             document.Document.History.Limit = choice.UndoLimit;
