@@ -394,7 +394,14 @@
     </Border>
 
     <!-- Werkzeugoptionen -->
-    <Border x:Name="ToolOptionsBar" DockPanel.Dock="Top" Classes="bar" Background="{DynamicResource Surface2Brush}" Padding="12,6" MinHeight="40">
+    <!-- Feste Höhe, damit die Leiste bei jedem Werkzeug gleich hoch ist (P19); Schieberegler sind von Haus aus höher -->
+    <Border x:Name="ToolOptionsBar" DockPanel.Dock="Top" Classes="bar" Background="{DynamicResource Surface2Brush}" Padding="12,6" Height="46">
+      <Border.Styles>
+        <!-- Schieberegler behalten ihre Darstellung, belegen aber nur die Höhe der übrigen Bedienelemente -->
+        <Style Selector="Slider">
+          <Setter Property="Margin" Value="0,-8" />
+        </Style>
+      </Border.Styles>
       <Grid ColumnDefinitions="Auto,*">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" DataContext="{Binding ToolOptions}" x:DataType="vm:ToolOptionsViewModel">
           <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
