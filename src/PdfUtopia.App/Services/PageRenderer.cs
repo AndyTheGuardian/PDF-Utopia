@@ -23,8 +23,9 @@ public sealed class PageRenderer(Func<int, PdfSource> sourceOf) : IDisposable
     /// </summary>
     /// <param name="page">Die Seite.</param>
     /// <param name="scale">Pixel je Punkt.</param>
+    /// <param name="drawForms"><c>false</c>: Formularfelder weglassen (die Seitenansicht zeigt sie als Eingabefelder).</param>
     /// <returns>Die Bitmap.</returns>
-    public async Task<Bitmap> RenderAsync(PageEntry page, double scale)
+    public async Task<Bitmap> RenderAsync(PageEntry page, double scale, bool drawForms = true)
     {
         var key = (page.SourceIndex, page.SourcePageNumber, page.Rotation, Math.Round(scale, 3));
         if (_cache.TryGetValue(key, out var cached))
@@ -33,7 +34,7 @@ public sealed class PageRenderer(Func<int, PdfSource> sourceOf) : IDisposable
         }
 
         var source = sourceOf(page.SourceIndex);
-        var rendered = await Task.Run(() => source.Render(page.SourcePageNumber, key.Item4, page.Rotation));
+        var rendered = await Task.Run(() => source.Render(page.SourcePageNumber, key.Item4, page.Rotation, drawForms));
         var bitmap = ToBitmap(rendered);
         Remember(key, bitmap);
         return bitmap;

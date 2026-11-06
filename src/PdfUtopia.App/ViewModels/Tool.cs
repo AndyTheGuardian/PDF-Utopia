@@ -17,8 +17,20 @@ public enum Tool
     /// <summary>Freihand.</summary>
     Freehand,
 
-    /// <summary>Rechteck.</summary>
-    Rectangle,
+    /// <summary>Formen: Rechteck, Ellipse, Linie, Pfeil (A44).</summary>
+    Shape,
+
+    /// <summary>Freier Text (A43).</summary>
+    Text,
+
+    /// <summary>Unterschrift (A49).</summary>
+    Signature,
+
+    /// <summary>Stempel und Bilder (A51).</summary>
+    Stamp,
+
+    /// <summary>Schwärzen (A52).</summary>
+    Redact,
 
     /// <summary>Radierer (Objekt-Radierer).</summary>
     Eraser,
@@ -35,9 +47,12 @@ public enum ColorTarget
     /// <summary>Freihand.</summary>
     Freehand,
 
-    /// <summary>Rechteck.</summary>
-    Rectangle,
+    /// <summary>Formen.</summary>
+    Shape,
 
     /// <summary>Kommentar.</summary>
     Comment,
+
+    /// <summary>Text-Werkzeug.</summary>
+    Text,
 }

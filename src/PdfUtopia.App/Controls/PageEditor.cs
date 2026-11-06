@@ -3,23 +3,26 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Media;
+using Avalonia.Threading;
+using Avalonia.VisualTree;
 using PdfUtopia.App.Localization;
 using PdfUtopia.App.ViewModels;
 using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Drawing;
 using PdfUtopia.Core.Geometry;
+using PdfUtopia.Core.Signatures;
 using PdfUtopia.Core.Theming;
 using BezierSegment = PdfUtopia.Core.Drawing.BezierSegment;
 
 namespace PdfUtopia.App.Controls;
 
 /// <summary>
-/// Zeigt die aktuelle Seite mit ihren Annotationen und nimmt Eingaben für Marker, Freihand, Rechteck,
-/// Kommentar und Radierer entgegen. Die Größe entspricht der angezeigten Seite in Punkten; der Zoom wird von
+/// Zeigt die aktuelle Seite mit ihren Annotationen und nimmt Eingaben für Marker, Freihand, Formen,
+/// Kommentar, Text und Radierer entgegen. Text wird in einem eingeblendeten Textfeld geschrieben (A43). Die Größe entspricht der angezeigten Seite in Punkten; der Zoom wird von
 /// außen über eine Layout-Transformation angewandt, die Seite aber passend zum Zoom scharf gerendert.
 /// Eingaberegeln aus dem Mockup-Test (A12): nicht an Zeiger-ID oder Gerätetyp gebunden, nur bei Kontakt.
 /// </summary>
-public sealed class PageEditor : Control
+public sealed partial class PageEditor : Control
 {
     /// <summary>Angezeigtes Dokument.</summary>
     public static readonly StyledProperty<DocumentViewModel?> DocumentProperty =
@@ -37,6 +40,13 @@ public sealed class PageEditor : Control
     private const double CommentBorderWidth = 1.5;
     private const byte CommentFillAlpha = 36;
     private const byte MarkerAlpha = 115;
+    private const double TextHitMargin = 3;
+    private const double FlashPadding = 6;
+    private static readonly TimeSpan FlashDuration = TimeSpan.FromSeconds(1.6);
+    private static readonly TimeSpan FlashFadeStart = TimeSpan.FromSeconds(1.1);
+
+    /// <summary>Schrift mit denselben Zeichenbreiten wie Helvetica, damit Anzeige und PDF gleich umbrechen.</summary>
+    private static readonly FontFamily TextFont = new("Liberation Sans, Arial, Helvetica, sans-serif");
 
     private readonly StrokeRecorder _recorder = new();
     private readonly List<PdfPoint> _eraserPath = [];
@@ -50,12 +60,34 @@ public sealed class PageEditor : Control
     private Guid? _hoveredBadge;
     private PdfRect? _suggestedParagraph;
     private DocumentViewModel? _subscribed;
+    private ToolOptionsViewModel? _subscribedOptions;
+    private TextAnnotation? _movingText;
+    private SignatureAnnotation? _movingSignature;
+    private bool _overSignature;
+    private bool _constrain;
+    private Guid? _flashId;
+    private DateTime _flashStart;
+    private DispatcherTimer? _flashTimer;
+    private Guid? _hoveredText;
+    private TextBox? _textEditor;
+    private TextAnnotation? _editing;
+    private int _editingPageId;
+    private bool _editingIsNew;
 
     static PageEditor()
     {
         AffectsMeasure<PageEditor>(DocumentProperty);
         AffectsRender<PageEditor>(DocumentProperty, OptionsProperty);
         FocusableProperty.OverrideDefaultValue<PageEditor>(true);
+    }
+
+    /// <summary>
+    /// Initialisiert den Editor; Text auf der Seite wird in Graustufen geglättet wie die gerenderte Seite.
+    /// </summary>
+    public PageEditor()
+    {
+        TextOptions.SetTextRenderingMode(this, TextRenderingMode.Antialias);
+        InitializeImageDrop();
     }
 
     /// <summary>Angezeigtes Dokument.</summary>
@@ -87,8 +119,24 @@ public sealed class PageEditor : Control
             return default;
         }
 
+        _textEditor?.Measure(Size.Infinity);
+        MeasureFormFields();
         var (width, height) = Document.CurrentDisplaySize;
         return new Size(width, height);
+    }
+
+    /// <inheritdoc />
+    protected override Size ArrangeOverride(Size finalSize)
+    {
+        // Eingabefeld an den Anker des bearbeiteten Texts; die Drehung übernimmt seine Render-Transformation
+        if (_textEditor is { } editor && _editing is { } text)
+        {
+            var anchor = ((TextAnnotation)ToDisplay(text)).Anchor;
+            editor.Arrange(new Rect(new Point(anchor.X, anchor.Y), new Size(text.Width, editor.DesiredSize.Height)));
+        }
+
+        ArrangeFormFields();
+        return finalSize;
     }
 
     /// <inheritdoc />
@@ -97,12 +145,21 @@ public sealed class PageEditor : Control
         base.OnPropertyChanged(change);
         if (change.Property == DocumentProperty)
         {
+            CommitText();
             Subscribe(Document);
             RequestRender();
+        }
+        else if (change.Property == OptionsProperty)
+        {
+            SubscribeOptions(Options);
         }
         else if (change.Property == ZoomProperty)
         {
             RequestRender();
+        }
+        else if (change.Property == HighlightFieldsProperty)
+        {
+            ApplyFormLook();
         }
     }
 
@@ -132,7 +189,11 @@ public sealed class PageEditor : Control
     /// <summary>
     /// Zeichnet nach geänderten Anwendungsressourcen neu.
     /// </summary>
-    private void OnApplicationResourcesChanged(object? sender, ResourcesChangedEventArgs e) => InvalidateVisual();
+    private void OnApplicationResourcesChanged(object? sender, ResourcesChangedEventArgs e)
+    {
+        ApplyFormLook();
+        InvalidateVisual();
+    }
 
     /// <inheritdoc />
     public override void Render(DrawingContext context)
@@ -151,7 +212,9 @@ public sealed class PageEditor : Control
 
         DrawSearchHits(context, document);
 
-        foreach (var annotation in document.CurrentAnnotations)
+        foreach (var annotation in document.CurrentAnnotations.Where(annotation =>
+                     annotation.Id != _editing?.Id && annotation.Id != _movingText?.Id && annotation.Id != _movingSignature?.Id
+                     && annotation.Id != _boxPreview?.Id))
         {
             var display = ToDisplay(annotation);
             using (context.PushOpacity(_eraserHits.Contains(annotation.Id) ? 0.2 : 1))
@@ -161,6 +224,11 @@ public sealed class PageEditor : Control
         }
 
         DrawSuggestion(context);
+        DrawTextFrames(context);
+        DrawSignatureGhost(context);
+        DrawBoxOverlay(context);
+        DrawRedactionGesture(context);
+        DrawFlash(context);
         DrawGesture(context);
         DrawEraserCursor(context);
     }
@@ -176,6 +244,7 @@ public sealed class PageEditor : Control
 
         var point = e.GetCurrentPoint(this);
         var display = ToPoint(point.Position);
+        _constrain = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         if (_hoveredBadge is { } badge && point.Properties.IsLeftButtonPressed)
         {
             Document.Document.RemoveAnnotation(Document.CurrentPage.Id, badge);
@@ -196,6 +265,17 @@ public sealed class PageEditor : Control
             return;
         }
 
+        // Ein Klick neben das Textfeld schließt die Bearbeitung ab
+        CommitText();
+
+        // Unterschrift setzen, aber noch keine gespeichert: Unterschriftenfeld öffnen (A49)
+        if (tool == Tool.Signature && Options.SelectedSignature is null && SignatureAt(display) is null)
+        {
+            Options.RequestSignatureDialog();
+            e.Handled = true;
+            return;
+        }
+
         // Sonst wertet die umgebende Bildlaufleiste Stiftbewegungen als Wischgeste und verschiebt die Seite
         e.PreventGestureRecognition();
         Begin(tool, display, sample);
@@ -210,6 +290,7 @@ public sealed class PageEditor : Control
         var point = e.GetCurrentPoint(this);
         _pointer = ToPoint(point.Position);
         _eraserEndHovering = point.Properties.IsEraser;
+        _constrain = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         if (_gesture is null)
         {
             UpdateHover(_pointer.Value, point.Properties.IsEraser);
@@ -233,6 +314,7 @@ public sealed class PageEditor : Control
     protected override void OnPointerReleased(PointerReleasedEventArgs e)
     {
         base.OnPointerReleased(e);
+        _constrain = e.KeyModifiers.HasFlag(KeyModifiers.Shift);
         Finish();
     }
 
@@ -264,7 +346,17 @@ public sealed class PageEditor : Control
         _start = _current = display;
         _eraserPath.Clear();
         _eraserHits.Clear();
-        if (tool == Tool.Freehand)
+        _movingText = tool == Tool.Text ? TextAt(display) : null;
+        _movingSignature = tool == Tool.Signature ? SignatureAt(display) : null;
+        if (tool == Tool.Stamp)
+        {
+            BeginBox(display);
+        }
+        else if (tool == Tool.Redact)
+        {
+            BeginRedaction(display);
+        }
+        else if (tool == Tool.Freehand)
         {
             _recorder.Begin(sample with { Position = ToPage(display), IsEraser = false });
         }
@@ -294,6 +386,9 @@ public sealed class PageEditor : Control
                 }
 
                 break;
+            case Tool.Stamp:
+                ContinueBox();
+                break;
         }
 
         InvalidateVisual();
@@ -320,8 +415,8 @@ public sealed class PageEditor : Control
             case Tool.Marker when Math.Abs(_current.X - _start.X) >= MinDragDistance:
                 document.AddAnnotation(new HighlightAnnotation(Guid.NewGuid(), options.MarkerColor, ToPage(MarkerBand())));
                 break;
-            case Tool.Rectangle when IsDrag():
-                document.AddAnnotation(new RectangleAnnotation(Guid.NewGuid(), options.RectangleColor, options.RectangleWidth, ToPage(DragRect())));
+            case Tool.Shape when DraggedShape(options, Guid.NewGuid(), toPage: true) is { } shape:
+                document.AddAnnotation(shape);
                 break;
             case Tool.Comment when IsDrag():
                 document.AddAnnotation(new CommentAnnotation(Guid.NewGuid(), options.CommentColor, ToPage(DragRect()), Loc.T("Comment.New")));
@@ -333,7 +428,22 @@ public sealed class PageEditor : Control
             case Tool.Eraser when _eraserHits.Count > 0:
                 document.RemoveAnnotations(_eraserHits.ToList());
                 break;
+            case Tool.Text:
+                FinishText(document, options);
+                break;
+            case Tool.Signature:
+                FinishSignature(document, options);
+                break;
+            case Tool.Stamp:
+                FinishBox(document, options);
+                break;
+            case Tool.Redact:
+                FinishRedaction(document);
+                break;
         }
+
+        _movingText = null;
+        _movingSignature = null;
 
         _eraserHits.Clear();
         InvalidateVisual();
@@ -371,9 +481,28 @@ public sealed class PageEditor : Control
             InvalidateVisual();
         }
 
+        // Unterschrift: Vorschau folgt dem Zeiger, über einer gesetzten Unterschrift Verschieben-Zeiger
+        var overSignature = Options?.Tool == Tool.Signature && !eraserEnd && SignatureAt(display) is not null;
+        if (Options?.Tool == Tool.Signature || overSignature != _overSignature)
+        {
+            InvalidateVisual();
+        }
+
+        _overSignature = overSignature;
+
+        var previousText = _hoveredText;
+        _hoveredText = Options?.Tool == Tool.Text && !eraserEnd ? TextAt(display)?.Id : null;
+        if (previousText != _hoveredText)
+        {
+            InvalidateVisual();
+        }
+
         var erasing = eraserEnd || Options?.Tool == Tool.Eraser;
         Cursor = _hoveredBadge is not null ? new Cursor(StandardCursorType.Hand)
             : erasing ? new Cursor(StandardCursorType.None)
+            : Options?.Tool == Tool.Stamp ? UpdateBoxHover(display)
+            : _hoveredText is not null || _overSignature ? new Cursor(StandardCursorType.SizeAll)
+            : Options?.Tool == Tool.Text ? new Cursor(StandardCursorType.Ibeam)
             : Options?.Tool is Tool.Select or null ? Cursor.Default
             : new Cursor(StandardCursorType.Cross);
         // Radierkreis folgt dem Zeiger; verschwindet er (Werkzeug oder Stiftende gewechselt), einmal neu zeichnen
@@ -404,7 +533,393 @@ public sealed class PageEditor : Control
             case CommentAnnotation comment:
                 DrawComment(context, comment);
                 break;
+            case TextAnnotation text:
+                DrawText(context, text);
+                break;
+            case SignatureAnnotation signature:
+                StrokeRenderer.Draw(context, signature.Strokes, signature.ColorHex, signature.Width, signature.PressureSensitive, Signature.Smoothing);
+                break;
+            case LineAnnotation line:
+                DrawLine(context, line);
+                break;
+            case EllipseAnnotation ellipse:
+                var bounds = ToRect(ellipse.Bounds);
+                context.DrawEllipse(null, new Pen(Brush(ellipse.ColorHex), ellipse.Width), bounds.Center, bounds.Width / 2, bounds.Height / 2);
+                break;
+            case BoxAnnotation box:
+                BoxRenderer.Draw(context, box);
+                break;
+            case RedactionAnnotation redaction:
+                DrawRedaction(context, redaction);
+                break;
         }
+    }
+
+    /// <summary>
+    /// Linie mit runden Enden, beim Pfeil mit offenen oder gefüllten Spitzen an einem oder beiden Enden.
+    /// </summary>
+    private static void DrawLine(DrawingContext context, LineAnnotation line)
+    {
+        var pen = RoundPen(Brush(line.ColorHex), line.Width);
+        context.DrawLine(pen, new Point(line.StrokeStart.X, line.StrokeStart.Y), new Point(line.StrokeEnd.X, line.StrokeEnd.Y));
+        foreach (var head in line.Heads)
+        {
+            var (tip, left, right) = (new Point(head.Tip.X, head.Tip.Y), new Point(head.Left.X, head.Left.Y), new Point(head.Right.X, head.Right.Y));
+            if (line.Arrow != ArrowStyle.Closed)
+            {
+                context.DrawLine(pen, left, tip);
+                context.DrawLine(pen, right, tip);
+                continue;
+            }
+
+            var triangle = new StreamGeometry();
+            using (var figure = triangle.Open())
+            {
+                figure.BeginFigure(left, true);
+                figure.LineTo(tip);
+                figure.LineTo(right);
+                figure.EndFigure(true);
+            }
+
+            context.DrawGeometry(pen.Brush, pen, triangle);
+        }
+    }
+
+    /// <summary>
+    /// Aufgezogene Form in Anzeige- oder Seitenkoordinaten; <c>null</c>, wenn kaum gezogen wurde. Mit Umschalt rasten
+    /// Linien in 15°-Schritten ein, Rechteck und Ellipse werden quadratisch.
+    /// </summary>
+    private Annotation? DraggedShape(ToolOptionsViewModel options, Guid id, bool toPage)
+    {
+        var isLine = options.Shape is ShapeKind.Line or ShapeKind.Arrow or ShapeKind.ClosedArrow;
+        var end = !_constrain ? _current : isLine ? ShapeConstraint.SnapAngle(_start, _current) : ShapeConstraint.Square(_start, _current);
+        var rect = PdfRect.FromCorners(_start, end);
+        var pageRect = toPage ? ToPage(rect) : rect;
+        var (color, width) = (options.RectangleColor, options.RectangleWidth);
+        if (isLine)
+        {
+            return _start.DistanceTo(end) < MinDragDistance ? null
+                : new LineAnnotation(id, color, width, toPage ? ToPage(_start) : _start, toPage ? ToPage(end) : end, options.Shape switch
+                {
+                    ShapeKind.Arrow => ArrowStyle.Open,
+                    ShapeKind.ClosedArrow => ArrowStyle.Closed,
+                    _ => ArrowStyle.None,
+                }, options.ArrowEnds);
+        }
+
+        if (rect.Width < MinDragDistance || rect.Height < MinDragDistance)
+        {
+            return null;
+        }
+
+        return options.Shape == ShapeKind.Ellipse
+            ? new EllipseAnnotation(id, color, width, pageRect)
+            : new RectangleAnnotation(id, color, width, pageRect);
+    }
+
+    /// <summary>
+    /// Freier Text: Zeilen wie beim Speichern umbrochen, in Leserichtung gedreht (Anzeige-Koordinaten).
+    /// </summary>
+    private static void DrawText(DrawingContext context, TextAnnotation text)
+    {
+        var brush = Brush(text.ColorHex);
+        var typeface = new Typeface(TextFont);
+        var transform = Matrix.CreateRotation(-(int)text.Orientation * Math.PI / 180) * Matrix.CreateTranslation(text.Anchor.X, text.Anchor.Y);
+        using (context.PushTransform(transform))
+        {
+            var lines = text.Lines;
+            for (var i = 0; i < lines.Count; i++)
+            {
+                var line = new FormattedText(lines[i], CultureInfo.CurrentCulture, FlowDirection.LeftToRight, typeface, text.FontSize, brush);
+                context.DrawText(line, new Point(0, text.Baseline(i) - line.Baseline));
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gestrichelter Rahmen um den Text unter dem Mauszeiger und um den gerade bearbeiteten Text.
+    /// </summary>
+    private void DrawTextFrames(DrawingContext context)
+    {
+        if (Document is null || _gesture is not null)
+        {
+            return;
+        }
+
+        var pen = new Pen(new SolidColorBrush(Color.Parse("#6B7280")), 1, new DashStyle([3, 2], 0));
+        var framed = Document.CurrentAnnotations.OfType<TextAnnotation>().Where(text => text.Id == _hoveredText && text.Id != _editing?.Id);
+        foreach (var text in _editing is { } editing ? framed.Append(editing) : framed)
+        {
+            context.DrawRectangle(null, pen, ToRect(Inflate(((TextAnnotation)ToDisplay(text)).Bounds, TextHitMargin)), 2, 2);
+        }
+    }
+
+    /// <summary>
+    /// Gesetzte Unterschrift an einer Anzeigeposition (die oberste) oder <c>null</c>.
+    /// </summary>
+    private SignatureAnnotation? SignatureAt(PdfPoint display) =>
+        Document?.CurrentAnnotations.OfType<SignatureAnnotation>()
+            .LastOrDefault(signature => Contains(Inflate(((SignatureAnnotation)ToDisplay(signature)).Bounds, TextHitMargin), display));
+
+    /// <summary>
+    /// Halbtransparente Vorschau der gewählten Unterschrift am Zeiger, solange nichts gezogen wird (Mockup v5).
+    /// </summary>
+    private void DrawSignatureGhost(DrawingContext context)
+    {
+        if (_gesture is not null || _overSignature || Options is not { Tool: Tool.Signature, SelectedSignature: { } signature } || _pointer is not { } pointer)
+        {
+            return;
+        }
+
+        var height = signature.HeightFor(Signature.DefaultPlacedWidth);
+        DrawSignature(context, SignatureAnnotation.Place(signature, pointer.X - Signature.DefaultPlacedWidth / 2, pointer.Y - height / 2,
+            Signature.DefaultPlacedWidth, point => point), 0.45);
+    }
+
+    /// <summary>Zeichnet eine Unterschrift (Anzeige-Koordinaten) mit Deckkraft.</summary>
+    private static void DrawSignature(DrawingContext context, SignatureAnnotation signature, double opacity)
+    {
+        using (context.PushOpacity(opacity))
+        {
+            StrokeRenderer.Draw(context, signature.Strokes, signature.ColorHex, signature.Width, signature.PressureSensitive, Signature.Smoothing);
+        }
+    }
+
+    /// <summary>
+    /// Unterschrift-Werkzeug losgelassen: gesetzte Unterschrift verschieben oder neue setzen – per Klick in
+    /// Standardbreite mittig auf den Klickpunkt, per Ziehen in der gezogenen Breite (Seitenverhältnis bleibt).
+    /// </summary>
+    private void FinishSignature(DocumentViewModel document, ToolOptionsViewModel options)
+    {
+        var dragged = Math.Abs(_current.X - _start.X) >= MinDragDistance;
+        if (_movingSignature is { } existing)
+        {
+            if (_current.DistanceTo(_start) < MinDragDistance)
+            {
+                return;
+            }
+
+            var (from, to) = (ToPage(_start), ToPage(_current));
+            document.Document.UpdateAnnotation(document.CurrentPage.Id, existing.Translate(to.X - from.X, to.Y - from.Y));
+            return;
+        }
+
+        if (options.SelectedSignature is not { } signature)
+        {
+            return;
+        }
+
+        var width = dragged ? Math.Max(Signature.MinPlacedWidth, Math.Abs(_current.X - _start.X)) : Signature.DefaultPlacedWidth;
+        var (left, top) = dragged ? (Math.Min(_start.X, _current.X), _start.Y) : (_start.X - width / 2, _start.Y - signature.HeightFor(width) / 2);
+        document.AddAnnotation(SignatureAnnotation.Place(signature, left, top, width, ToPage));
+    }
+
+    /// <summary>
+    /// Text an einer Anzeigeposition (der oberste) oder <c>null</c>.
+    /// </summary>
+    private TextAnnotation? TextAt(PdfPoint display) =>
+        Document?.CurrentAnnotations.OfType<TextAnnotation>()
+            .LastOrDefault(text => Contains(Inflate(((TextAnnotation)ToDisplay(text)).Bounds, TextHitMargin), display));
+
+    /// <summary>
+    /// Text-Werkzeug losgelassen: Text verschieben, zum Bearbeiten öffnen oder neues Textfeld anlegen.
+    /// </summary>
+    private void FinishText(DocumentViewModel document, ToolOptionsViewModel options)
+    {
+        var moved = _current.DistanceTo(_start) >= MinDragDistance;
+        if (_movingText is { } existing)
+        {
+            if (!moved)
+            {
+                BeginTextEdit(existing, isNew: false);
+                return;
+            }
+
+            var anchor = ((TextAnnotation)ToDisplay(existing)).Anchor;
+            var target = new PdfPoint(anchor.X + _current.X - _start.X, anchor.Y + _current.Y - _start.Y);
+            document.Document.UpdateAnnotation(document.CurrentPage.Id, existing with { Anchor = ToPage(target) });
+            return;
+        }
+
+        var fontSize = TextAnnotation.ClampFontSize(options.TextSize);
+        var (displayWidth, _) = document.CurrentDisplaySize;
+        var drag = DragRect();
+        var (left, top, width) = Math.Abs(_current.X - _start.X) >= MinDragDistance
+            ? (drag.X, drag.Y, Math.Max(TextAnnotation.MinWidth, drag.Width))
+            // Klick: Zeile mittig auf den Klickpunkt, Standardbreite bis höchstens zum rechten Rand
+            : (_start.X, _start.Y - fontSize * TextAnnotation.LineSpacing / 2,
+                Math.Clamp(displayWidth - _start.X - 8, TextAnnotation.MinWidth, TextAnnotation.DefaultWidth));
+        var text = new TextAnnotation(Guid.NewGuid(), options.TextColor, ToPage(new PdfPoint(left, top)), width, fontSize, string.Empty,
+            document.CurrentPage.Rotation);
+        BeginTextEdit(text, isNew: true);
+    }
+
+    /// <summary>
+    /// Blendet über dem Text ein Eingabefeld ein (gleiche Schrift, Größe, Breite und Drehung).
+    /// </summary>
+    private void BeginTextEdit(TextAnnotation text, bool isNew)
+    {
+        CommitText();
+        _editing = text;
+        _editingIsNew = isNew;
+        _editingPageId = Document!.CurrentPage.Id;
+        var editor = new TextBox
+        {
+            Text = text.Text,
+            AcceptsReturn = true,
+            TextWrapping = TextWrapping.Wrap,
+            Padding = default,
+            BorderThickness = default,
+            MinHeight = 0,
+            MinWidth = 0,
+            FontFamily = TextFont,
+            RenderTransformOrigin = RelativePoint.TopLeft,
+        };
+        // Durchsichtig in jedem Zustand, damit das Feld wie der fertige Text auf der Seite aussieht
+        foreach (var key in new[] { "TextControlBackground", "TextControlBackgroundPointerOver", "TextControlBackgroundFocused",
+                     "TextControlBorderBrush", "TextControlBorderBrushPointerOver", "TextControlBorderBrushFocused" })
+        {
+            editor.Resources[key] = Brushes.Transparent;
+        }
+
+        editor.TextChanged += (_, _) =>
+        {
+            if (_editing is not null && editor == _textEditor)
+            {
+                _editing = _editing with { Text = editor.Text ?? string.Empty };
+                InvalidateVisual();
+            }
+        };
+        // Esc vor dem Textfeld abfangen: es verarbeitet die Taste sonst selbst und die Bearbeitung bliebe offen
+        editor.AddHandler(KeyDownEvent, (_, e) =>
+        {
+            if (e.Key == Key.Escape)
+            {
+                e.Handled = true;
+                CommitText();
+            }
+        }, Avalonia.Interactivity.RoutingStrategies.Tunnel);
+        editor.LostFocus += (_, _) =>
+        {
+            // Erst nach dem Fokuswechsel prüfen, wohin er gegangen ist
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (editor == _textEditor && !editor.IsKeyboardFocusWithin && !FocusStaysWithTextOptions())
+                {
+                    CommitText();
+                }
+            }, DispatcherPriority.Input);
+        };
+        _textEditor = editor;
+        ApplyTextStyle();
+        LogicalChildren.Add(editor);
+        VisualChildren.Add(editor);
+        InvalidateMeasure();
+        Dispatcher.UIThread.Post(() =>
+        {
+            editor.Focus();
+            editor.CaretIndex = editor.Text?.Length ?? 0;
+        }, DispatcherPriority.Loaded);
+        InvalidateVisual();
+    }
+
+    /// <summary>
+    /// Ob der Fokus beim Bearbeiten eines Textes nur zu Farbe oder Schriftgröße gewechselt ist (Optionsleiste,
+    /// Farbwahl im Aufklappfeld oder ein anderes Fenster). Dann bleibt die Bearbeitung offen, damit die Änderung für
+    /// den Text gilt (P10); ein Klick auf die Seite oder Speichern schließt sie ab.
+    /// </summary>
+    private bool FocusStaysWithTextOptions()
+    {
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is not Visual focused)
+        {
+            return true;
+        }
+
+        return focused.GetSelfAndVisualAncestors().Any(visual =>
+            visual is Avalonia.Controls.Primitives.PopupRoot or Avalonia.Controls.Primitives.OverlayPopupHost
+            || (visual as Control)?.Name == "ToolOptionsBar");
+    }
+
+    /// <summary>
+    /// Gibt dem gerade bearbeiteten Text den Fokus zurück, z. B. nach dem Schließen der Farbwahl, damit man direkt
+    /// weitertippen kann (P10).
+    /// </summary>
+    public void ResumeTextEditing()
+    {
+        if (_textEditor is { } editor)
+        {
+            Dispatcher.UIThread.Post(() =>
+            {
+                if (editor == _textEditor)
+                {
+                    editor.Focus();
+                }
+            }, DispatcherPriority.Background);
+        }
+    }
+
+    /// <summary>
+    /// Übernimmt Lage, Schrift und Farbe des bearbeiteten Texts ins Eingabefeld.
+    /// </summary>
+    private void ApplyTextStyle()
+    {
+        if (_textEditor is not { } editor || _editing is not { } text)
+        {
+            return;
+        }
+
+        var display = (TextAnnotation)ToDisplay(text);
+        var brush = Brush(text.ColorHex);
+        foreach (var key in new[] { "TextControlForeground", "TextControlForegroundPointerOver", "TextControlForegroundFocused" })
+        {
+            editor.Resources[key] = brush;
+        }
+
+        editor.Foreground = brush;
+        editor.CaretBrush = brush;
+        editor.FontSize = text.FontSize;
+        editor.LineHeight = text.LineHeight;
+        editor.Width = text.Width;
+        editor.RenderTransform = new RotateTransform(-(int)display.Orientation);
+        InvalidateArrange();
+    }
+
+    /// <summary>
+    /// Schließt die Textbearbeitung ab: neuer Text wird angelegt, geänderter übernommen, geleerter gelöscht –
+    /// jeweils als ein Rückgängig-Schritt.
+    /// </summary>
+    private void CommitText()
+    {
+        if (_editing is not { } text || _textEditor is not { } editor || Document is not { } document)
+        {
+            return;
+        }
+
+        _editing = null;
+        _textEditor = null;
+        VisualChildren.Remove(editor);
+        LogicalChildren.Remove(editor);
+        var result = text with { Text = (editor.Text ?? string.Empty).TrimEnd() };
+        var annotations = document.Document.Annotations.For(_editingPageId);
+        var original = annotations.OfType<TextAnnotation>().FirstOrDefault(candidate => candidate.Id == text.Id);
+        if (_editingIsNew || original is null)
+        {
+            if (result.Text.Length > 0)
+            {
+                document.Document.AddAnnotation(_editingPageId, result);
+            }
+        }
+        else if (result.Text.Length == 0)
+        {
+            document.Document.RemoveAnnotation(_editingPageId, text.Id);
+        }
+        else if (result != original)
+        {
+            document.Document.UpdateAnnotation(_editingPageId, result);
+        }
+
+        Focus();
+        InvalidateVisual();
     }
 
     /// <summary>
@@ -538,12 +1053,31 @@ public sealed class PageEditor : Control
             case Tool.Marker:
                 context.FillRectangle(new SolidColorBrush(WithAlpha(options.MarkerColor, MarkerAlpha)), ToRect(MarkerBand()));
                 break;
-            case Tool.Rectangle:
-                DrawRounded(context, null, new Pen(Brush(options.RectangleColor), options.RectangleWidth), ToRect(DragRect()));
+            case Tool.Shape when DraggedShape(options, Guid.Empty, toPage: false) is { } shape:
+                DrawAnnotation(context, shape);
                 break;
             case Tool.Comment:
                 DrawRounded(context, new SolidColorBrush(WithAlpha(options.CommentColor, CommentFillAlpha)),
                     new Pen(Brush(DrawingColors.CommentBorder(options.CommentColor)), CommentBorderWidth, new DashStyle([4, 2], 0)), ToRect(DragRect()));
+                break;
+            case Tool.Signature when _movingSignature is { } movingSignature:
+                DrawSignature(context, ((SignatureAnnotation)ToDisplay(movingSignature)).Translate(_current.X - _start.X, _current.Y - _start.Y), 1);
+                break;
+            case Tool.Signature when options.SelectedSignature is { } signature && Math.Abs(_current.X - _start.X) >= MinDragDistance:
+                var placedWidth = Math.Max(Signature.MinPlacedWidth, Math.Abs(_current.X - _start.X));
+                DrawSignature(context, SignatureAnnotation.Place(signature, Math.Min(_start.X, _current.X), _start.Y, placedWidth, point => point), 0.6);
+                break;
+            case Tool.Text when _movingText is { } moving:
+                var shown = (TextAnnotation)ToDisplay(moving);
+                var moved = shown with { Anchor = new PdfPoint(shown.Anchor.X + _current.X - _start.X, shown.Anchor.Y + _current.Y - _start.Y) };
+                DrawText(context, moved);
+                context.DrawRectangle(null, new Pen(new SolidColorBrush(Color.Parse("#6B7280")), 1, new DashStyle([3, 2], 0)),
+                    ToRect(Inflate(moved.Bounds, TextHitMargin)), 2, 2);
+                break;
+            case Tool.Text when Math.Abs(_current.X - _start.X) >= MinDragDistance:
+                var lineHeight = TextAnnotation.ClampFontSize(options.TextSize) * TextAnnotation.LineSpacing;
+                context.DrawRectangle(null, new Pen(Brush(options.TextColor), 1, new DashStyle([4, 2], 0)),
+                    new Rect(Math.Min(_start.X, _current.X), _start.Y, Math.Abs(_current.X - _start.X), lineHeight));
                 break;
         }
     }
@@ -624,6 +1158,9 @@ public sealed class PageEditor : Control
         {
             _subscribed.PropertyChanged -= OnDocumentPropertyChanged;
             _subscribed.CurrentPageAnnotationsChanged -= OnAnnotationsChanged;
+            _subscribed.AnnotationFocusRequested -= OnAnnotationFocusRequested;
+            _subscribed.CommitEditsRequested -= OnCommitEditsRequested;
+            _subscribed.Document.Form.Changed -= OnFormValueChanged;
         }
 
         _subscribed = document;
@@ -631,6 +1168,111 @@ public sealed class PageEditor : Control
         {
             document.PropertyChanged += OnDocumentPropertyChanged;
             document.CurrentPageAnnotationsChanged += OnAnnotationsChanged;
+            document.AnnotationFocusRequested += OnAnnotationFocusRequested;
+            document.CommitEditsRequested += OnCommitEditsRequested;
+            document.Document.Form.Changed += OnFormValueChanged;
+        }
+
+        RebuildFormFields();
+    }
+
+    /// <summary>Übernimmt einen gerade bearbeiteten Text vor dem Speichern, Extrahieren, Drucken oder Schließen.</summary>
+    private void OnCommitEditsRequested(object? sender, EventArgs e) => CommitText();
+
+    /// <summary>
+    /// Anmerkung aus der Übersicht angesprungen (A45): nach dem Seitenwechsel in den sichtbaren Bereich holen und
+    /// kurz mit einem gestrichelten Rahmen in der Akzentfarbe hervorheben.
+    /// </summary>
+    private void OnAnnotationFocusRequested(object? sender, Guid id) => Dispatcher.UIThread.Post(() =>
+    {
+        if (Document?.CurrentAnnotations.FirstOrDefault(annotation => annotation.Id == id) is not { } annotation)
+        {
+            return;
+        }
+
+        var bounds = AnnotationBounds.Of(ToDisplay(annotation));
+        this.BringIntoView(ToRect(Inflate(bounds, FlashPadding * 4)));
+        _flashId = id;
+        _flashStart = DateTime.UtcNow;
+        _flashTimer ??= new DispatcherTimer(TimeSpan.FromMilliseconds(40), DispatcherPriority.Render, (_, _) => InvalidateVisual());
+        _flashTimer.Start();
+        InvalidateVisual();
+    }, DispatcherPriority.Background);
+
+    /// <summary>
+    /// Rahmen um die angesprungene Anmerkung; blendet nach kurzer Zeit aus.
+    /// </summary>
+    private void DrawFlash(DrawingContext context)
+    {
+        if (_flashId is not { } id)
+        {
+            return;
+        }
+
+        var elapsed = DateTime.UtcNow - _flashStart;
+        if (elapsed >= FlashDuration || Document?.CurrentAnnotations.FirstOrDefault(annotation => annotation.Id == id) is not { } annotation)
+        {
+            _flashId = null;
+            _flashTimer?.Stop();
+            return;
+        }
+
+        var opacity = elapsed < FlashFadeStart ? 1 : 1 - (elapsed - FlashFadeStart) / (FlashDuration - FlashFadeStart);
+        var accent = this.TryFindResource("AccentBorderBrush", ActualThemeVariant, out var resource) && resource is ISolidColorBrush brush
+            ? brush.Color
+            : Color.Parse(AccentPalette.DefaultAccent);
+        var pen = new Pen(new SolidColorBrush(accent, opacity), 3, new DashStyle([2, 1.3], 0));
+        context.DrawRectangle(null, pen, ToRect(Inflate(AnnotationBounds.Of(ToDisplay(annotation)), FlashPadding)), 6, 6);
+    }
+
+    /// <summary>
+    /// Beobachtet Werkzeugwechsel und Text-Einstellungen.
+    /// </summary>
+    private void SubscribeOptions(ToolOptionsViewModel? options)
+    {
+        if (_subscribedOptions is not null)
+        {
+            _subscribedOptions.PropertyChanged -= OnOptionsPropertyChanged;
+        }
+
+        _subscribedOptions = options;
+        if (options is not null)
+        {
+            options.PropertyChanged += OnOptionsPropertyChanged;
+        }
+    }
+
+    /// <summary>
+    /// Werkzeugwechsel schließt die Textbearbeitung ab; Farbe und Größe gelten für den gerade bearbeiteten Text.
+    /// </summary>
+    private void OnOptionsPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (Options is not { } options)
+        {
+            return;
+        }
+
+        switch (e.PropertyName)
+        {
+            case nameof(ToolOptionsViewModel.Tool):
+                if (options.Tool != Tool.Text)
+                {
+                    CommitText();
+                }
+
+                UpdateFormInteraction();
+                break;
+            case nameof(ToolOptionsViewModel.TextColor) or nameof(ToolOptionsViewModel.TextSize) when _editing is { } text:
+                _editing = text with { ColorHex = options.TextColor, FontSize = TextAnnotation.ClampFontSize(options.TextSize) };
+                ApplyTextStyle();
+                InvalidateVisual();
+                // Nach der Schriftgröße direkt weitertippen können; die Farbwahl gibt den Fokus erst beim Schließen
+                // zurück, sonst ginge das Aufklappfeld gleich wieder zu
+                if (e.PropertyName == nameof(ToolOptionsViewModel.TextSize))
+                {
+                    ResumeTextEditing();
+                }
+                break;
         }
     }
 
@@ -639,12 +1281,15 @@ public sealed class PageEditor : Control
     /// </summary>
     private void OnDocumentPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(DocumentViewModel.CurrentBitmap))
+        if (e.PropertyName is nameof(DocumentViewModel.CurrentBitmap) or nameof(DocumentViewModel.SelectedBox))
         {
             InvalidateVisual();
         }
         else if (e.PropertyName == nameof(DocumentViewModel.CurrentIndex))
         {
+            CommitText();
+            Document?.SelectedBox = null;
+            RebuildFormFields();
             InvalidateMeasure();
             RequestRender();
         }
@@ -655,6 +1300,7 @@ public sealed class PageEditor : Control
     /// </summary>
     private void OnAnnotationsChanged(object? sender, EventArgs e)
     {
+        RebuildFormFields();
         InvalidateMeasure();
         InvalidateVisual();
         RequestRender();
@@ -683,6 +1329,14 @@ public sealed class PageEditor : Control
         var (width, height) = Document!.CurrentPageSize;
         return PageTransform.Rotate(annotation, Document.CurrentPage.Rotation, width, height);
     }
+
+    /// <summary>Vergrößert ein Rechteck auf allen Seiten.</summary>
+    private static PdfRect Inflate(PdfRect rect, double amount) =>
+        new(rect.X - amount, rect.Y - amount, rect.Width + 2 * amount, rect.Height + 2 * amount);
+
+    /// <summary>Ob ein Punkt im Rechteck liegt.</summary>
+    private static bool Contains(PdfRect rect, PdfPoint point) =>
+        point.X >= rect.X && point.X <= rect.Right && point.Y >= rect.Y && point.Y <= rect.Bottom;
 
     /// <summary>Kurvenzug aus Bézier-Stücken.</summary>
     private static StreamGeometry Curve(IReadOnlyList<BezierSegment> segments)

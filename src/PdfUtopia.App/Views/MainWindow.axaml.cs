@@ -1,3 +1,4 @@
+using Avalonia.VisualTree;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
@@ -41,12 +42,30 @@ public sealed partial class MainWindow : Window
         // Vor der Bildlaufleiste auswerten: am Rand blättern statt (wirkungslos) weiterscrollen
         PageScroller.AddHandler(PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
         AddHandler(KeyDownEvent, OnNavigationKeyDown, RoutingStrategies.Tunnel);
+        // Strg-Zustand für „Drehen gegen den Uhrzeigersinn“ (auch wenn ein Textfeld die Taste verarbeitet)
+        AddHandler(KeyDownEvent, (_, e) => TrackControlKey(e.Key, e.KeyModifiers, pressed: true), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(KeyUpEvent, (_, e) => TrackControlKey(e.Key, e.KeyModifiers, pressed: false), RoutingStrategies.Tunnel, handledEventsToo: true);
+        AddHandler(PointerMovedEvent, (_, e) => SetReverseRotation(e.KeyModifiers.HasFlag(KeyModifiers.Control)), RoutingStrategies.Tunnel, handledEventsToo: true);
+        Deactivated += (_, _) => SetReverseRotation(false);
         _thumbnailDrag = new ThumbnailDragController(ThumbnailList, DragLayer, DragGhost, DropLine,
-            index => ViewModel?.ActiveDocument?.Show(index),
+            (index, modifiers) =>
+            {
+                ViewModel?.ActiveDocument?.ClickPage(index, modifiers.HasFlag(KeyModifiers.Control) || modifiers.HasFlag(KeyModifiers.Meta),
+                    modifiers.HasFlag(KeyModifiers.Shift));
+                // Tasten der Seitenliste (Strg+A, Entf, Esc) wirken, sobald sie angeklickt wurde
+                PageListScroller.Focus();
+            },
             (from, to) => ViewModel?.ActiveDocument?.MovePage(from, to));
-        AddHandler(DragDrop.DragLeaveEvent, (_, _) => _thumbnailDrag.HideInsertLine());
+        AddHandler(DragDrop.DragLeaveEvent, (_, _) =>
+        {
+            _thumbnailDrag.HideInsertLine();
+            _thumbnailDrag.UpdateAutoScroll(null);
+        });
         DataContextChanged += (_, _) => OnViewModelChanged();
     }
+
+    /// <summary>Spalte der linken Leiste (F30).</summary>
+    private ColumnDefinition SidebarColumn => MainArea.ColumnDefinitions[0];
 
     /// <summary>Das ViewModel des Fensters.</summary>
     private MainWindowViewModel? ViewModel => DataContext as MainWindowViewModel;
@@ -81,6 +100,8 @@ public sealed partial class MainWindow : Window
         {
             return;
         }
+
+        SidebarColumn.Width = new GridLength(viewModel.SidebarWidth);
 
         ApplyZoom(viewModel.Zoom);
         PageScroller.SizeChanged += (_, _) => Refit();
@@ -270,10 +291,12 @@ public sealed partial class MainWindow : Window
         if (isFile && IsOverPageList(e))
         {
             _thumbnailDrag.ShowInsertLine(e.GetPosition(ThumbnailList).Y);
+            _thumbnailDrag.UpdateAutoScroll(ThumbnailList.FindAncestorOfType<ScrollViewer>() is { } viewer ? e.GetPosition(viewer) : null);
         }
         else
         {
             _thumbnailDrag.HideInsertLine();
+            _thumbnailDrag.UpdateAutoScroll(null);
         }
     }
 
@@ -284,6 +307,7 @@ public sealed partial class MainWindow : Window
     private async void OnFileDrop(object? sender, DragEventArgs e)
     {
         _thumbnailDrag.HideInsertLine();
+        _thumbnailDrag.UpdateAutoScroll(null);
         var paths = e.DataTransfer.TryGetFiles()?.Select(item => item.TryGetLocalPath()).OfType<string>().ToList();
         if (paths is not { Count: > 0 } || ViewModel is not { } viewModel)
         {
@@ -309,6 +333,38 @@ public sealed partial class MainWindow : Window
         new Rect(PageListScroller.Bounds.Size).Contains(e.GetPosition(PageListScroller));
 
     /// <summary>
+    /// Linke Leiste ändert ihre Breite (auch während des Ziehens): Miniaturen mitwachsen lassen.
+    /// </summary>
+    private void OnSidebarSizeChanged(object? sender, SizeChangedEventArgs e) => ViewModel?.ResizeSidebar(e.NewSize.Width);
+
+    /// <summary>
+    /// Linke Leiste per Ziehen verbreitert oder verschmälert: Breite merken (F30).
+    /// </summary>
+    private void OnSidebarResized(object? sender, VectorEventArgs e) => ViewModel?.SaveSidebarWidth(SidebarColumn.ActualWidth);
+
+    /// <summary>
+    /// Merkt sich, ob Strg gedrückt ist: beim Drücken/Loslassen der Strg-Taste selbst und bei jeder anderen Taste.
+    /// </summary>
+    private void TrackControlKey(Key key, KeyModifiers modifiers, bool pressed) =>
+        SetReverseRotation(key is Key.LeftCtrl or Key.RightCtrl ? pressed : modifiers.HasFlag(KeyModifiers.Control));
+
+    /// <summary>
+    /// Setzt die Drehrichtung der Drehen-Knöpfe (nur bei Änderung, damit Bindungen nicht unnötig auslösen).
+    /// </summary>
+    private void SetReverseRotation(bool reverse)
+    {
+        if (ViewModel is { } viewModel && viewModel.ReverseRotation != reverse)
+        {
+            viewModel.ReverseRotation = reverse;
+        }
+    }
+
+    /// <summary>
+    /// Zoom-Eingabe verlassen, ohne Enter zu drücken: aktuellen Zoom wieder anzeigen.
+    /// </summary>
+    private void OnZoomBoxLostFocus(object? sender, RoutedEventArgs e) => ViewModel?.ResetZoomInputCommand.Execute(null);
+
+    /// <summary>
     /// Übernimmt einen bearbeiteten Fußnotentext beim Verlassen des Felds (rückgängig machbar).
     /// </summary>
     private void OnFootnoteLostFocus(object? sender, RoutedEventArgs e)
@@ -323,6 +379,14 @@ public sealed partial class MainWindow : Window
     /// Setzt den Fokus in das Suchfeld (Menü „Suchen“, Strg+F).
     /// </summary>
     private void OnFindClick(object? sender, RoutedEventArgs e) => FocusSearch();
+
+    /// <summary>Farbwahl geschlossen: einem gerade bearbeiteten Text den Fokus zurückgeben (P10).</summary>
+    private void OnColorFlyoutClosed(object? sender, EventArgs e) => Editor.ResumeTextEditing();
+
+    /// <summary>Schließt die Stempelauswahl, sobald ein Stempel gewählt oder „+ Eigener Text…“ angeklickt ist.</summary>
+    private void OnStampChosen(object? sender, RoutedEventArgs e) =>
+        // Erst nach dem Befehl schließen; sonst verliert die Schaltfläche ihre Bindung, bevor er ausgeführt wird
+        Avalonia.Threading.Dispatcher.UIThread.Post(() => StampPicker.Flyout?.Hide());
 
     /// <summary>
     /// Strg+F setzt den Fokus in das Suchfeld.

@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Threading;
 using Avalonia.VisualTree;
 using PdfUtopia.App.ViewModels;
 
@@ -17,11 +18,20 @@ public sealed class ThumbnailDragController
     private const string DraggingClass = "dragging";
     private const double DragThreshold = 6;
 
+    /// <summary>Höhe der Zone am oberen und unteren Rand, in der die Liste beim Ziehen mitscrollt (P11).</summary>
+    private const double AutoScrollZone = 48;
+
+    /// <summary>Größte Scrollweite je Schritt in Pixeln (ganz am Rand).</summary>
+    private const double AutoScrollMaxStep = 22;
+
+    private readonly DispatcherTimer _autoScroll;
+    private Point? _pointerInViewer;
+
     private readonly ItemsControl _list;
     private readonly Visual _layer;
     private readonly Control _ghost;
     private readonly Control _dropLine;
-    private readonly Action<int> _show;
+    private readonly Action<int, KeyModifiers> _show;
     private readonly Action<int, int> _move;
 
     private Control? _container;
@@ -30,6 +40,7 @@ public sealed class ThumbnailDragController
     private int _fromIndex = -1;
     private int _targetIndex = -1;
     private bool _dragging;
+    private KeyModifiers _modifiers;
 
     /// <summary>
     /// Erzeugt den Controller und registriert die Zeigerereignisse an der Liste.
@@ -38,9 +49,9 @@ public sealed class ThumbnailDragController
     /// <param name="layer">Ebene für Abbild und Einfügelinie (Canvas über der Liste).</param>
     /// <param name="ghost">Abbild der gezogenen Seite.</param>
     /// <param name="dropLine">Die Einfügelinie.</param>
-    /// <param name="show">Zeigt die Seite mit diesem Index an.</param>
+    /// <param name="show">Klick auf die Seite mit diesem Index (mit Strg/Umschalt für die Mehrfachauswahl).</param>
     /// <param name="move">Verschiebt eine Seite von Index 1 nach Index 2.</param>
-    public ThumbnailDragController(ItemsControl list, Visual layer, Control ghost, Control dropLine, Action<int> show, Action<int, int> move)
+    public ThumbnailDragController(ItemsControl list, Visual layer, Control ghost, Control dropLine, Action<int, KeyModifiers> show, Action<int, int> move)
     {
         _list = list;
         _layer = layer;
@@ -52,7 +63,11 @@ public sealed class ThumbnailDragController
         list.AddHandler(InputElement.PointerMovedEvent, OnPointerMoved, RoutingStrategies.Tunnel);
         list.AddHandler(InputElement.PointerReleasedEvent, OnPointerReleased, RoutingStrategies.Tunnel);
         list.PointerCaptureLost += (_, _) => Reset();
+        _autoScroll = new DispatcherTimer(TimeSpan.FromMilliseconds(30), DispatcherPriority.Input, (_, _) => AutoScrollStep());
     }
+
+    /// <summary>Bildlaufbereich um die Liste.</summary>
+    private ScrollViewer? Viewer => _list.FindAncestorOfType<ScrollViewer>();
 
     /// <summary>
     /// Merkt sich die gedrückte Seite (nicht bei Klicks auf Schaltflächen).
@@ -72,6 +87,7 @@ public sealed class ThumbnailDragController
         _container = container;
         _fromIndex = _targetIndex = _list.IndexFromContainer(container);
         _pressPosition = e.GetPosition(_list);
+        _modifiers = e.KeyModifiers;
         _grabOffset = e.GetPosition(container);
         e.Pointer.Capture(_list);
         e.Handled = true;
@@ -105,6 +121,7 @@ public sealed class ThumbnailDragController
         PlaceGhost(e.GetPosition(_layer));
         _targetIndex = FindIndexAt(position.Y);
         PlaceDropLine();
+        UpdateAutoScroll(Viewer is { } viewer ? e.GetPosition(viewer) : null);
         e.Handled = true;
     }
 
@@ -127,7 +144,7 @@ public sealed class ThumbnailDragController
         }
         else
         {
-            _show(from);
+            _show(from, _modifiers);
         }
 
         e.Handled = true;
@@ -138,12 +155,91 @@ public sealed class ThumbnailDragController
     /// </summary>
     private void Reset()
     {
+        UpdateAutoScroll(null);
         _container?.Classes.Remove(DraggingClass);
         _container = null;
         _dragging = false;
         _dropLine.IsVisible = false;
         _ghost.IsVisible = false;
         _ghost.DataContext = null;
+    }
+
+    /// <summary>
+    /// Startet oder beendet das Mitscrollen, wenn der Zeiger beim Ziehen nahe am oberen oder unteren Rand steht
+    /// (auch beim Ziehen einer Datei auf die Liste).
+    /// </summary>
+    /// <param name="pointerInViewer">Zeigerposition relativ zum Bildlaufbereich oder <c>null</c> zum Beenden.</param>
+    public void UpdateAutoScroll(Point? pointerInViewer)
+    {
+        _pointerInViewer = pointerInViewer;
+        if (pointerInViewer is { } point && Viewer is { } viewer && ScrollStep(point.Y, viewer.Bounds.Height) != 0)
+        {
+            _autoScroll.Start();
+        }
+        else
+        {
+            _autoScroll.Stop();
+        }
+    }
+
+    /// <summary>
+    /// Scrollweite für eine Zeigerhöhe: negativ am oberen, positiv am unteren Rand, umso größer, je näher am Rand.
+    /// </summary>
+    /// <param name="y">Zeigerhöhe im Bildlaufbereich.</param>
+    /// <param name="height">Höhe des Bildlaufbereichs.</param>
+    /// <returns>Pixel je Schritt; 0 außerhalb der Randzonen.</returns>
+    public static double ScrollStep(double y, double height)
+    {
+        if (height <= 2 * AutoScrollZone)
+        {
+            return 0;
+        }
+
+        if (y < AutoScrollZone)
+        {
+            return -AutoScrollMaxStep * (AutoScrollZone - Math.Max(y, 0)) / AutoScrollZone;
+        }
+
+        return y > height - AutoScrollZone ? AutoScrollMaxStep * (Math.Min(y, height) - (height - AutoScrollZone)) / AutoScrollZone : 0;
+    }
+
+    /// <summary>
+    /// Ein Schritt des Mitscrollens; danach Einfügestelle und Linie nachführen.
+    /// </summary>
+    private void AutoScrollStep()
+    {
+        if (_pointerInViewer is not { } point || Viewer is not { } viewer)
+        {
+            _autoScroll.Stop();
+            return;
+        }
+
+        var step = ScrollStep(point.Y, viewer.Bounds.Height);
+        var maximum = Math.Max(0, viewer.Extent.Height - viewer.Viewport.Height);
+        var target = Math.Clamp(viewer.Offset.Y + step, 0, maximum);
+        if (step == 0 || Math.Abs(target - viewer.Offset.Y) < 0.5)
+        {
+            return;
+        }
+
+        viewer.Offset = viewer.Offset.WithY(target);
+        if (!_dragging)
+        {
+            return;
+        }
+
+        // Nach dem Scrollen erst das Layout aktualisieren, dann Abbild, Einfügestelle und Linie am Zeiger nachführen
+        viewer.UpdateLayout();
+        if (viewer.TranslatePoint(point, _layer) is { } inLayer)
+        {
+            PlaceGhost(inLayer);
+        }
+
+        if (viewer.TranslatePoint(point, _list) is { } inList)
+        {
+            _targetIndex = FindIndexAt(inList.Y);
+            PlaceDropLine();
+        }
     }
 
     /// <summary>

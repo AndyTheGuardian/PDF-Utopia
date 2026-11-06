@@ -10,10 +10,17 @@ weiterbearbeiten.
 
 - **Kommentare mit Fußnoten:** Ein Klick auf einen Absatz oder ein aufgezogener Bereich erzeugt einen nummerierten
   Kommentar. Der Text steht als Fußnote auf einer nach unten verlängerten Seite.
-- **Marker, Freihand und Rechteck:** mit Maus oder Stift, Freihand wahlweise druckempfindlich und mit einstellbarer
+- **Marker, Freihand, Formen (Rechteck, Ellipse, Linie, Pfeile mit offener oder geschlossener Spitze an einem oder beiden Enden) und Text:** mit Maus oder Stift, Freihand wahlweise druckempfindlich und mit einstellbarer
   Glättung.
 - **Radierer:** als Werkzeug oder über das Radiererende des Stifts.
-- **Seiten:** per Drag & Drop umsortieren, drehen, löschen.
+- **Seiten:** per Drag & Drop umsortieren, drehen, löschen, leere Seiten einfügen – auch mehrere Seiten auf einmal (Strg/Umschalt+Klick).
+- **Texterkennung:** Text gescannter Seiten mit Tesseract erkennen; sofort durchsuchbar und beim Speichern als unsichtbare Textebene geschrieben.
+- **Schwärzen:** Bereiche oder alle Fundstellen eines Begriffs markieren; beim Speichern werden diese Seiten als Bild geschrieben, sodass darunter nichts übrig bleibt.
+- **Stempel und Bilder:** Vorlagen wie „Genehmigt“ oder eigene Texte, wahlweise mit Datum und Name; PNG/JPEG per Dialog, Drag & Drop oder Strg+V; verschieben, Größe ändern und drehen.
+- **Unterschrift:** bis zu fünf Unterschriften mit Stift oder Maus schreiben und als Stempel auf Seiten setzen (sichtbar, keine digitale Signatur).
+- **Anmerkungsübersicht:** alle Anmerkungen nach Seiten, mit Filter; ein Klick springt hin.
+- **Formulare:** direkt auf der Seite ausfüllen (Text, Kästchen, Optionen, Listen); sie bleiben beim Speichern ausfüllbar.
+- **Lesezeichen:** Inhaltsverzeichnis der Datei als Baum zum Springen; beim Speichern bleibt es erhalten.
 - **Extrahieren:** Seitenauswahl wie `2`, `4-8` oder `2,4,8,13-15`, mit Vorschau.
 - **Einfügen:** Seiten aus einer anderen PDF-Datei übernehmen, per Dialog oder Drag & Drop auf die Seitenliste; Anmerkungen kommen mit.
 - **Rückgängig/Wiederholen:** mit einstellbarer Anzahl von Schritten (Standard 50).
@@ -85,10 +92,10 @@ dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:Pub
 | `src/PdfUtopia.App` | Avalonia-Oberfläche (MVVM mit CommunityToolkit.Mvvm): Fenster, Dialoge, Seiteneditor, Lokalisierung, Themes |
 | `tests/PdfUtopia.Core.Tests` | Unit-Tests der Fachlogik |
 | `tests/PdfUtopia.Pdf.Tests` | Tests der PDF-Anbindung mit den Testdateien |
-| `testdata/` | Erzeugte Test-PDFs, darunter eine passwortgeschützte |
+| `testdata/` | Erzeugte Test-PDFs, darunter eine passwortgeschützte, eine mit Lesezeichen und eine mit Formular |
 | `mockups/` | Abgenommene HTML-Mockups der Oberfläche |
 | `spikes/PressureProbe` | Prototyp zum Prüfen von Stift-Andruck und Radiererende |
-| `docs/` | Anwenderdokumentation und Benutzerhandbuch |
+| `docs/` | Anwender-, Benutzer- und Entwicklerdokumentation, Funktionsübersicht, Abnahme-Checkliste |
 | `SPECS.md` | Ursprüngliche Spezifikation |
 | `OFFENE-PUNKTE.md` | Getroffene Annahmen, bekannte Einschränkungen und erledigte Punkte |
 
@@ -97,6 +104,9 @@ dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:Pub
 - [Benutzerhandbuch](docs/BENUTZERHANDBUCH.md): Schritt-für-Schritt-Anleitungen für alle Aufgaben
 - [Anwenderdokumentation](docs/ANWENDERDOKUMENTATION.md): Installation, Bedienkonzept, Tastenkürzel,
   Einstellungen, Datenschutz, Einschränkungen
+- [Funktionsübersicht](docs/FUNKTIONSUEBERSICHT.md): verdichteter Entwicklungsverlauf, alle Funktionen nach Phasen
+- [Entwicklerdokumentation](docs/ENTWICKLERDOKUMENTATION.md): Architektur, Kernkonzepte, Lesen und Schreiben von Dateien,
+  Oberfläche, Tests, neue Anmerkungsarten, Konventionen und Fallstricke
 - [Offene Punkte](OFFENE-PUNKTE.md): Entscheidungen und Annahmen aus der Entwicklung
 
 ## Verwendete Bibliotheken

@@ -2,6 +2,8 @@ using PdfSharp.Drawing;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using PdfUtopia.Core;
+using PdfUtopia.Core.Annotations;
+using PdfUtopia.Core.Geometry;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Pdf.Rendering;
 
@@ -137,6 +139,10 @@ public static class PdfExporter
         {
             using var output = new PdfDocument();
             var writer = new AnnotationWriter(output, options);
+            var written = new List<PdfPage>();
+            var origins = new List<(PdfPage Page, int SourceIndex)>();
+            var redactions = new List<PageRedaction>();
+            var recognized = new List<PageRecognizedText>();
             foreach (var entry in entries)
             {
                 if (!inputs.TryGetValue(entry.SourceIndex, out var input))
@@ -154,11 +160,43 @@ public static class PdfExporter
                     Extend(page, geometry, extension);
                 }
 
+                if (Redactions(document.Annotations.For(entry.Id), GeometryOf(page), entry.Rotation, written.Count) is { } redaction)
+                {
+                    redactions.Add(redaction);
+                }
+
+                if (document.RecognizedText.TryGetValue(entry.Id, out var text))
+                {
+                    // Geschwärzte Wörter nie als Text schreiben (A52)
+                    var areas = document.Annotations.For(entry.Id).OfType<RedactionAnnotation>().Select(area => area.Bounds).ToList();
+                    var extended = GeometryOf(page);
+                    recognized.Add(new PageRecognizedText(written.Count, text.Without(areas), entry.Rotation, extended.DisplayWidth, extended.DisplayHeight));
+                }
+
                 page.Rotate = (geometry.FileRotation + (int)entry.Rotation) % 360;
+                written.Add(page);
+                origins.Add((page, entry.SourceIndex));
             }
 
-            Protect(output, targetPassword);
-            SaveAtomically(output, targetPath);
+            // Lesezeichen der geöffneten Datei auf die neue Seitenfolge umstellen (P6)
+            AddBookmarks(output.Outlines, BookmarkMap.Prune(BookmarkMap.Place(sources[PageEntry.OpenedFile].Bookmarks, entries)), written);
+            // Formular-Registrierung neu aufbauen, sonst sind Formularfelder in anderen Programmen nicht mehr ausfüllbar (P7)
+            FormRebuilder.Rebuild(output, origins, inputs, document.Form);
+            if (redactions.Count == 0)
+            {
+                WriteRecognizedText(output, recognized);
+                Protect(output, targetPassword);
+                SaveAtomically(output, targetPath);
+                return;
+            }
+
+            // Schwärzen (A52): erst vollständig schreiben, dann die betroffenen Seiten als Bild ersetzen
+            using var buffer = new MemoryStream();
+            output.Save(buffer, closeStream: false);
+            using var redacted = Redactor.Apply(buffer.ToArray(), redactions);
+            WriteRecognizedText(redacted, recognized);
+            Protect(redacted, targetPassword);
+            SaveAtomically(redacted, targetPath);
         }
         finally
         {
@@ -166,6 +204,48 @@ public static class PdfExporter
             {
                 input.Dispose();
             }
+        }
+    }
+
+    /// <summary>
+    /// Schreibt erkannten Text als unsichtbare Textebene in die fertigen Seiten (A53).
+    /// </summary>
+    private static void WriteRecognizedText(PdfDocument target, IReadOnlyList<PageRecognizedText> recognized)
+    {
+        foreach (var text in recognized)
+        {
+            var page = target.Pages[text.PageIndex];
+            RecognizedTextWriter.Write(page, GeometryOf(page), text);
+        }
+    }
+
+    /// <summary>
+    /// Schwärzungen einer Seite, umgerechnet auf die gespeicherte Anzeige (Bearbeitungsdrehung und Verlängerung).
+    /// </summary>
+    /// <returns>Die Schwärzungen oder <c>null</c>, wenn die Seite keine hat.</returns>
+    private static PageRedaction? Redactions(IReadOnlyList<Annotation> annotations, PageGeometry geometry, PageRotation rotation, int pageIndex)
+    {
+        var areas = annotations.OfType<RedactionAnnotation>()
+            .Select(redaction => PageTransform.Rotate(redaction.Bounds, rotation, geometry.DisplayWidth, geometry.DisplayHeight))
+            .ToList();
+        return areas.Count == 0 ? null : new PageRedaction(pageIndex, areas);
+    }
+
+    /// <summary>
+    /// Schreibt Lesezeichen samt Unterpunkten; Gliederungspunkte ohne Ziel bleiben ohne Ziel.
+    /// </summary>
+    private static void AddBookmarks(PdfOutlineCollection target, IReadOnlyList<PlacedBookmark> bookmarks, List<PdfPage> pages)
+    {
+        foreach (var bookmark in bookmarks)
+        {
+            var outline = new PdfOutline { Title = bookmark.Source.Title, Opened = bookmark.Source.IsOpen };
+            if (bookmark.PageIndex is { } index)
+            {
+                outline.DestinationPage = pages[index];
+            }
+
+            target.Add(outline);
+            AddBookmarks(outline.Outlines, bookmark.Children, pages);
         }
     }
 

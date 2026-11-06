@@ -90,6 +90,25 @@ public static class PageTransform
             HighlightAnnotation highlight => highlight with { Bounds = Rotate(highlight.Bounds, rotation, width, height) },
             RectangleAnnotation rectangle => rectangle with { Bounds = Rotate(rectangle.Bounds, rotation, width, height) },
             CommentAnnotation comment => comment with { Bounds = Rotate(comment.Bounds, rotation, width, height) },
+            SignatureAnnotation signature => signature with
+            {
+                Strokes = signature.Strokes.Select(stroke => (IReadOnlyList<StrokePoint>)stroke
+                    .Select(point => point with { Position = Rotate(point.Position, rotation, width, height) }).ToList()).ToList(),
+            },
+            LineAnnotation line => line with { Start = Rotate(line.Start, rotation, width, height), End = Rotate(line.End, rotation, width, height) },
+            EllipseAnnotation ellipse => ellipse with { Bounds = Rotate(ellipse.Bounds, rotation, width, height) },
+            RedactionAnnotation redaction => redaction with { Bounds = Rotate(redaction.Bounds, rotation, width, height) },
+            TextAnnotation text => text with
+            {
+                Anchor = Rotate(text.Anchor, rotation, width, height),
+                Orientation = (PageRotation)(((int)text.Orientation - (int)rotation + 360) % 360),
+            },
+            // Stempel und Bilder: Mitte wandert mit, die Drehung kommt zur eigenen hinzu
+            BoxAnnotation box => box with
+            {
+                Bounds = BoxAnnotation.Centered(Rotate(box.Center, rotation, width, height), box.Bounds.Width, box.Bounds.Height),
+                Angle = BoxAnnotation.NormalizeAngle(box.Angle + (int)rotation),
+            },
             _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
         };
     }

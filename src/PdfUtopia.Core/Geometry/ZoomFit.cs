@@ -53,4 +53,21 @@ public static class ZoomFit
         };
         return Math.Clamp(Math.Round(zoom, 3), MinZoom, MaxZoom);
     }
+
+    /// <summary>
+    /// Liest einen eingegebenen Zoom in Prozent, z. B. „150“, „150 %“ oder „87,5“, und begrenzt ihn auf 30–400 %.
+    /// </summary>
+    /// <param name="input">Die Eingabe.</param>
+    /// <returns>Der Zoom (1 = 100 %) oder <c>null</c> bei ungültiger Eingabe.</returns>
+    public static double? ParsePercent(string? input)
+    {
+        var text = (input ?? string.Empty).Replace("%", string.Empty, StringComparison.Ordinal).Trim().Replace(',', '.');
+        if (!double.TryParse(text, System.Globalization.NumberStyles.AllowDecimalPoint, System.Globalization.CultureInfo.InvariantCulture, out var percent)
+            || percent <= 0)
+        {
+            return null;
+        }
+
+        return Math.Clamp(Math.Round(percent / 100, 3), MinZoom, MaxZoom);
+    }
 }

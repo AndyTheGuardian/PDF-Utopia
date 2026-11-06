@@ -90,6 +90,26 @@ public sealed class InsertPagesTests : IDisposable
     }
 
     [Fact]
+    public void BlankPage_HasRequestedSize_AndIsSavedAsEmptyPage()
+    {
+        using var opened = PdfSource.Open(_file);
+        using var blank = PdfSource.CreateBlankPage(842, 595);
+        Assert.True(blank.IsGenerated);
+        Assert.Equal((842, 595), blank.PageSize(1));
+        var document = opened.CreateDocument();
+        document.InsertPages(1, 1, [1]);
+        var target = _temp.File("mit-leerer-seite.pdf");
+
+        PdfExporter.Save([opened, blank], document, target);
+
+        using var reopened = PdfSource.Open(target);
+        Assert.Equal(15, reopened.PageCount);
+        Assert.Equal((842, 595), reopened.PageSize(2));
+        Assert.Equal(string.Empty, reopened.PageText(2));
+        Assert.Contains("Seite 2", reopened.PageText(3), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Save_UnknownSourceIndex_Throws()
     {
         using var opened = PdfSource.Open(_file);

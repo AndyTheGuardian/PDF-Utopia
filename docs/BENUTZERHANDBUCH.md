@@ -1,6 +1,6 @@
 # PDF Utopia – Benutzerhandbuch
 
-Stand: 2026-11-03
+Stand: 2026-11-06
 
 Dieses Handbuch führt Schritt für Schritt durch alle Aufgaben in PDF Utopia. Hintergründe, Regeln im Detail,
 Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokumentation](ANWENDERDOKUMENTATION.md).
@@ -11,19 +11,21 @@ Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokum
 2. [Dokumente öffnen](#2-dokumente-öffnen)
 3. [Durch das Dokument bewegen](#3-durch-das-dokument-bewegen)
 4. [Kommentieren](#4-kommentieren)
-5. [Markieren, Zeichnen, Rechtecke](#5-markieren-zeichnen-rechtecke)
-6. [Radieren](#6-radieren)
-7. [Seiten umsortieren, drehen, löschen](#7-seiten-umsortieren-drehen-löschen)
-8. [Rückgängig und Wiederholen](#8-rückgängig-und-wiederholen)
-9. [Suchen](#9-suchen)
-10. [Speichern](#10-speichern)
-11. [Seiten extrahieren](#11-seiten-extrahieren)
-12. [Seiten aus anderer PDF-Datei einfügen](#12-seiten-aus-anderer-pdf-datei-einfügen)
-13. [Drucken](#13-drucken)
-14. [Farben, Design und Sprache](#14-farben-design-und-sprache)
-15. [Einstellungen](#15-einstellungen)
-16. [Arbeiten mit dem Stift](#16-arbeiten-mit-dem-stift)
-17. [Häufige Fragen und Lösungen](#17-häufige-fragen-und-lösungen)
+5. [Markieren, Zeichnen, Formen, Text](#5-markieren-zeichnen-formen-text)
+6. [Unterschreiben, Stempeln und Formulare ausfüllen](#6-unterschreiben-stempeln-und-formulare-ausfüllen)
+7. [Schwärzen und Texterkennung](#7-schwärzen-und-texterkennung)
+8. [Radieren](#8-radieren)
+9. [Seiten umsortieren, drehen, löschen, einfügen](#9-seiten-umsortieren-drehen-löschen-einfügen)
+10. [Rückgängig und Wiederholen](#10-rückgängig-und-wiederholen)
+11. [Suchen](#11-suchen)
+12. [Speichern](#12-speichern)
+13. [Seiten extrahieren](#13-seiten-extrahieren)
+14. [Seiten aus anderer PDF-Datei einfügen](#14-seiten-aus-anderer-pdf-datei-einfügen)
+15. [Drucken](#15-drucken)
+16. [Farben, Design und Sprache](#16-farben-design-und-sprache)
+17. [Einstellungen](#17-einstellungen)
+18. [Arbeiten mit dem Stift](#18-arbeiten-mit-dem-stift)
+19. [Häufige Fragen und Lösungen](#19-häufige-fragen-und-lösungen)
 
 ---
 
@@ -68,18 +70,39 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 |---|---|
 | Seite anzeigen | in der Seitenliste links auf die Miniatur klicken |
 | Blättern | **Mausrad** über der Seite, **←** / **→**, **Bild↑** / **Bild↓**; **Pos1** / **Ende** für die erste / letzte Seite. Die Seitenliste scrollt mit, die aktuelle Seite bleibt dort sichtbar |
-| Seiten mit Anmerkungen finden | in der Seitenliste zeigen kleine **Symbole in der Akzentfarbe** oben links, was die Seite enthält: je eines für Kommentare, Markierungen, Freihandlinien und Rechtecke (wie in der Werkzeugleiste) |
+| Seiten mit Anmerkungen finden | in der Seitenliste zeigen kleine **Symbole in der Akzentfarbe** oben links, was die Seite enthält: je eines für Kommentare, Markierungen, Freihandlinien, Formen und Texte (wie in der Werkzeugleiste) |
+| Alle Anmerkungen im Überblick | oben in der linken Leiste den Reiter **Anmerkungen** wählen (siehe unten) |
 | Ganze Seite sehen | unten rechts **Ganze Seite** wählen (Standard) |
 | Seite so hoch wie möglich | **Volle Höhe** |
 | Seite so breit wie möglich | **Volle Breite** |
-| Feiner zoomen | **−** / **+** in der Werkzeug- oder Statusleiste, oder **Strg+Minus** / **Strg+Plus** |
+| Feiner zoomen | **−** / **+** in der Statusleiste, oder **Strg+Minus** / **Strg+Plus** |
+| Zoom genau einstellen | in der Statusleiste in das Feld zwischen − und + klicken, z. B. `150` eintippen und **Enter** drücken |
 
 Die gewählte Ansicht passt sich automatisch an, wenn Sie das Fenster vergrößern, maximieren oder verkleinern.
-Sobald Sie mit − oder + zoomen, bleibt der Zoom fest, bis Sie wieder eine Ansicht wählen.
+Sobald Sie mit −, + oder dem Eingabefeld zoomen, bleibt der Zoom fest, bis Sie wieder eine Ansicht wählen.
 
 Ist die Seite größer als die Ansicht (z. B. bei **Volle Breite**), scrollen Mausrad und **↑** / **↓** zuerst
 innerhalb der Seite. Am unteren Rand blättert die nächste Drehung weiter, am oberen Rand zurück – dann sehen Sie
 das Ende der vorigen Seite. Während Sie in ein Textfeld schreiben, blättern die Pfeiltasten nicht.
+
+### Alle Anmerkungen im Überblick
+1. Oben in der linken Leiste auf **Anmerkungen** klicken. Die Zahl daneben zeigt, wie viele es gibt. Der Reiter
+   erscheint erst, wenn das Dokument mindestens eine Anmerkung hat.
+2. Die Liste zeigt alle Anmerkungen nach Seiten geordnet: Kommentare mit Fußnotenzahl und Text, Markierungen mit
+   dem markierten Text, Texte mit ihrem Inhalt, Zeichnungen und Formen mit ihrer Art.
+3. Über das Auswahlfeld darüber zeigen Sie nur eine Art an, z. B. nur **Kommentare**.
+4. Ein **Klick** auf einen Eintrag springt zur Seite; die Anmerkung wird kurz farbig umrahmt.
+
+Mit **Seiten** kehren Sie zur Seitenliste zurück.
+
+### Mit Lesezeichen springen
+Hat die Datei ein Inhaltsverzeichnis (Lesezeichen), gibt es oben in der linken Leiste den Reiter **Lesezeichen**.
+Klicken Sie auf ein Lesezeichen, um zur Seite zu springen; mit dem Pfeil davor klappen Sie Unterpunkte auf und zu.
+Das Kapitel der angezeigten Seite ist farbig markiert, Lesezeichen gelöschter Seiten sind grau. Beim Speichern
+bleiben die Lesezeichen erhalten.
+
+> **Tipp:** Ist die Leiste zu schmal, ziehen Sie ihren rechten Rand mit der Maus nach rechts – die Seitenminiaturen
+> werden dabei größer. PDF Utopia merkt sich die Breite. Passen nicht alle Reiter in eine Zeile, steht der dritte darunter.
 
 ---
 
@@ -106,11 +129,11 @@ darauf. Kommentar und Fußnote verschwinden; die übrigen Kommentare werden neu 
 
 ### Die Kommentarfarbe ändern
 Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt** und wählen Sie eine Farbe
-(siehe [Farben](#14-farben-design-und-sprache)). Die Farbe gilt für neue Kommentare.
+(siehe [Farben](#16-farben-design-und-sprache)). Die Farbe gilt für neue Kommentare.
 
 ---
 
-## 5. Markieren, Zeichnen, Rechtecke
+## 5. Markieren, Zeichnen, Formen, Text
 
 ### Text markieren (Marker)
 1. Werkzeug **Marker** wählen.
@@ -127,33 +150,120 @@ Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt
    fester Druck eine dicke Linie.
 4. Zeichnen. Der Strich endet, wenn Sie die Maustaste loslassen oder den Stift abheben.
 
-### Ein Rechteck aufziehen
-1. Werkzeug **Rechteck** wählen, **Farbe** und **Strichstärke** einstellen.
-2. Von einer Ecke zur gegenüberliegenden ziehen. Die Ecken sind wie bei Kommentaren leicht abgerundet.
+### Formen zeichnen: Rechteck, Ellipse, Linie, Pfeil
+1. Werkzeug **Formen** wählen.
+2. In der Optionsleiste die **Form** anklicken – Rechteck, Ellipse, Linie, Pfeil mit offener Spitze oder Pfeil
+   mit geschlossener (gefüllter) Spitze – und **Farbe** und **Strichstärke** einstellen. Farbe und Stärke gelten
+   für alle Formen. Bei Pfeilen legen Sie unter **Spitze** fest, ob sie am Ende, am Anfang oder an beiden Enden
+   sitzt.
+3. Ziehen:
+   - **Rechteck und Ellipse:** von einer Ecke zur gegenüberliegenden. Rechtecke haben wie Kommentare leicht
+     abgerundete Ecken.
+   - **Linie und Pfeil:** vom Anfang zum Ende. „Ende“ ist dort, wo Sie loslassen.
+4. Mit gedrückter **Umschalttaste** rasten Linien und Pfeile in 15°-Schritten ein (waagerecht, senkrecht,
+   45° …), aus Rechteck und Ellipse werden **Quadrat** und **Kreis**.
 
-> **Hinweis:** Sehr kurze Striche oder winzige Rechtecke (Klick ohne Ziehen) werden nicht angelegt.
+### Text schreiben
+1. Werkzeug **Text** wählen; in der Optionsleiste **Farbe** und **Schriftgröße** einstellen.
+2. Auf die Seite **klicken** – es erscheint ein Textfeld mit Standardbreite. Oder mit gedrückter Maustaste
+   **waagerecht ziehen**, um die Breite selbst festzulegen.
+3. Schreiben. Lange Zeilen brechen automatisch um, **Enter** beginnt eine neue Zeile.
+4. **Esc** drücken oder neben das Textfeld klicken – fertig.
+
+So ändern Sie einen Text später (Werkzeug **Text** gewählt):
+- **Bearbeiten:** auf den Text klicken.
+- **Verschieben:** den Text mit gedrückter Maustaste an die neue Stelle ziehen.
+- **Löschen:** den ganzen Text entfernen und die Eingabe abschließen – oder mit dem **Radierer** darüberstreichen.
+
+> **Hinweis:** Sehr kurze Striche oder winzige Formen (Klick ohne Ziehen) werden nicht angelegt.
 
 ---
 
-## 6. Radieren
+## 6. Unterschreiben, Stempeln und Formulare ausfüllen
+
+### Unterschreiben
+1. Werkzeug **Unterschrift** wählen. Beim ersten Mal öffnet sich der Dialog **Unterschriften**.
+2. Im weißen Feld mit Stift oder Maus unterschreiben, einen **Namen** vergeben (z. B. „Unterschrift“ oder „Kürzel“),
+   eine **Farbe** wählen und **Speichern** klicken. Bis zu fünf Unterschriften sind möglich; **Schließen** beendet
+   den Dialog.
+3. In der Optionsleiste die gewünschte Unterschrift anklicken.
+4. Auf die Seite klicken – oder mit gedrückter Maustaste waagerecht ziehen, um die Größe zu bestimmen.
+5. Zum Verschieben die gesetzte Unterschrift mit gedrückter Maustaste an die neue Stelle ziehen.
+
+Über **Verwalten…** ändern oder löschen Sie Unterschriften, **+ Neue** legt eine weitere an.
+
+> **Wichtig:** Die Unterschrift ist ein sichtbares Abbild wie auf Papier, **keine digitale Signatur**. Für Verträge,
+> die eine qualifizierte elektronische Signatur verlangen, reicht sie nicht.
+
+### Stempeln und Bilder einfügen
+1. Werkzeug **Stempel** wählen.
+2. Im Klappfeld links in der Optionsleiste einen Stempel wählen, z. B. **Genehmigt** – oder mit **+ Eigener Text…**
+   einen eigenen anlegen.
+3. Bei Bedarf **Datum** und **Name** anhaken (den Namen tragen Sie unter **Einstellungen** ein) und eine Farbe wählen.
+4. Auf die Seite klicken – oder waagerecht ziehen, um die Größe zu bestimmen.
+
+Ein Bild fügen Sie über **Bild…** ein (danach auf die Seite klicken), ziehen eine PNG- oder JPEG-Datei aus dem
+Dateimanager auf die Seite oder drücken **Strg+V**, wenn ein Bild in der Zwischenablage liegt.
+
+Zum Ändern den Stempel oder das Bild anklicken:
+- in der Fläche ziehen = verschieben,
+- an einer Ecke ziehen = Größe ändern,
+- am runden Griff oben ziehen = drehen (in 15°-Schritten, mit **Umschalt** stufenlos),
+- **Entf** = löschen.
+
+### Formulare ausfüllen
+Enthält eine Datei ein Formular, steht über der Seite ein Hinweis mit der Anzahl der Felder.
+1. Werkzeug **Auswählen** wählen.
+2. In ein Feld klicken und Text eingeben, ein Kästchen ankreuzen oder einen Eintrag wählen.
+3. Mit **Tab** zum nächsten Feld springen.
+4. Speichern. Das Formular bleibt in anderen Programmen ausfüllbar.
+
+> **Tipp:** Der Schalter **Felder hervorheben** im Hinweis hinterlegt alle Felder farbig. Ein falscher Eintrag
+> lässt sich mit Strg+Z zurücknehmen. Graue Felder sind schreibgeschützt.
+
+---
+
+## 7. Schwärzen und Texterkennung
+
+### Schwärzen
+1. Werkzeug **Schwärzen** wählen.
+2. Bereiche aufziehen, die verschwinden sollen – oder oben einen Begriff (z. B. einen Namen) eingeben und
+   **Alle markieren** klicken.
+3. Die rot schraffierten Markierungen prüfen; eine falsche anklicken und **Entf** drücken.
+4. **Speichern unter** wählen und im Dialog **Schwärzen und speichern…** bestätigen.
+
+> **Wichtig:** Geschwärzte Seiten werden als Bild gespeichert. Was unter den Bereichen lag, ist in der neuen Datei
+> endgültig entfernt; Text dieser Seiten lässt sich dort nicht mehr markieren oder suchen. Titel, Autor und
+> Lesezeichen werden nicht geschwärzt – bei Bedarf vorher prüfen. Das Original bleibt unverändert.
+
+### Text in Scans erkennen
+1. Einmalig Tesseract installieren (siehe [Anwenderdokumentation, Abschnitt 5.5](ANWENDERDOKUMENTATION.md#55-texterkennung)).
+2. Im Hinweis über der Seite **Texterkennung…** klicken – oder **Bearbeiten → Texterkennung…**.
+3. **Seiten ohne Text** und die Sprache lassen, **Erkennen** klicken und warten.
+4. Danach lässt sich der Text suchen, markieren und schwärzen; beim Speichern kommt er als unsichtbare Textebene in
+   die Datei.
+
+---
+
+## 8. Radieren
 
 ### Mit dem Radierer-Werkzeug
 1. Werkzeug **Radierer** wählen; in der Optionsleiste die **Größe** einstellen. Ein gestrichelter Kreis zeigt
    sie am Mauszeiger.
-2. Über Marker, Freihandlinien oder Rechtecke streichen. Was getroffen ist, wird **blass**.
+2. Über Marker, Freihandlinien, Formen, Texte oder Unterschriften streichen. Was getroffen ist, wird **blass**.
 3. Loslassen – die getroffenen Markierungen werden **vollständig** entfernt.
 
 ### Mit dem Radiererende des Stifts
 Drehen Sie den Stift um und streichen Sie mit dem Radiererende über die Markierung – egal, welches Werkzeug
 gerade gewählt ist. Der gestrichelte Radierkreis erscheint schon, sobald der Stift über der Seite schwebt.
 
-> **Gut zu wissen:** Rechtecke werden nur über ihren Rand erfasst, nicht über ihre Fläche. Kommentare werden
+> **Gut zu wissen:** Rechtecke und Ellipsen werden nur über ihren Rand erfasst, nicht über ihre Fläche. Kommentare werden
 > nicht radiert; sie entfernen Sie über das × an der Fußnotenzahl. Ein Radierstrich lässt sich mit einem
 > einzigen **Rückgängig** zurücknehmen.
 
 ---
 
-## 7. Seiten umsortieren, drehen, löschen
+## 9. Seiten umsortieren, drehen, löschen, einfügen
 
 ### Umsortieren
 1. In der Seitenliste eine Miniatur mit der Maus **greifen und ziehen**.
@@ -162,9 +272,11 @@ gerade gewählt ist. Der gestrichelte Radierkreis erscheint schon, sobald der St
 
 ### Drehen
 - Mit der Maus über eine Miniatur fahren und auf **⟳** klicken, oder
-- die angezeigte Seite mit **Drehen** in der Werkzeugleiste (bzw. **Bearbeiten → Seite drehen**) drehen.
+- die angezeigte Seite mit **Drehen** in der Werkzeugleiste (bzw. **Bearbeiten → Seite im Uhrzeigersinn drehen**) drehen.
 
-Jeder Klick dreht um 90° im Uhrzeigersinn. Kommentare und Zeichnungen drehen mit.
+Jeder Klick dreht um 90° im Uhrzeigersinn. Mit gedrückter **Strg**-Taste dreht der Klick gegen den Uhrzeigersinn –
+das Symbol auf dem Knopf zeigt dann in die andere Richtung. Alternativ: **Bearbeiten → Seite gegen den
+Uhrzeigersinn drehen** oder Rechtsklick auf die Miniatur. Kommentare und Zeichnungen drehen mit.
 
 ### Löschen
 - Mit der Maus über eine Miniatur fahren und auf den **Papierkorb** klicken, oder
@@ -172,21 +284,38 @@ Jeder Klick dreht um 90° im Uhrzeigersinn. Kommentare und Zeichnungen drehen mi
 
 Die letzte Seite eines Dokuments lässt sich nicht löschen.
 
+### Mehrere Seiten auf einmal
+1. In der Seitenliste eine Seite anklicken.
+2. Weitere Seiten mit gedrückter **Strg**-Taste anklicken – oder mit gedrückter **Umschalttaste** die letzte Seite
+   eines Bereichs. **Strg+A** wählt alle Seiten.
+3. Die gewählten Seiten sind farbig umrandet, unten steht z. B. „3 Seiten ausgewählt“.
+4. Jetzt wirken **Drehen**, **Löschen** (auch die Taste **Entf**) und **Extrahieren** auf alle gewählten Seiten.
+   Ziehen Sie eine der gewählten Seiten, wandern alle zusammen an die neue Stelle.
+5. **Esc** oder ein einfacher Klick auf eine Seite hebt die Auswahl auf.
+
+Ein **Rechtsklick** auf eine Miniatur öffnet ein Menü mit Drehen, Löschen, Extrahieren und „Leere Seite danach
+einfügen“.
+
+### Leere Seite einfügen
+**Bearbeiten → Leere Seite einfügen** (**Strg+Umschalt+N**) fügt hinter der angezeigten Seite eine leere Seite
+in derselben Größe und Ausrichtung ein – praktisch für Notizen. Über den Rechtsklick auf eine Miniatur geht es
+auch hinter jeder anderen Seite.
+
 ---
 
-## 8. Rückgängig und Wiederholen
+## 10. Rückgängig und Wiederholen
 
 - **Rückgängig**: Schaltfläche **Rückgängig** oder **Strg+Z**
 - **Wiederholen**: Schaltfläche **Wiederholen**, **Strg+Y** oder **Strg+Umschalt+Z**
 
 Rückgängig machen lässt sich alles, was Sie am Dokument ändern: Kommentare, Fußnotentexte, Markierungen,
-Zeichnungen, Rechtecke, Radieren sowie Verschieben, Drehen und Löschen von Seiten. Die Statusleiste zeigt, wie
+Zeichnungen, Formen, Texte, Radieren sowie Verschieben, Drehen und Löschen von Seiten. Die Statusleiste zeigt, wie
 viele Schritte verfügbar sind (z. B. „Rückgängig: 4 / 50 Schritte“). Die Höchstzahl stellen Sie in den
-[Einstellungen](#15-einstellungen) ein.
+[Einstellungen](#17-einstellungen) ein.
 
 ---
 
-## 9. Suchen
+## 11. Suchen
 
 1. Klicken Sie in das **Suchfeld** oben rechts (oder **Strg+F**) und geben Sie einen Begriff ein.
 2. Rechts im Feld erscheint die **Anzahl der Treffer**. Auf der angezeigten Seite sind die Fundstellen in der
@@ -198,7 +327,7 @@ Groß- und Kleinschreibung spielt keine Rolle. Gescannte Seiten ohne Textebene l
 
 ---
 
-## 10. Speichern
+## 12. Speichern
 
 1. **Speichern unter** (Schaltfläche, **Datei → Speichern unter…** oder **Strg+Umschalt+S**).
 2. Wählen Sie den **Passwortschutz**:
@@ -213,7 +342,7 @@ bearbeiten.
 
 ---
 
-## 11. Seiten extrahieren
+## 13. Seiten extrahieren
 
 1. **Extrahieren** (Schaltfläche, **Datei → Seiten extrahieren…** oder **Strg+E**).
 2. Geben Sie die Seiten ein, z. B.
@@ -229,7 +358,7 @@ bearbeiten.
 
 ---
 
-## 12. Seiten aus anderer PDF-Datei einfügen
+## 14. Seiten aus anderer PDF-Datei einfügen
 
 So holen Sie Seiten einer anderen Datei in das angezeigte Dokument:
 
@@ -257,7 +386,7 @@ Eingefügte Seiten haben in der Seitenliste einen Rahmen in der Akzentfarbe und 
 
 ---
 
-## 13. Drucken
+## 15. Drucken
 
 1. **Drucken** (Schaltfläche, **Datei → Drucken…** oder **Strg+P**).
 2. PDF Utopia öffnet das Dokument mit allen Änderungen im **PDF-Betrachter Ihres Systems**.
@@ -265,7 +394,7 @@ Eingefügte Seiten haben in der Seitenliste einen Rahmen in der Akzentfarbe und 
 
 ---
 
-## 14. Farben, Design und Sprache
+## 16. Farben, Design und Sprache
 
 ### Design
 **Ansicht → System / Hell / Dunkel**. „System“ folgt der Einstellung Ihres Betriebssystems.
@@ -276,7 +405,7 @@ gewählte Werkzeug, die gewählte Seite, Auswahlfelder und die Hinterlegung von 
 
 ### Die Farbwahl bedienen
 Dieselbe Farbwahl gibt es für die Akzentfarbe und – über den Farbpunkt in der Optionsleiste – für Freihand,
-Rechteck und Kommentar. Der Titel zeigt, wofür Sie gerade wählen.
+Formen, Kommentar und Text. Der Titel zeigt, wofür Sie gerade wählen.
 
 | Bereich | Bedienung |
 |---|---|
@@ -295,7 +424,7 @@ ist. Ihre Auswahl wird gespeichert.
 
 ---
 
-## 15. Einstellungen
+## 17. Einstellungen
 
 **Bearbeiten → Einstellungen…**
 
@@ -310,9 +439,9 @@ in der Optionsleiste ein; auch sie werden gespeichert.
 
 ---
 
-## 16. Arbeiten mit dem Stift
+## 18. Arbeiten mit dem Stift
 
-- **Zeichnen**: Freihand, Marker und Rechteck funktionieren mit dem Stift wie mit der Maus. Gezeichnet wird nur,
+- **Zeichnen**: Freihand, Marker und Formen funktionieren mit dem Stift wie mit der Maus. Gezeichnet wird nur,
   solange der Stift aufliegt. Während Sie zeichnen, verschiebt der Stift die Seite nicht.
 - **Seite verschieben**: Mit dem Werkzeug **Auswählen** können Sie die Seite mit dem Stift wie mit dem Finger
   verschieben.
@@ -325,7 +454,7 @@ in der Optionsleiste ein; auch sie werden gespeichert.
 
 ---
 
-## 17. Häufige Fragen und Lösungen
+## 19. Häufige Fragen und Lösungen
 
 **Der Klick mit dem Kommentar-Werkzeug macht nichts.**
 Unter dem Mauszeiger wurde kein Absatz erkannt (z. B. bei gescannten Seiten) oder der Absatz ist schon
@@ -335,7 +464,7 @@ kommentiert. Ziehen Sie stattdessen einen Bereich auf.
 Bei Spalten, Tabellen oder ungewöhnlichem Satz kann das vorkommen. Ziehen Sie den gewünschten Bereich auf.
 
 **Meine Linie ist trotz „Druckempfindlich“ gleich dick.**
-Ihr Stift meldet keinen Andruck – siehe [Arbeiten mit dem Stift](#16-arbeiten-mit-dem-stift). Mit der Maus
+Ihr Stift meldet keinen Andruck – siehe [Arbeiten mit dem Stift](#18-arbeiten-mit-dem-stift). Mit der Maus
 wirkt die Einstellung grundsätzlich nicht.
 
 **Der Radierer entfernt meinen Kommentar nicht.**

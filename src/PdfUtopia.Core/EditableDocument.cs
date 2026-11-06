@@ -27,8 +27,60 @@ public sealed class EditableDocument
     /// <summary>Seiten in aktueller Reihenfolge.</summary>
     public PageList Pages { get; }
 
+    /// <summary>Formularfelder der geöffneten Datei mit ihren Werten (A50, 7b).</summary>
+    public Forms.FormValues Form { get; } = new();
+
     /// <summary>Annotationen aller Seiten.</summary>
     public AnnotationStore Annotations { get; } = new();
+
+    /// <summary>Durch Texterkennung gewonnener Text je Seitenkennung (A53).</summary>
+    public IReadOnlyDictionary<int, Text.RecognizedPage> RecognizedText => _recognized;
+
+    /// <summary>Wird ausgelöst, wenn sich der erkannte Text ändert.</summary>
+    public event EventHandler? RecognizedTextChanged;
+
+    private readonly Dictionary<int, Text.RecognizedPage> _recognized = [];
+
+    /// <summary>
+    /// Übernimmt erkannten Text für mehrere Seiten als einen Rückgängig-Schritt; vorhandener Text dieser Seiten wird
+    /// ersetzt.
+    /// </summary>
+    /// <param name="pages">Seitenkennung und erkannter Text; ohne Einträge entsteht kein Schritt.</param>
+    public void SetRecognizedText(IReadOnlyDictionary<int, Text.RecognizedPage> pages)
+    {
+        if (pages.Count == 0)
+        {
+            return;
+        }
+
+        var previous = pages.Keys.ToDictionary(id => id, id => _recognized.GetValueOrDefault(id));
+        History.Execute(new DelegateCommand(
+            () =>
+            {
+                foreach (var (id, page) in pages)
+                {
+                    _recognized[id] = page;
+                }
+
+                RecognizedTextChanged?.Invoke(this, EventArgs.Empty);
+            },
+            () =>
+            {
+                foreach (var (id, page) in previous)
+                {
+                    if (page is null)
+                    {
+                        _recognized.Remove(id);
+                    }
+                    else
+                    {
+                        _recognized[id] = page;
+                    }
+                }
+
+                RecognizedTextChanged?.Invoke(this, EventArgs.Empty);
+            }));
+    }
 
     /// <summary>Verlauf für Rückgängig/Wiederholen.</summary>
     public UndoHistory History { get; }
@@ -68,6 +120,35 @@ public sealed class EditableDocument
     }
 
     /// <summary>
+    /// Ändert den Wert eines Formularfelds als einen Rückgängig-Schritt; schreibgeschützte und unbekannte Felder
+    /// sowie unveränderte Werte ergeben keinen Schritt.
+    /// </summary>
+    /// <param name="name">Feldname.</param>
+    /// <param name="value">Neuer Wert; bei Textfeldern auf die Höchstlänge gekürzt.</param>
+    /// <returns><c>true</c>, wenn sich der Wert geändert hat.</returns>
+    public bool SetFieldValue(string name, string value)
+    {
+        if (Form.Field(name) is not { ReadOnly: false } field)
+        {
+            return false;
+        }
+
+        if (field.MaxLength > 0 && value.Length > field.MaxLength)
+        {
+            value = value[..field.MaxLength];
+        }
+
+        var previous = Form.Value(name);
+        if (previous == value)
+        {
+            return false;
+        }
+
+        History.Execute(new DelegateCommand(() => Form.Set(name, value), () => Form.Set(name, previous)));
+        return true;
+    }
+
+    /// <summary>
     /// Fügt einer Seite eine Annotation hinzu.
     /// </summary>
     /// <param name="pageId">Seitenkennung.</param>
@@ -76,6 +157,34 @@ public sealed class EditableDocument
         History.Execute(new DelegateCommand(
             () => Annotations.Add(pageId, annotation),
             () => Annotations.Remove(pageId, annotation.Id)));
+
+    /// <summary>
+    /// Fügt Annotationen auf mehreren Seiten als einen Rückgängig-Schritt hinzu (z. B. „Suchen und schwärzen“, A52).
+    /// </summary>
+    /// <param name="annotations">Seitenkennung und Annotation; ohne Einträge entsteht kein Schritt.</param>
+    public void AddAnnotations(IReadOnlyList<(int PageId, Annotation Annotation)> annotations)
+    {
+        if (annotations.Count == 0)
+        {
+            return;
+        }
+
+        History.Execute(new DelegateCommand(
+            () =>
+            {
+                foreach (var (pageId, annotation) in annotations)
+                {
+                    Annotations.Add(pageId, annotation);
+                }
+            },
+            () =>
+            {
+                foreach (var (pageId, annotation) in annotations)
+                {
+                    Annotations.Remove(pageId, annotation.Id);
+                }
+            }));
+    }
 
     /// <summary>
     /// Entfernt eine Annotation; Rückgängig stellt sie an derselben Position wieder her.
@@ -160,6 +269,85 @@ public sealed class EditableDocument
     /// <param name="clockwise"><c>true</c> im, <c>false</c> gegen den Uhrzeigersinn.</param>
     public void RotatePage(int index, bool clockwise = true) =>
         History.Execute(new DelegateCommand(() => Pages.Rotate(index, clockwise), () => Pages.Rotate(index, !clockwise)));
+
+    /// <summary>
+    /// Dreht mehrere Seiten als einen Rückgängig-Schritt (Mehrfachauswahl, A48).
+    /// </summary>
+    /// <param name="indices">Positionen der Seiten.</param>
+    /// <param name="clockwise"><c>true</c> im, <c>false</c> gegen den Uhrzeigersinn (Strg+Klick).</param>
+    public void RotatePages(IReadOnlyCollection<int> indices, bool clockwise = true)
+    {
+        var targets = indices.Distinct().Order().ToList();
+        if (targets.Count == 0)
+        {
+            return;
+        }
+
+        History.Execute(new DelegateCommand(
+            () => targets.ForEach(index => Pages.Rotate(index, clockwise)),
+            () => targets.ForEach(index => Pages.Rotate(index, !clockwise))));
+    }
+
+    /// <summary>
+    /// Löscht mehrere Seiten als einen Rückgängig-Schritt; mindestens eine Seite bleibt (A48).
+    /// </summary>
+    /// <param name="indices">Positionen der Seiten.</param>
+    /// <returns><c>false</c>, wenn dabei alle Seiten gelöscht würden (dann geschieht nichts).</returns>
+    public bool DeletePages(IReadOnlyCollection<int> indices)
+    {
+        var targets = indices.Distinct().Order().ToList();
+        if (targets.Count == 0 || targets.Count >= Pages.Count)
+        {
+            return false;
+        }
+
+        var removed = targets.Select(index => (Index: index, Page: Pages[index])).ToList();
+        History.Execute(new DelegateCommand(
+            () =>
+            {
+                // Von hinten löschen, damit die übrigen Positionen gültig bleiben
+                foreach (var (index, _) in Enumerable.Reverse(removed))
+                {
+                    Pages.RemoveAt(index);
+                }
+            },
+            () =>
+            {
+                foreach (var (index, page) in removed)
+                {
+                    Pages.Insert(index, page);
+                }
+            }));
+        return true;
+    }
+
+    /// <summary>
+    /// Verschiebt mehrere Seiten als Block vor oder hinter eine Zielseite; ihre Reihenfolge untereinander bleibt
+    /// (A48). Liegt das Ziel selbst in der Auswahl, geschieht nichts.
+    /// </summary>
+    /// <param name="indices">Positionen der verschobenen Seiten.</param>
+    /// <param name="targetIndex">Position der Zielseite.</param>
+    /// <param name="after"><c>true</c>: hinter die Zielseite, sonst davor.</param>
+    public void MovePages(IReadOnlyCollection<int> indices, int targetIndex, bool after)
+    {
+        var moving = indices.Distinct().Order().ToList();
+        if (moving.Count == 0 || moving.Contains(targetIndex) || targetIndex < 0 || targetIndex >= Pages.Count)
+        {
+            return;
+        }
+
+        var before = Pages.ToList();
+        var block = moving.Select(index => before[index]).ToList();
+        var rest = before.Where((_, index) => !moving.Contains(index)).ToList();
+        var insertAt = rest.IndexOf(before[targetIndex]) + (after ? 1 : 0);
+        var order = rest.Take(insertAt).Concat(block).Concat(rest.Skip(insertAt)).ToList();
+        if (order.SequenceEqual(before))
+        {
+            return;
+        }
+
+        History.Execute(new DelegateCommand(() => Pages.Reorder(order), () => Pages.Reorder(before)));
+    }
 
     /// <summary>
     /// Fügt Seiten aus einer anderen Datei als einen Rückgängig-Schritt ein (A41). Ihre Annotationen werden mit

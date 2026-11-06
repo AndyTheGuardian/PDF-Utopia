@@ -11,6 +11,9 @@ public static class DrawingColors
     /// <summary>Standardfarbe für Rechtecke (Blau).</summary>
     public const string RectangleDefault = "#2F6FDF";
 
+    /// <summary>Standardfarbe des Text-Werkzeugs (fast Schwarz, A43).</summary>
+    public const string TextDefault = "#1F2328";
+
     /// <summary>Standardfarbe für Kommentare (Indigo).</summary>
     public const string CommentDefault = AccentPalette.DefaultAccent;
 

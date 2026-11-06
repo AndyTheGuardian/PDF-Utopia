@@ -2,6 +2,7 @@ using PdfSharp.Pdf;
 using PdfSharp.Pdf.Advanced;
 using PdfSharp.Pdf.IO;
 using PdfUtopia.Core.Annotations;
+using PdfUtopia.Core.Images;
 using PdfUtopia.Pdf.Export;
 
 namespace PdfUtopia.Pdf.Import;
@@ -93,7 +94,14 @@ internal static class SavedAnnotationImporter
                 continue;
             }
 
-            if (AnnotationSerializer.Deserialize(dictionary.Elements.GetString(AnnotationWriter.DataKey)) is { } annotation)
+            var annotation = AnnotationSerializer.Deserialize(dictionary.Elements.GetString(AnnotationWriter.DataKey));
+            if (annotation is ImageAnnotation image)
+            {
+                // Die Bildpunkte stehen nicht im JSON, sondern im Bild-XObject; fehlt es, entfällt das Bild
+                annotation = ReadImage(dictionary) is { } data ? image with { Image = data } : null;
+            }
+
+            if (annotation is not null)
             {
                 own.Add(annotation);
             }
@@ -108,6 +116,35 @@ internal static class SavedAnnotationImporter
         }
 
         return (own, removed);
+    }
+
+    /// <summary>
+    /// Liest das Bild einer Bild-Annotation aus ihrem Bild-XObject.
+    /// </summary>
+    /// <returns>Die Bilddaten oder <c>null</c>, wenn das Bild fehlt oder nicht lesbar ist.</returns>
+    private static ImageData? ReadImage(PdfDictionary annotation)
+    {
+        if (annotation.Elements[AnnotationWriter.ImageKey] is not { } item || Resolve(item) is not { Stream: not null } picture)
+        {
+            return null;
+        }
+
+        var (width, height) = (picture.Elements.GetInteger("/Width"), picture.Elements.GetInteger("/Height"));
+        if (width <= 0 || height <= 0)
+        {
+            return null;
+        }
+
+        if (picture.Elements.GetName("/Filter") == "/DCTDecode")
+        {
+            return new ImageData(width, height, ImageEncoding.Jpeg, picture.Stream.Value);
+        }
+
+        var rgb = picture.Stream.UnfilteredValue;
+        var alpha = picture.Elements["/SMask"] is { } maskItem && Resolve(maskItem) is { Stream: not null } mask ? mask.Stream.UnfilteredValue : null;
+        return rgb.Length == width * height * 3 && (alpha is null || alpha.Length == width * height)
+            ? new ImageData(width, height, ImageEncoding.Rgb, rgb, alpha)
+            : null;
     }
 
     /// <summary>

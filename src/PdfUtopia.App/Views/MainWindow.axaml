@@ -18,10 +18,12 @@
     <KeyBinding Gesture="Ctrl+Shift+S" Command="{Binding SaveAsCommand}" />
     <KeyBinding Gesture="Ctrl+E" Command="{Binding ExtractCommand}" />
     <KeyBinding Gesture="Ctrl+I" Command="{Binding InsertPagesCommand}" />
+    <KeyBinding Gesture="Ctrl+Shift+N" Command="{Binding InsertBlankPageCommand}" />
     <KeyBinding Gesture="Ctrl+P" Command="{Binding PrintCommand}" />
     <KeyBinding Gesture="Ctrl+W" Command="{Binding CloseDocumentCommand}" />
     <KeyBinding Gesture="Ctrl+Z" Command="{Binding UndoCommand}" />
     <KeyBinding Gesture="Ctrl+Y" Command="{Binding RedoCommand}" />
+    <KeyBinding Gesture="Ctrl+V" Command="{Binding PasteImageCommand}" />
     <KeyBinding Gesture="Ctrl+Shift+Z" Command="{Binding RedoCommand}" />
     <KeyBinding Gesture="Ctrl+OemPlus" Command="{Binding ZoomInCommand}" />
     <KeyBinding Gesture="Ctrl+Add" Command="{Binding ZoomInCommand}" />
@@ -49,6 +51,55 @@
     </Style>
     <Style Selector="Border.thumb.selected">
       <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <!-- Mehrfachauswahl (A48): Rahmen in der Akzentfarbe; die angezeigte Seite ist zusätzlich hinterlegt -->
+    <!-- Strg gedrückt: Drehen-Symbol gespiegelt (gegen den Uhrzeigersinn) -->
+    <!-- Spiegelung um die Mitte mit derselben Verkleinerung wie Path.icon bzw. Path.icon.small (App.axaml),
+         damit gespiegeltes und normales Symbol exakt gleich groß sind -->
+    <Style Selector="Path.icon.mirrored">
+      <Setter Property="RenderTransform" Value="scale(-0.75, 0.75)" />
+    </Style>
+    <Style Selector="Path.icon.small.mirrored">
+      <Setter Property="RenderTransform" Value="scale(-0.55, 0.55)" />
+    </Style>
+    <!-- Unterschriften in der Optionsleiste: weiß wie Papier, gewählte in der Akzentfarbe umrandet -->
+    <Style Selector="Button.sigChip">
+      <Setter Property="Background" Value="White" />
+      <Setter Property="Padding" Value="4,2" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+    </Style>
+    <Style Selector="Button.sigChip:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="White" />
+    </Style>
+    <Style Selector="Button.sigChip.selected">
+      <Setter Property="BorderThickness" Value="2" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <Style Selector="Button.stampColor">
+      <Setter Property="BorderBrush" Value="{DynamicResource SurfaceBrush}" />
+    </Style>
+    <Style Selector="Button.stampColor.selected">
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <!-- Trenner der linken Leiste (P12): liegt über der Linie, beim Überfahren dezent in der Akzentfarbe -->
+    <Style Selector="GridSplitter.sidebarSplitter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="GridSplitter.sidebarSplitter:pointerover">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+    </Style>
+    <Style Selector="Border.formBar">
+      <Setter Property="Margin" Value="12,10,12,0" />
+      <Setter Property="Padding" Value="12,6" />
+      <Setter Property="CornerRadius" Value="9" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <Style Selector="Border.thumb.marked">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
     </Style>
     <Style Selector="Border.thumb.dragging">
@@ -80,6 +131,67 @@
     </Style>
     <Style Selector="Border.insertedFrame.inserted">
       <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <!-- Anmerkungsübersicht (A45): Reiter und Einträge -->
+    <Style Selector="RadioButton.sideTab">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                            CornerRadius="7" Padding="4,6" Content="{TemplateBinding Content}" HorizontalContentAlignment="Center"
+                            Foreground="{DynamicResource MutedTextBrush}" />
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.sideTab:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="RadioButton.sideTab:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="RadioButton.sideTab:checked TextBlock.count">
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+    </Style>
+    <Style Selector="Button.annItem">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="CornerRadius" Value="7" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.annItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.annItem.selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentSoftBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+    </Style>
+    <!-- Lesezeichen: Markierung nur für das angezeigte Kapitel, keine eigene Auswahl des Baums -->
+    <Style Selector="TreeViewItem:selected /template/ Border#PART_LayoutRoot">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TreeViewItem:pointerover /template/ Border#PART_LayoutRoot">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.annItem:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.bookmark.missing">
+      <Setter Property="Opacity" Value="0.5" />
+    </Style>
+    <Style Selector="Button.bookmark">
+      <Setter Property="Padding" Value="6,4" />
+    </Style>
+    <Style Selector="TextBlock.kindOnly">
+      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
     </Style>
     <Style Selector="Button.thumbAction">
       <Setter Property="Width" Value="26" />
@@ -150,9 +262,12 @@
             <MenuItem Header="{loc:T Menu.Undo}" Command="{Binding UndoCommand}" InputGesture="Ctrl+Z" />
             <MenuItem Header="{loc:T Menu.Redo}" Command="{Binding RedoCommand}" InputGesture="Ctrl+Y" />
             <Separator />
-            <MenuItem Header="{loc:T Menu.RotatePage}" Command="{Binding RotateCurrentPageCommand}" />
+            <MenuItem Header="{loc:T Menu.RotatePage}" Command="{Binding RotateCurrentPageClockwiseCommand}" />
+            <MenuItem Header="{loc:T Menu.RotatePageCounterclockwise}" Command="{Binding RotateCurrentPageCounterclockwiseCommand}" />
             <MenuItem Header="{loc:T Menu.DeletePage}" Command="{Binding DeleteCurrentPageCommand}" />
+            <MenuItem Header="{loc:T Menu.InsertBlankPage}" Command="{Binding InsertBlankPageCommand}" InputGesture="Ctrl+Shift+N" />
             <Separator />
+            <MenuItem Header="{loc:T Menu.Ocr}" Command="{Binding RecognizeTextCommand}" />
             <MenuItem Header="{loc:T Menu.Find}" Click="OnFindClick" InputGesture="Ctrl+F" />
             <MenuItem Header="{loc:T Menu.Settings}" Command="{Binding OpenSettingsCommand}" />
           </MenuItem>
@@ -207,8 +322,20 @@
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Freehand}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconPen}" /><TextBlock Text="{loc:T Tool.Freehand}" /></StackPanel>
             </RadioButton>
-            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Rectangle}">
-              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconRect}" /><TextBlock Text="{loc:T Tool.Rectangle}" /></StackPanel>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Shape}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconShapes}" /><TextBlock Text="{loc:T Tool.Shape}" /></StackPanel>
+            </RadioButton>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Text}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconText}" /><TextBlock Text="{loc:T Tool.Text}" /></StackPanel>
+            </RadioButton>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Signature}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconSignature}" /><TextBlock Text="{loc:T Tool.Signature}" /></StackPanel>
+            </RadioButton>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Stamp}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconStamp}" /><TextBlock Text="{loc:T Tool.Stamp}" /></StackPanel>
+            </RadioButton>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Redact}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconRedact}" /><TextBlock Text="{loc:T Tool.Redact}" /></StackPanel>
             </RadioButton>
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Eraser}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconEraser}" /><TextBlock Text="{loc:T Tool.Eraser}" /></StackPanel>
@@ -216,15 +343,8 @@
             <Border Classes="divider" />
             <Button Classes="tb" Command="{Binding ExtractCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconExtract}" /><TextBlock Text="{loc:T Toolbar.Extract}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding InsertPagesCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconInsertPages}" /><TextBlock Text="{loc:T Toolbar.InsertPages}" /></StackPanel></Button>
-            <Button Classes="tb" Command="{Binding RotateCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconRotate}" /><TextBlock Text="{loc:T Toolbar.Rotate}" /></StackPanel></Button>
+            <Button Classes="tb" Command="{Binding RotateCurrentPageCommand}" ToolTip.Tip="{loc:T Toolbar.RotateTip}"><StackPanel Spacing="2"><Path Classes="icon" Classes.mirrored="{Binding ReverseRotation}" Data="{StaticResource IconRotate}" /><TextBlock Text="{loc:T Toolbar.Rotate}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding DeleteCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconTrash}" /><TextBlock Text="{loc:T Toolbar.Delete}" /></StackPanel></Button>
-            <Border Classes="divider" />
-            <Button Classes="tb" Command="{Binding ZoomOutCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconMinus}" /><TextBlock Text="{loc:T Toolbar.ZoomOut}" /></StackPanel></Button>
-            <Border BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1" CornerRadius="6" Background="{DynamicResource Surface2Brush}"
-                    Padding="6,4" MinWidth="54" VerticalAlignment="Center">
-              <TextBlock Text="{Binding ZoomText}" HorizontalAlignment="Center" />
-            </Border>
-            <Button Classes="tb" Command="{Binding ZoomInCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconPlus}" /><TextBlock Text="{loc:T Toolbar.ZoomIn}" /></StackPanel></Button>
         </WrapPanel>
         <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top" Margin="8,6,0,0">
           <TextBox x:Name="SearchBox" Width="200" Text="{Binding SearchText}" PlaceholderText="{loc:T Toolbar.SearchPlaceholder}" VerticalAlignment="Center">
@@ -256,7 +376,7 @@
     </Border>
 
     <!-- Werkzeugoptionen -->
-    <Border DockPanel.Dock="Top" Classes="bar" Background="{DynamicResource Surface2Brush}" Padding="12,6" MinHeight="40">
+    <Border x:Name="ToolOptionsBar" DockPanel.Dock="Top" Classes="bar" Background="{DynamicResource Surface2Brush}" Padding="12,6" MinHeight="40">
       <Grid ColumnDefinitions="Auto,*">
         <StackPanel Orientation="Horizontal" Spacing="16" VerticalAlignment="Center" DataContext="{Binding ToolOptions}" x:DataType="vm:ToolOptionsViewModel">
           <TextBlock Text="{Binding Title}" FontWeight="SemiBold" VerticalAlignment="Center" />
@@ -266,7 +386,7 @@
                     Background="{Binding CurrentColor, Converter={StaticResource HexToBrush}}" ToolTip.Tip="{Binding CurrentColor}"
                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).PrepareColorPickerCommand}" CommandParameter="{Binding ColorTarget}">
               <Button.Flyout>
-                <Flyout Placement="BottomEdgeAlignedLeft">
+                <Flyout Placement="BottomEdgeAlignedLeft" Closed="OnColorFlyoutClosed">
                   <views:ColorPickerView DataContext="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ColorPicker}" />
                 </Flyout>
               </Button.Flyout>
@@ -285,11 +405,160 @@
               </ItemsControl.ItemTemplate>
             </ItemsControl>
           </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowShapeKinds}" VerticalAlignment="Center">
+            <TextBlock Text="{loc:T Options.Shape}" Classes="hint" VerticalAlignment="Center" Margin="0,0,4,0" />
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.Rectangle}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=Rectangle}">
+              <Path Classes="icon" Data="{StaticResource IconRect}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.Ellipse}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=Ellipse}">
+              <Path Classes="icon" Data="{StaticResource IconEllipse}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.Line}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=Line}">
+              <Path Classes="icon" Data="{StaticResource IconLine}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.Arrow}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=Arrow}">
+              <Path Classes="icon" Data="{StaticResource IconArrow}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="shapes" ToolTip.Tip="{loc:T Shape.ClosedArrow}"
+                         IsChecked="{Binding Shape, Converter={StaticResource EnumEquals}, ConverterParameter=ClosedArrow}">
+              <Path Classes="icon" Data="{StaticResource IconClosedArrow}" />
+            </RadioButton>
+          </StackPanel>
+          <!-- Unterschrift (A49, Mockup v5): gespeicherte Unterschriften als Vorschau, „+ Neue“, „Verwalten…“ -->
+          <StackPanel Orientation="Horizontal" Spacing="6" IsVisible="{Binding ShowSignatureOptions}" VerticalAlignment="Center">
+            <TextBlock Text="{loc:T Signature.None}" IsVisible="{Binding HasNoSignature}" Classes="hint" VerticalAlignment="Center" />
+            <ItemsControl ItemsSource="{Binding Signatures}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:SignatureChoice">
+                  <Button Classes="sigChip" Classes.selected="{Binding IsSelected}" ToolTip.Tip="{Binding Signature.Name}"
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectSignatureCommand}" CommandParameter="{Binding}">
+                    <controls:SignaturePreview Signature="{Binding Signature}" Width="76" Height="24" />
+                  </Button>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="{loc:T Signature.New}" IsVisible="{Binding CanAddSignature}" VerticalAlignment="Center"
+                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NewSignatureCommand}" />
+            <Button Content="{loc:T Signature.Manage}" VerticalAlignment="Center"
+                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ManageSignaturesCommand}" />
+          </StackPanel>
+          <!-- Schwärzen (A52, Mockup v8): Suchen und schwärzen, Anzahl der markierten Bereiche -->
+          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowRedactOptions}" VerticalAlignment="Center">
+            <TextBox Width="190" PlaceholderText="{loc:T Redact.Search}" VerticalAlignment="Center"
+                     Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RedactTerm}">
+              <TextBox.KeyBindings>
+                <KeyBinding Gesture="Enter" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MarkRedactionsCommand}" />
+              </TextBox.KeyBindings>
+            </TextBox>
+            <Button Content="{loc:T Redact.MarkAll}" VerticalAlignment="Center"
+                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MarkRedactionsCommand}" />
+            <TextBlock Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RedactHitsText}" Classes="hint" FontSize="12"
+                       MinWidth="120" VerticalAlignment="Center" />
+            <Border IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).HasPendingRedactions}" Background="#FEE2E2"
+                    CornerRadius="6" Padding="9,3" VerticalAlignment="Center">
+              <TextBlock Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RedactPendingText, StringFormat='■ {0}'}"
+                         Foreground="#991B1B" FontSize="12" />
+            </Border>
+          </StackPanel>
+          <!-- Stempel und Bild (A51, Mockup v7): Auswahl als Klappfeld, Datum/Name, Farbe, Bild -->
+          <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding ShowStampOptions}" VerticalAlignment="Center">
+            <Button x:Name="StampPicker" Classes="sigChip" Padding="6,2" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <controls:StampPreview Stamp="{Binding StampPreview}" Width="96" Height="24" />
+                <TextBlock Text="▾" Foreground="#555555" VerticalAlignment="Center" />
+              </StackPanel>
+              <Button.Flyout>
+                <Flyout Placement="BottomEdgeAlignedLeft">
+                  <StackPanel Spacing="6" Width="324">
+                    <TextBlock Text="{loc:T Stamp.Presets}" Classes="hint" FontSize="11" />
+                    <ItemsControl ItemsSource="{Binding PresetChoices}">
+                      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:StampChoice">
+                          <Button Classes="sigChip" Classes.selected="{Binding IsSelected}" Width="156" Height="40" Click="OnStampChosen"
+                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectStampCommand}" CommandParameter="{Binding}">
+                            <controls:StampPreview Stamp="{Binding Preview}" Width="140" Height="28" />
+                          </Button>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <TextBlock Text="{loc:T Stamp.Custom}" Classes="hint" FontSize="11" IsVisible="{Binding HasCustomStamps}" Margin="0,4,0,0" />
+                    <ItemsControl ItemsSource="{Binding CustomChoices}" IsVisible="{Binding HasCustomStamps}">
+                      <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemSpacing="6" LineSpacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                      <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="vm:StampChoice">
+                          <Grid Width="156" Height="40">
+                            <Button Classes="sigChip" Classes.selected="{Binding IsSelected}" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" Click="OnStampChosen"
+                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SelectStampCommand}" CommandParameter="{Binding}">
+                              <controls:StampPreview Stamp="{Binding Preview}" Width="128" Height="28" />
+                            </Button>
+                            <Button Content="×" Padding="5,0" FontSize="12" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,2,2,0"
+                                    Background="Transparent" Foreground="#666666" ToolTip.Tip="{loc:T Stamp.Delete}"
+                                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteStampCommand}" CommandParameter="{Binding}" />
+                          </Grid>
+                        </DataTemplate>
+                      </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="{loc:T Stamp.New}" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,4,0,0" Click="OnStampChosen"
+                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NewStampCommand}" />
+                  </StackPanel>
+                </Flyout>
+              </Button.Flyout>
+            </Button>
+            <CheckBox Content="{loc:T Stamp.Date}" IsChecked="{Binding StampDate}" VerticalAlignment="Center" />
+            <CheckBox Content="{loc:T Stamp.Name}" IsChecked="{Binding StampName}" VerticalAlignment="Center" />
+            <Border IsVisible="{Binding ShowNoNameHint}" Background="{DynamicResource WarnBackgroundBrush}" CornerRadius="6" Padding="9,3" VerticalAlignment="Center">
+              <TextBlock Text="{loc:T Stamp.NoName}" Foreground="{DynamicResource WarnTextBrush}" FontSize="12" />
+            </Border>
+            <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <TextBlock Text="{loc:T Options.Color}" Classes="hint" VerticalAlignment="Center" />
+              <ItemsControl ItemsSource="{Binding StampColorChoices}">
+                <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="6" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:StampColorChoice">
+                    <Button Classes="stampColor" Classes.selected="{Binding IsSelected}" Width="22" Height="22" CornerRadius="11" Padding="0" BorderThickness="2"
+                            Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}" ToolTip.Tip="{Binding Name}"
+                            Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).SetStampColorCommand}" CommandParameter="{Binding ColorHex}" />
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+            <Button Content="{loc:T Stamp.Image}" IsVisible="{Binding !HasPendingImage}" VerticalAlignment="Center"
+                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ChooseImageCommand}" />
+            <Border IsVisible="{Binding HasPendingImage}" Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBorderBrush}"
+                    BorderThickness="1" CornerRadius="7" Padding="8,2,2,2" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="4">
+                <TextBlock Text="{Binding PendingImageText}" VerticalAlignment="Center" FontSize="12" />
+                <Button Content="×" Padding="6,0" Background="Transparent" ToolTip.Tip="{loc:T Stamp.ImageCancel}"
+                        Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).CancelImageCommand}" />
+              </StackPanel>
+            </Border>
+          </StackPanel>
+          <StackPanel Orientation="Horizontal" Spacing="4" IsVisible="{Binding ShowArrowEnds}" VerticalAlignment="Center">
+            <TextBlock Text="{loc:T Options.ArrowEnds}" Classes="hint" VerticalAlignment="Center" Margin="0,0,4,0" />
+            <RadioButton Classes="fit" GroupName="arrowEnds" ToolTip.Tip="{loc:T ArrowEnds.End}"
+                         IsChecked="{Binding ArrowEnds, Converter={StaticResource EnumEquals}, ConverterParameter=End}">
+              <Path Classes="icon" Data="{StaticResource IconArrowEnd}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="arrowEnds" ToolTip.Tip="{loc:T ArrowEnds.Start}"
+                         IsChecked="{Binding ArrowEnds, Converter={StaticResource EnumEquals}, ConverterParameter=Start}">
+              <Path Classes="icon" Data="{StaticResource IconArrowStart}" />
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="arrowEnds" ToolTip.Tip="{loc:T ArrowEnds.Both}"
+                         IsChecked="{Binding ArrowEnds, Converter={StaticResource EnumEquals}, ConverterParameter=Both}">
+              <Path Classes="icon" Data="{StaticResource IconArrowBoth}" />
+            </RadioButton>
+          </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowWidth}" VerticalAlignment="Center">
-            <TextBlock Text="{loc:T Options.Width}" Classes="hint" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding WidthLabel}" Classes="hint" VerticalAlignment="Center" />
             <Slider Width="120" Minimum="{Binding WidthMinimum}" Maximum="{Binding WidthMaximum}" Value="{Binding CurrentWidth}"
                     TickFrequency="1" IsSnapToTickEnabled="True" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding CurrentWidth, StringFormat='{}{0:0} px'}" MinWidth="36" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding WidthText}" MinWidth="36" VerticalAlignment="Center" />
           </StackPanel>
           <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowFreehandOptions}" VerticalAlignment="Center">
             <TextBlock Text="{loc:T Options.Smoothing}" Classes="hint" VerticalAlignment="Center" />
@@ -313,9 +582,20 @@
 
     <!-- Statusleiste -->
     <Border DockPanel.Dock="Bottom" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,1,0,0" Padding="12,4">
+      <!-- Alle Texte senkrecht mittig, damit sie neben Ansichtsknöpfen und Zoomfeld auf einer Grundlinie stehen (P15) -->
+      <Border.Styles>
+        <Style Selector="TextBlock">
+          <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+      </Border.Styles>
       <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
-        <TextBlock Classes="hint" Text="{Binding PageStatus}" />
+        <StackPanel Orientation="Horizontal" Spacing="10">
+          <TextBlock Classes="hint" Text="{Binding PageStatus}" />
+          <TextBlock Classes="hint" Text="{Binding ActiveDocument.SelectionStatus, FallbackValue=''}" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold" />
+        </StackPanel>
         <TextBlock Grid.Column="1" Classes="hint" Margin="18,0,0,0" Text="{Binding UndoStatus}" />
+        <TextBlock Grid.Column="3" Classes="hint" Margin="18,0,0,0" Text="{Binding StatusNotice}" Foreground="{DynamicResource AccentTextBrush}"
+                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="18,0,0,0" IsVisible="{Binding HasDocument}">
           <TextBlock Classes="hint" Text="{Binding ActiveDocument.FileName, FallbackValue=''}" />
           <TextBlock Classes="hint" Text=" · " />
@@ -334,11 +614,19 @@
               <StackPanel Orientation="Horizontal" Spacing="5"><Path Classes="icon small" Data="{StaticResource IconFitPage}" /><TextBlock Text="{loc:T Status.FitPage}" /></StackPanel>
             </RadioButton>
           </StackPanel>
-          <Button Width="22" Height="22" Padding="0" Command="{Binding ZoomOutCommand}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+          <Button Width="22" Height="22" Padding="0" Command="{Binding ZoomOutCommand}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" ToolTip.Tip="{loc:T Toolbar.ZoomOut}">
             <Path Classes="icon small" Data="{StaticResource IconMinus}" />
           </Button>
-          <TextBlock Classes="hint" Text="{Binding ZoomText}" MinWidth="44" TextAlignment="Center" VerticalAlignment="Center" />
-          <Button Width="22" Height="22" Padding="0" Command="{Binding ZoomInCommand}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+          <!-- Zoom direkt eingeben: Enter übernimmt, Esc oder Verlassen des Felds stellt den aktuellen Wert wieder her -->
+          <TextBox x:Name="ZoomBox" Classes="zoomInput" Text="{Binding ZoomInput}" Width="62" MinHeight="22" Padding="4,1" FontSize="12"
+                   TextAlignment="Center" VerticalAlignment="Center" VerticalContentAlignment="Center" ToolTip.Tip="{loc:T Status.ZoomInput}"
+                   LostFocus="OnZoomBoxLostFocus">
+            <TextBox.KeyBindings>
+              <KeyBinding Gesture="Enter" Command="{Binding ApplyZoomInputCommand}" />
+              <KeyBinding Gesture="Escape" Command="{Binding ResetZoomInputCommand}" />
+            </TextBox.KeyBindings>
+          </TextBox>
+          <Button Width="22" Height="22" Padding="0" Command="{Binding ZoomInCommand}" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" ToolTip.Tip="{loc:T Toolbar.ZoomIn}">
             <Path Classes="icon small" Data="{StaticResource IconPlus}" />
           </Button>
         </StackPanel>
@@ -375,26 +663,140 @@
 
     <!-- Hauptbereich -->
     <Grid>
-      <Grid ColumnDefinitions="220,*" IsVisible="{Binding HasDocument}">
-        <Border Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0">
+      <Grid x:Name="MainArea" IsVisible="{Binding HasDocument}">
+        <!-- Linke Leiste in der Breite veränderbar (F30) -->
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="220" MinWidth="180" MaxWidth="420" />
+          <ColumnDefinition Width="Auto" />
+          <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Border x:Name="Sidebar" Background="{DynamicResource SurfaceBrush}" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,1,0"
+                SizeChanged="OnSidebarSizeChanged">
           <DockPanel>
-            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10">
+            <!-- Ohne Anmerkungen und Lesezeichen: schlichte Überschrift der Seitenliste -->
+            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="12,10"
+                    IsVisible="{Binding !ShowSidebarTabs}">
               <Grid ColumnDefinitions="*,Auto">
                 <TextBlock Text="{loc:T Pages.Title}" FontWeight="SemiBold" />
                 <TextBlock Grid.Column="1" Classes="hint" Text="{Binding ActiveDocument.Thumbnails.Count, FallbackValue=''}" />
               </Grid>
             </Border>
-            <ScrollViewer x:Name="PageListScroller">
+            <!-- Reiter nur für vorhandene Inhalte (A45, A46); passen sie nicht nebeneinander, rückt der dritte nach unten (F30) -->
+            <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8"
+                    IsVisible="{Binding ShowSidebarTabs}">
+              <controls:TabStripPanel>
+                <RadioButton Classes="sideTab" GroupName="side" IsChecked="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Pages}">
+                  <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
+                    <TextBlock Text="{loc:T Pages.Title}" FontWeight="SemiBold" />
+                    <TextBlock Classes="hint count" Text="{Binding ActiveDocument.Thumbnails.Count, FallbackValue=''}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </RadioButton>
+                <RadioButton Classes="sideTab" GroupName="side" IsVisible="{Binding ActiveDocument.AnnotationList.HasAny, FallbackValue=False}"
+                             IsChecked="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Annotations}">
+                  <StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
+                    <TextBlock Text="{loc:T Annotations.Title}" FontWeight="SemiBold" />
+                    <TextBlock Classes="hint count" Text="{Binding ActiveDocument.AnnotationList.Count, FallbackValue=''}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </RadioButton>
+                <RadioButton Classes="sideTab" GroupName="side" IsVisible="{Binding ActiveDocument.BookmarkList.HasAny, FallbackValue=False}"
+                             IsChecked="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Bookmarks}">
+                  <TextBlock Text="{loc:T Bookmarks.Title}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+                </RadioButton>
+              </controls:TabStripPanel>
+            </Border>
+            <Panel>
+            <!-- Lesezeichen (A46) -->
+            <TreeView IsVisible="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Bookmarks}"
+                      ItemsSource="{Binding ActiveDocument.BookmarkList.Items, FallbackValue={x:Null}}" Margin="4,4,4,12">
+              <TreeView.Styles>
+                <Style Selector="TreeViewItem" x:DataType="vm:BookmarkItemViewModel">
+                  <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                  <Setter Property="MinHeight" Value="28" />
+                </Style>
+              </TreeView.Styles>
+              <TreeView.ItemTemplate>
+                <TreeDataTemplate x:DataType="vm:BookmarkItemViewModel" ItemsSource="{Binding Children}">
+                  <Button Classes="annItem bookmark" Classes.selected="{Binding IsCurrent}" Classes.missing="{Binding IsTargetMissing}"
+                          IsEnabled="{Binding CanShow}" ToolTip.Tip="{Binding ToolTip}" ToolTip.ShowOnDisabled="True"
+                          Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ShowBookmarkCommand}" CommandParameter="{Binding}">
+                    <TextBlock Text="{Binding Title}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" FontSize="12" />
+                  </Button>
+                </TreeDataTemplate>
+              </TreeView.ItemTemplate>
+            </TreeView>
+            <Panel IsVisible="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Annotations}">
+            <DockPanel DataContext="{Binding ActiveDocument.AnnotationList, FallbackValue={x:Null}}" x:DataType="vm:AnnotationListViewModel">
+              <Border DockPanel.Dock="Top" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="0,0,0,1" Padding="8">
+                <ComboBox ItemsSource="{Binding Filters}" SelectedItem="{Binding SelectedFilter}" HorizontalAlignment="Stretch">
+                  <ComboBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:AnnotationFilterOption"><TextBlock Text="{Binding Name}" /></DataTemplate>
+                  </ComboBox.ItemTemplate>
+                </ComboBox>
+              </Border>
+              <Panel>
+                <TextBlock Text="{Binding EmptyText}" IsVisible="{Binding IsEmpty}" Classes="hint" TextWrapping="Wrap" TextAlignment="Center" Margin="16,24" />
+                <ScrollViewer>
+                  <ItemsControl ItemsSource="{Binding Items}" Margin="6,2,6,12">
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="vm:AnnotationListItem">
+                        <Panel>
+                          <TextBlock Text="{Binding HeaderText}" IsVisible="{Binding IsHeader}" Classes="hint" FontSize="11" FontWeight="SemiBold" Margin="8,10,8,4" />
+                          <Button Classes="annItem" Classes.selected="{Binding IsSelected}" IsVisible="{Binding IsEntry}"
+                                  Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ShowAnnotationCommand}" CommandParameter="{Binding}">
+                            <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
+                              <Border Classes="thumbBadge" Width="22" Height="22" VerticalAlignment="Top">
+                                <Panel>
+                                  <Path Classes="icon small" Data="{StaticResource IconComment}" IsVisible="{Binding IsComment}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconMarker}" IsVisible="{Binding IsHighlight}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconPen}" IsVisible="{Binding IsFreehand}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconShapes}" IsVisible="{Binding IsShape}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconText}" IsVisible="{Binding IsText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                </Panel>
+                              </Border>
+                              <Ellipse Grid.Column="1" Width="9" Height="9" Margin="0,7,0,0" VerticalAlignment="Top"
+                                       Fill="{Binding ColorHex, Converter={StaticResource HexToBrush}}" Stroke="#26000000" StrokeThickness="1" />
+                              <TextBlock Grid.Column="2" Classes.kindOnly="{Binding IsKindOnly}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" FontSize="12" Margin="0,3,0,0">
+                                <Run Text="{Binding NumberPrefix}" FontWeight="Bold" /><Run Text="{Binding Description}" />
+                              </TextBlock>
+                            </Grid>
+                          </Button>
+                        </Panel>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Panel>
+            </DockPanel>
+            </Panel>
+            <ScrollViewer x:Name="PageListScroller" Focusable="True" IsVisible="{Binding SidebarView, Converter={StaticResource EnumEquals}, ConverterParameter=Pages}">
+              <ScrollViewer.KeyBindings>
+                <KeyBinding Gesture="Ctrl+A" Command="{Binding SelectAllPagesCommand}" />
+                <KeyBinding Gesture="Escape" Command="{Binding ClearPageSelectionCommand}" />
+                <KeyBinding Gesture="Delete" Command="{Binding DeleteCurrentPageCommand}" />
+              </ScrollViewer.KeyBindings>
               <Panel>
                 <ItemsControl x:Name="ThumbnailList" ItemsSource="{Binding ActiveDocument.Thumbnails, FallbackValue={x:Null}}" Margin="12">
                   <ItemsControl.ItemTemplate>
                     <DataTemplate x:DataType="vm:PageThumbnailViewModel">
-                      <Border Classes="thumb" Classes.selected="{Binding IsSelected}">
+                      <Border Classes="thumb" Classes.selected="{Binding IsSelected}" Classes.marked="{Binding IsMarked}">
+                        <Border.ContextMenu>
+                          <ContextMenu>
+                            <MenuItem Header="{loc:T Pages.Rotate}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RotatePageClockwiseCommand}" CommandParameter="{Binding}" />
+                            <MenuItem Header="{loc:T Pages.RotateCounterclockwise}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RotatePageCounterclockwiseCommand}" CommandParameter="{Binding}" />
+                            <MenuItem Header="{loc:T Pages.Delete}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeletePageCommand}" CommandParameter="{Binding}" />
+                            <MenuItem Header="{loc:T Pages.Extract}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ExtractPageCommand}" CommandParameter="{Binding}" />
+                            <Separator />
+                            <MenuItem Header="{loc:T Pages.InsertBlankAfter}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).InsertBlankPageAfterCommand}" CommandParameter="{Binding}" />
+                          </ContextMenu>
+                        </Border.ContextMenu>
                         <Panel>
                           <StackPanel Spacing="6" HorizontalAlignment="Center">
-                            <Border Width="112" Height="158">
+                            <Border Width="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailBoxWidth}"
+                                    Height="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailBoxHeight}">
                               <Border Classes="insertedFrame" Classes.inserted="{Binding IsInserted}" HorizontalAlignment="Center" VerticalAlignment="Center">
-                              <Image Source="{Binding Thumbnail}" Stretch="Uniform" MaxWidth="106" MaxHeight="150">
+                              <Image Source="{Binding Thumbnail}" Stretch="Uniform"
+                                     MaxWidth="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailImageMaxWidth}"
+                                     MaxHeight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailImageMaxHeight}">
                                 <Image.Effect><DropShadowEffect BlurRadius="4" OffsetX="0" OffsetY="1" Opacity="0.3" /></Image.Effect>
                               </Image>
                               </Border>
@@ -414,14 +816,18 @@
                             <Border Classes="thumbBadge" IsVisible="{Binding HasInk}" ToolTip.Tip="{loc:T Pages.HasInk}">
                               <Path Classes="icon small" Data="{StaticResource IconPen}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
-                            <Border Classes="thumbBadge" IsVisible="{Binding HasRectangles}" ToolTip.Tip="{loc:T Pages.HasRectangles}">
-                              <Path Classes="icon small" Data="{StaticResource IconRect}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasShapes}" ToolTip.Tip="{loc:T Pages.HasShapes}">
+                              <Path Classes="icon small" Data="{StaticResource IconShapes}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasText}" ToolTip.Tip="{loc:T Pages.HasText}">
+                              <Path Classes="icon small" Data="{StaticResource IconText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                           </StackPanel>
                           <StackPanel Classes="thumbActions" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0">
-                            <Button Classes="thumbAction" ToolTip.Tip="{loc:T Pages.Rotate}"
+                            <Button Classes="thumbAction" ToolTip.Tip="{loc:T Toolbar.RotateTip}"
                                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RotatePageCommand}" CommandParameter="{Binding}">
-                              <Path Classes="icon small" Data="{StaticResource IconRotate}" />
+                              <Path Classes="icon small" Classes.mirrored="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ReverseRotation}"
+                                    Data="{StaticResource IconRotate}" />
                             </Button>
                             <Button Classes="thumbAction" ToolTip.Tip="{loc:T Pages.Delete}"
                                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeletePageCommand}" CommandParameter="{Binding}">
@@ -440,21 +846,53 @@
                           Background="{DynamicResource AccentSoftBrush}" BorderBrush="{DynamicResource AccentBorderBrush}" BorderThickness="2"
                           BoxShadow="0 6 18 0 #40000000">
                     <StackPanel Spacing="6" HorizontalAlignment="Center">
-                      <Image Source="{Binding Thumbnail}" Stretch="Uniform" MaxWidth="106" MaxHeight="150" />
+                      <Image Source="{Binding Thumbnail}" Stretch="Uniform"
+                             MaxWidth="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailImageMaxWidth}"
+                             MaxHeight="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ThumbnailImageMaxHeight}" />
                       <TextBlock Text="{Binding Label}" Classes="hint" HorizontalAlignment="Center" />
                     </StackPanel>
                   </Border>
                 </Canvas>
               </Panel>
             </ScrollViewer>
+            </Panel>
           </DockPanel>
         </Border>
 
-        <ScrollViewer x:Name="PageScroller" Grid.Column="1" Background="{DynamicResource CanvasBrush}" HorizontalScrollBarVisibility="Auto">
+        <GridSplitter Grid.Column="1" Classes="sidebarSplitter" Width="11" Margin="-6,0,0,0" ZIndex="1" ResizeDirection="Columns"
+                      DragCompleted="OnSidebarResized" Cursor="SizeWestEast"
+                      ToolTip.Tip="{loc:T Sidebar.Resize}" />
+        <DockPanel Grid.Column="2">
+          <!-- Hinweis auf Seiten ohne Text (A53, Mockup v9) -->
+          <Border DockPanel.Dock="Top" Classes="formBar" Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource AppBorderBrush}"
+                  IsVisible="{Binding ActiveDocument.ShowOcrNotice, FallbackValue=False}">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="thumbAction" ToolTip.Tip="{loc:T Form.Dismiss}" VerticalAlignment="Center"
+                      Command="{Binding ActiveDocument.DismissOcrNoticeCommand, FallbackValue={x:Null}}">
+                <Path Classes="icon small" Data="{StaticResource IconClose}" />
+              </Button>
+              <Button DockPanel.Dock="Right" Content="{loc:T Ocr.NoticeButton}" Command="{Binding RecognizeTextCommand}" VerticalAlignment="Center" Margin="12,0,8,0" />
+              <Path DockPanel.Dock="Left" Classes="icon" Data="{StaticResource IconOcr}" Stroke="{DynamicResource AccentBorderBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ActiveDocument.OcrNotice, FallbackValue=''}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+          <!-- Hinweis bei Formularen (A50, Mockup v6) -->
+          <Border DockPanel.Dock="Top" Classes="formBar" IsVisible="{Binding ActiveDocument.ShowFormNotice, FallbackValue=False}">
+            <DockPanel>
+              <Button DockPanel.Dock="Right" Classes="thumbAction" ToolTip.Tip="{loc:T Form.Dismiss}" VerticalAlignment="Center"
+                      Command="{Binding ActiveDocument.DismissFormNoticeCommand, FallbackValue={x:Null}}">
+                <Path Classes="icon small" Data="{StaticResource IconClose}" />
+              </Button>
+              <Path DockPanel.Dock="Left" Classes="icon" Data="{StaticResource IconForm}" Stroke="{DynamicResource AccentBorderBrush}" Margin="0,0,6,0" VerticalAlignment="Center" />
+              <CheckBox DockPanel.Dock="Right" Content="{loc:T Form.Highlight}" IsChecked="{Binding HighlightFormFields}" VerticalAlignment="Center" Margin="12,0,8,0" />
+              <TextBlock Text="{Binding FormNotice}" TextWrapping="Wrap" VerticalAlignment="Center" />
+            </DockPanel>
+          </Border>
+        <ScrollViewer x:Name="PageScroller" Background="{DynamicResource CanvasBrush}" HorizontalScrollBarVisibility="Auto">
           <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="32">
             <Border BoxShadow="0 1 3 0 #30000000, 0 8 24 0 #20000000">
               <StackPanel>
-                <controls:PageEditor Document="{Binding ActiveDocument}" Options="{Binding ToolOptions}" Zoom="{Binding Zoom}" />
+                <controls:PageEditor x:Name="Editor" Document="{Binding ActiveDocument}" Options="{Binding ToolOptions}" Zoom="{Binding Zoom}" HighlightFields="{Binding HighlightFormFields}" />
                 <!-- Fußnoten auf der verlängerten Seite -->
                 <Border Background="#FCFCFD" BorderBrush="#C9CDD8" BorderThickness="0,2,0,0" Padding="40,12,40,18"
                         IsVisible="{Binding ActiveDocument.HasFootnotes, FallbackValue=False}">
@@ -497,6 +935,7 @@
             </Border>
           </LayoutTransformControl>
         </ScrollViewer>
+        </DockPanel>
       </Grid>
 
       <!-- Startansicht -->

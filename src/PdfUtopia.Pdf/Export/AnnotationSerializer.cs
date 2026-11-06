@@ -56,6 +56,15 @@ internal static class AnnotationSerializer
     /// </summary>
     private static void AddAnnotationTypes(JsonTypeInfo info)
     {
+        // Bildpunkte gehören nicht ins JSON; sie stehen als Bild-XObject in der Datei (AnnotationWriter.ImageKey)
+        if (info.Type == typeof(ImageAnnotation))
+        {
+            foreach (var property in info.Properties.Where(property => property.Name == nameof(ImageAnnotation.Image)))
+            {
+                property.ShouldSerialize = (_, _) => false;
+            }
+        }
+
         if (info.Type != typeof(Annotation))
         {
             return;
@@ -70,6 +79,13 @@ internal static class AnnotationSerializer
                 new JsonDerivedType(typeof(HighlightAnnotation), "highlight"),
                 new JsonDerivedType(typeof(RectangleAnnotation), "rectangle"),
                 new JsonDerivedType(typeof(CommentAnnotation), "comment"),
+                new JsonDerivedType(typeof(TextAnnotation), "text"),
+                new JsonDerivedType(typeof(LineAnnotation), "line"),
+                new JsonDerivedType(typeof(EllipseAnnotation), "ellipse"),
+                new JsonDerivedType(typeof(SignatureAnnotation), "signature"),
+                new JsonDerivedType(typeof(StampAnnotation), "stamp"),
+                new JsonDerivedType(typeof(ImageAnnotation), "image"),
+                new JsonDerivedType(typeof(RedactionAnnotation), "redaction"),
             },
         };
     }

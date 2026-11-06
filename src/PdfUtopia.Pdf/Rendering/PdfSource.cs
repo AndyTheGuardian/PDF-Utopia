@@ -28,6 +28,11 @@ public sealed class PdfSource : IDisposable
     private readonly byte[] _data;
     private GCHandle _pin;
     private FpdfDocumentT? _document;
+    private FPDF_FORMFILLINFO? _formInfo;
+    private FpdfFormHandleT? _form;
+    private IReadOnlyList<Bookmark>? _bookmarks;
+    private int? _formFieldCount;
+    private IReadOnlyList<Core.Forms.FormField>? _formFields;
 
     /// <summary>
     /// Übernimmt ein geladenes PDFium-Dokument.
@@ -41,10 +46,28 @@ public sealed class PdfSource : IDisposable
         _document = loaded.Document;
         PageCount = fpdfview.FPDF_GetPageCount(loaded.Document);
         SavedAnnotations = savedAnnotations;
+        InitForms(loaded.Document);
     }
 
-    /// <summary>Pfad der Datei.</summary>
+    /// <summary>
+    /// Richtet die Formularumgebung ein: Ohne sie zeichnet PDFium keine Formularfelder, ausgefüllte Formulare sähen
+    /// leer aus (A50). Version 1 braucht keine Rückrufe; die Struktur muss so lange leben wie die Umgebung.
+    /// </summary>
+    private void InitForms(FpdfDocumentT document)
+    {
+        lock (PdfiumLibrary.Sync)
+        {
+            _formInfo = new FPDF_FORMFILLINFO { Version = 1 };
+            var form = fpdf_formfill.FPDFDOC_InitFormFillEnvironment(document, _formInfo);
+            _form = form is null || form.__Instance == IntPtr.Zero ? null : form;
+        }
+    }
+
+    /// <summary>Pfad der Datei (bei erzeugten Seiten leer).</summary>
     public string FilePath { get; }
+
+    /// <summary>Ob die Datei im Speicher erzeugt wurde (leere Seite, A48) statt von einem Datenträger zu stammen.</summary>
+    public bool IsGenerated => FilePath.Length == 0;
 
     /// <summary>Verwendetes Passwort oder <c>null</c>.</summary>
     public string? Password { get; }
@@ -57,6 +80,38 @@ public sealed class PdfSource : IDisposable
     /// und werden über <see cref="CreateDocument"/> wieder bearbeitbar (F23).
     /// </summary>
     public IReadOnlyDictionary<int, IReadOnlyList<Annotation>> SavedAnnotations { get; }
+
+    /// <summary>
+    /// Lesezeichen (Inhaltsverzeichnis) der Datei als Baum (A46); leer, wenn die Datei keine hat.
+    /// </summary>
+    public IReadOnlyList<Bookmark> Bookmarks
+    {
+        get
+        {
+            if (_bookmarks is null)
+            {
+                lock (PdfiumLibrary.Sync)
+                {
+                    ObjectDisposedException.ThrowIf(_document is null, this);
+                    _bookmarks = ReadBookmarks(_document, null, new HashSet<IntPtr>(), depth: 0);
+                }
+            }
+
+            return _bookmarks;
+        }
+    }
+
+    /// <summary>
+    /// Anzahl der Formularfelder (A50); 0 ohne Formular. Gezählt werden ausfüllbare Felder, nicht ihre Widgets
+    /// (eine Gruppe von Optionsfeldern ist ein Feld).
+    /// </summary>
+    public int FormFieldCount => _formFieldCount ??= CountFormFields();
+
+    /// <summary>
+    /// Ausfüllbare Felder mit der Lage ihrer sichtbaren Teile in Anzeige-Koordinaten (A50, 7b); leer ohne Formular
+    /// oder bei unlesbarem Formular.
+    /// </summary>
+    public IReadOnlyList<Core.Forms.FormField> FormFields => _formFields ??= ReadFormFields();
 
     /// <summary>
     /// Inhalt der Datei beim Öffnen, bereinigt um eigene Annotationen und Seitenverlängerungen
@@ -91,6 +146,34 @@ public sealed class PdfSource : IDisposable
     }
 
     /// <summary>
+    /// Öffnet eine ungeschützte Datei aus dem Speicher, ohne eigene Annotationen einzulesen (z. B. zum Schwärzen).
+    /// </summary>
+    /// <param name="data">Inhalt der Datei.</param>
+    /// <returns>Die geöffnete Datei.</returns>
+    internal static PdfSource FromData(byte[] data) =>
+        new(string.Empty, null, Load(data, null, string.Empty), new Dictionary<int, IReadOnlyList<Annotation>>());
+
+    /// <summary>
+    /// Erzeugt eine leere Seite als eigene, nur im Speicher vorhandene Datei (A48).
+    /// </summary>
+    /// <param name="width">Breite in Punkten.</param>
+    /// <param name="height">Höhe in Punkten.</param>
+    /// <returns>Die Datei mit einer leeren Seite.</returns>
+    public static PdfSource CreateBlankPage(double width, double height)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
+        using var document = new PdfSharp.Pdf.PdfDocument();
+        var page = document.AddPage();
+        page.Width = PdfSharp.Drawing.XUnit.FromPoint(width);
+        page.Height = PdfSharp.Drawing.XUnit.FromPoint(height);
+        using var stream = new MemoryStream();
+        document.Save(stream);
+        var data = stream.ToArray();
+        return new PdfSource(string.Empty, null, Load(data, null, string.Empty), new Dictionary<int, IReadOnlyList<Annotation>>());
+    }
+
+    /// <summary>
     /// Erzeugt das Bearbeitungsmodell mit den in der Datei gespeicherten Annotationen.
     /// </summary>
     /// <param name="undoLimit">Höchstzahl der Rückgängig-Schritte.</param>
@@ -98,6 +181,7 @@ public sealed class PdfSource : IDisposable
     public EditableDocument CreateDocument(int undoLimit = UndoHistory.DefaultLimit)
     {
         var document = new EditableDocument(PageCount, undoLimit);
+        document.Form.Load(FormFields);
         foreach (var (pageNumber, annotations) in SavedAnnotations)
         {
             document.LoadAnnotations(document.Pages[pageNumber - 1].Id, annotations);
@@ -173,7 +257,8 @@ public sealed class PdfSource : IDisposable
     /// <param name="scale">Pixel je Punkt (1 = 72 dpi).</param>
     /// <param name="rotation">Zusätzliche Drehung aus der Bearbeitung.</param>
     /// <returns>Die Pixel.</returns>
-    public RenderedPage Render(int sourcePageNumber, double scale, PageRotation rotation = PageRotation.None)
+    /// <param name="drawForms"><c>false</c>: Formularfelder nicht zeichnen (die Oberfläche zeigt sie als Eingabefelder).</param>
+    public RenderedPage Render(int sourcePageNumber, double scale, PageRotation rotation = PageRotation.None, bool drawForms = true)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(scale);
         return WithPage(sourcePageNumber, page =>
@@ -185,7 +270,7 @@ public sealed class PdfSource : IDisposable
                 (width, height) = (height, width);
             }
 
-            return RenderToPixels(page, width, height, (int)rotation / 90);
+            return RenderToPixels(page, drawForms ? _form : null, width, height, (int)rotation / 90);
         });
     }
 
@@ -207,6 +292,28 @@ public sealed class PdfSource : IDisposable
         var count = fpdf_text.FPDFTextCountChars(textPage);
         var boxes = Enumerable.Range(0, Math.Max(0, count)).Select(i => CharBox(textPage, i)).OfType<PdfRect>();
         return TextLayout.Paragraphs(boxes).Select(toDisplay).ToList();
+    });
+
+    /// <summary>
+    /// Text in einem Bereich der Seite, z. B. unter einer Markierung (Anmerkungsübersicht, A45). Ein Zeichen zählt,
+    /// wenn seine Mitte im Bereich liegt; Leerraum wird zu einzelnen Leerzeichen zusammengefasst.
+    /// </summary>
+    /// <param name="sourcePageNumber">Seitennummer in der Datei (1-basiert).</param>
+    /// <param name="area">Bereich in Anzeige-Koordinaten (wie die Annotationen).</param>
+    /// <returns>Der Text; leer, wenn dort kein Text steht (z. B. bei Scans).</returns>
+    public string TextInArea(int sourcePageNumber, PdfRect area) => WithTextPage(sourcePageNumber, (textPage, toDisplay) =>
+    {
+        var text = ReadText(textPage);
+        var inside = Enumerable.Range(0, text.Length)
+            .Where(i => CharBox(textPage, i) is { } box && Contains(area, Center(toDisplay(box))))
+            .ToList();
+        if (inside.Count == 0)
+        {
+            return string.Empty;
+        }
+
+        var span = text[inside[0]..(inside[^1] + 1)];
+        return string.Join(' ', span.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
     });
 
     /// <summary>
@@ -264,6 +371,13 @@ public sealed class PdfSource : IDisposable
         return count;
     }
 
+    /// <summary>Mittelpunkt eines Rechtecks.</summary>
+    private static PdfPoint Center(PdfRect rect) => new(rect.X + rect.Width / 2, rect.Y + rect.Height / 2);
+
+    /// <summary>Ob ein Punkt im Rechteck liegt.</summary>
+    private static bool Contains(PdfRect rect, PdfPoint point) =>
+        point.X >= rect.X && point.X <= rect.Right && point.Y >= rect.Y && point.Y <= rect.Bottom;
+
     /// <summary>
     /// Lädt die Textebene einer Seite und stellt eine Umrechnung von Schreibrichtungs- in Anzeige-Koordinaten bereit.
     /// </summary>
@@ -303,6 +417,155 @@ public sealed class PdfSource : IDisposable
     }
 
     /// <summary>
+    /// Liest die Felder und rechnet die Lage ihrer Widgets in Anzeige-Koordinaten um.
+    /// </summary>
+    private IReadOnlyList<Core.Forms.FormField> ReadFormFields()
+    {
+        try
+        {
+            using var stream = new MemoryStream(_data, writable: false);
+            using var document = Password is { } password
+                ? PdfSharp.Pdf.IO.PdfReader.Open(stream, password, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)
+                : PdfSharp.Pdf.IO.PdfReader.Open(stream, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+            return FormReader.Read(document).Select(raw => raw.Field with
+            {
+                Widgets = raw.Widgets.Where(widget => widget.Page <= PageCount).Select(widget => new Core.Forms.FormWidget(
+                    widget.Page, UserToDisplay(widget.Page, widget.Left, widget.Bottom, widget.Right, widget.Top), widget.OnState)).ToList(),
+            }).Where(field => field.Widgets.Count > 0).ToList();
+        }
+        catch (Exception exception) when (exception is PdfSharp.Pdf.IO.PdfReaderException or InvalidOperationException or NotImplementedException)
+        {
+            return [];
+        }
+    }
+
+    /// <summary>
+    /// Rechteck des PDF-Benutzerraums einer Seite in Anzeige-Koordinaten (Seitenbereich und Drehung der Datei).
+    /// </summary>
+    private PdfRect UserToDisplay(int sourcePageNumber, double left, double bottom, double right, double top) => WithPage(sourcePageNumber, page =>
+    {
+        var width = fpdfview.FPDF_GetPageWidthF(page);
+        var height = fpdfview.FPDF_GetPageHeightF(page);
+        return PdfRect.FromCorners(ToDisplay(page, width, height, left, top), ToDisplay(page, width, height, right, bottom));
+    });
+
+    /// <summary>
+    /// Zählt die Felder des Formulars; eine unlesbare Datei ergibt 0 (sie wird trotzdem angezeigt).
+    /// </summary>
+    private int CountFormFields()
+    {
+        try
+        {
+            using var stream = new MemoryStream(_data, writable: false);
+            using var document = Password is { } password
+                ? PdfSharp.Pdf.IO.PdfReader.Open(stream, password, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import)
+                : PdfSharp.Pdf.IO.PdfReader.Open(stream, PdfSharp.Pdf.IO.PdfDocumentOpenMode.Import);
+            var fields = document.Internals.Catalog.Elements.GetDictionary("/AcroForm")?.Elements.GetArray("/Fields");
+            return fields is null ? 0 : fields.Elements.Sum(item => CountFields(Resolve(item), depth: 0));
+        }
+        catch (Exception exception) when (exception is PdfSharp.Pdf.IO.PdfReaderException or InvalidOperationException or NotImplementedException)
+        {
+            return 0;
+        }
+    }
+
+    /// <summary>
+    /// Zählt ein Feld: ohne Unterfelder (Kinder mit eigenem Namen) als eins, sonst die Summe der Unterfelder.
+    /// </summary>
+    private static int CountFields(PdfSharp.Pdf.PdfDictionary? node, int depth)
+    {
+        if (node is null || depth > MaxBookmarkDepth)
+        {
+            return 0;
+        }
+
+        var children = node.Elements.GetArray("/Kids")?.Elements.Select(Resolve).OfType<PdfSharp.Pdf.PdfDictionary>()
+            .Where(kid => kid.Elements.ContainsKey("/T")).ToList() ?? [];
+        return children.Count == 0 ? 1 : children.Sum(child => CountFields(child, depth + 1));
+    }
+
+    /// <summary>Dictionary hinter einem Eintrag (auch über Verweise).</summary>
+    private static PdfSharp.Pdf.PdfDictionary? Resolve(PdfSharp.Pdf.PdfItem item) => item switch
+    {
+        PdfSharp.Pdf.Advanced.PdfReference reference => reference.Value as PdfSharp.Pdf.PdfDictionary,
+        PdfSharp.Pdf.PdfDictionary dictionary => dictionary,
+        _ => null,
+    };
+
+    /// <summary>Höchste Verschachtelungstiefe von Lesezeichen (Schutz vor fehlerhaften Dateien).</summary>
+    private const int MaxBookmarkDepth = 32;
+
+    /// <summary>
+    /// Liest die Unterpunkte eines Lesezeichens (bzw. die oberste Ebene). Bereits besuchte Lesezeichen werden
+    /// übersprungen, damit fehlerhafte Dateien mit Zyklen keine Endlosschleife auslösen.
+    /// </summary>
+    private static List<Bookmark> ReadBookmarks(FpdfDocumentT document, FpdfBookmarkT? parent, HashSet<IntPtr> visited, int depth)
+    {
+        var result = new List<Bookmark>();
+        if (depth > MaxBookmarkDepth)
+        {
+            return result;
+        }
+
+        for (var item = fpdf_doc.FPDFBookmarkGetFirstChild(document, parent);
+             item is not null && item.__Instance != IntPtr.Zero && visited.Add(item.__Instance);
+             item = fpdf_doc.FPDFBookmarkGetNextSibling(document, item))
+        {
+            result.Add(new Bookmark(
+                BookmarkTitle(item),
+                BookmarkPage(document, item),
+                fpdf_doc.FPDFBookmarkGetCount(item) > 0,
+                ReadBookmarks(document, item, visited, depth + 1)));
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Titel eines Lesezeichens (UTF-16).
+    /// </summary>
+    private static string BookmarkTitle(FpdfBookmarkT bookmark)
+    {
+        var length = (int)fpdf_doc.FPDFBookmarkGetTitle(bookmark, IntPtr.Zero, 0);
+        if (length <= 2)
+        {
+            return string.Empty;
+        }
+
+        var buffer = Marshal.AllocHGlobal(length);
+        try
+        {
+            fpdf_doc.FPDFBookmarkGetTitle(bookmark, buffer, (ulong)length);
+            return (Marshal.PtrToStringUni(buffer, length / 2 - 1) ?? string.Empty).Trim();
+        }
+        finally
+        {
+            Marshal.FreeHGlobal(buffer);
+        }
+    }
+
+    /// <summary>
+    /// Zielseite eines Lesezeichens (1-basiert): direktes Ziel oder Ziel einer „Gehe zu“-Aktion.
+    /// </summary>
+    private static int? BookmarkPage(FpdfDocumentT document, FpdfBookmarkT bookmark)
+    {
+        var destination = fpdf_doc.FPDFBookmarkGetDest(document, bookmark);
+        if (destination is null || destination.__Instance == IntPtr.Zero)
+        {
+            var action = fpdf_doc.FPDFBookmarkGetAction(bookmark);
+            destination = action is null || action.__Instance == IntPtr.Zero ? null : fpdf_doc.FPDFActionGetDest(document, action);
+        }
+
+        if (destination is null || destination.__Instance == IntPtr.Zero)
+        {
+            return null;
+        }
+
+        var index = fpdf_doc.FPDFDestGetDestPageIndex(document, destination);
+        return index >= 0 ? index + 1 : null;
+    }
+
+    /// <summary>
     /// Text einer geladenen Textebene, ein Zeichen je Zeichenindex.
     /// </summary>
     private static string ReadText(FpdfTextpageT textPage)
@@ -328,6 +591,14 @@ public sealed class PdfSource : IDisposable
                 return;
             }
 
+            if (_form is not null)
+            {
+                fpdf_formfill.FPDFDOC_ExitFormFillEnvironment(_form);
+                _form = null;
+            }
+
+            _formInfo?.Dispose();
+            _formInfo = null;
             fpdfview.FPDF_CloseDocument(_document);
             _document = null;
             _pin.Free();
@@ -349,13 +620,21 @@ public sealed class PdfSource : IDisposable
     /// <summary>
     /// Rendert eine geladene Seite in ein BGRA-Pixelfeld.
     /// </summary>
-    private static RenderedPage RenderToPixels(FpdfPageT page, int width, int height, int quarterTurns)
+    private static RenderedPage RenderToPixels(FpdfPageT page, FpdfFormHandleT? form, int width, int height, int quarterTurns)
     {
         var bitmap = fpdfview.FPDFBitmapCreate(width, height, HasAlpha);
         try
         {
             fpdfview.FPDFBitmapFillRect(bitmap, 0, 0, width, height, 0xFFFFFFFF);
             fpdfview.FPDF_RenderPageBitmap(bitmap, page, 0, 0, width, height, quarterTurns, RenderAnnotations);
+            if (form is not null)
+            {
+                // Formularfelder mit ihren aktuellen Werten über die Seite zeichnen
+                fpdf_formfill.FORM_OnAfterLoadPage(page, form);
+                fpdf_formfill.FPDF_FFLDraw(form, bitmap, page, 0, 0, width, height, quarterTurns, RenderAnnotations);
+                fpdf_formfill.FORM_OnBeforeClosePage(page, form);
+            }
+
             var stride = fpdfview.FPDFBitmapGetStride(bitmap);
             var pixels = new byte[stride * height];
             Marshal.Copy(fpdfview.FPDFBitmapGetBuffer(bitmap), pixels, 0, pixels.Length);

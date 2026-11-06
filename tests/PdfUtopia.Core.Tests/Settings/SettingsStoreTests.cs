@@ -20,6 +20,27 @@ public sealed class SettingsStoreTests : IDisposable
     }
 
     [Fact]
+    public void DefaultPath_WithMissingConfigFolder_IsStillAbsolute()
+    {
+        if (!OperatingSystem.IsLinux())
+        {
+            Assert.Skip("Der Konfigurationsordner wird nur unter Linux über XDG_CONFIG_HOME bestimmt.");
+        }
+
+        var previous = Environment.GetEnvironmentVariable("XDG_CONFIG_HOME");
+        var missing = Path.Combine(Path.GetTempPath(), $"pdfutopia-fehlt-{Guid.NewGuid():N}");
+        try
+        {
+            Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", missing);
+            Assert.Equal(Path.Combine(missing, "PDF Utopia", "settings.json"), SettingsStore.DefaultPath());
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable("XDG_CONFIG_HOME", previous);
+        }
+    }
+
+    [Fact]
     public void Load_MissingFile_ReturnsDefaults() =>
         Assert.Equal(50, new SettingsStore(FilePath).Load().UndoLimit);
 

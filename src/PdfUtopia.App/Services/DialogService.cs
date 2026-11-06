@@ -7,6 +7,7 @@ using PdfUtopia.App.Localization;
 using PdfUtopia.Core.History;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
+using PdfUtopia.Core.Signatures;
 using PdfUtopia.Pdf.Export;
 
 namespace PdfUtopia.App.Services;
@@ -104,9 +105,9 @@ public sealed class DialogService(Window owner) : IDialogService
     }
 
     /// <inheritdoc />
-    public async Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount)
+    public async Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount, string? preset = null)
     {
-        var input = new TextBox { Text = pageCount > 1 ? $"1-{pageCount}" : "1", MinWidth = 380 };
+        var input = new TextBox { Text = preset ?? (pageCount > 1 ? $"1-{pageCount}" : "1"), MinWidth = 380 };
         var chips = new WrapPanel();
         var hints = new StackPanel { Spacing = 4 };
         var selection = PageSelectionParser.Parse(input.Text, pageCount);
@@ -175,6 +176,105 @@ public sealed class DialogService(Window owner) : IDialogService
         await new InsertPagesDialog(this, request).ShowAsync();
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<Signature>> EditSignaturesAsync(IReadOnlyList<Signature> signatures, int startSlot, Action<IReadOnlyList<Signature>> persist) =>
+        await new SignatureDialog(this, signatures, startSlot, persist).ShowAsync();
+
+    /// <inheritdoc />
+    public async Task<OcrOutcome?> RecognizeTextAsync(OcrRequest request) => await new OcrDialog(this, request).ShowAsync();
+
+    /// <inheritdoc />
+    public async Task<bool> ShowTesseractMissingAsync()
+    {
+        static TextBox Command(string text) => new()
+        {
+            Text = text, IsReadOnly = true, FontFamily = new FontFamily("monospace"), FontSize = 12, Margin = new Thickness(0, 2, 0, 8),
+        };
+        var content = new StackPanel
+        {
+            Spacing = 4, MaxWidth = 480,
+            Children =
+            {
+                Message(Loc.T("Ocr.MissingText")),
+                new TextBlock { Text = Loc.T("Ocr.Linux"), Margin = new Thickness(0, 8, 0, 0) }, Command("sudo apt install tesseract-ocr tesseract-ocr-deu"),
+                new TextBlock { Text = Loc.T("Ocr.Windows"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) },
+                new TextBlock { Text = Loc.T("Ocr.Mac") }, Command("brew install tesseract tesseract-lang"),
+                new TextBlock { Text = Loc.T("Ocr.After"), Classes = { "hint" }, TextWrapping = TextWrapping.Wrap },
+            },
+        };
+        var dialog = CreateDialog(Loc.T("Ocr.MissingTitle"), content);
+        AddButtons(dialog, (Loc.T("Ocr.Close"), false), (Loc.T("Ocr.Retry"), true));
+        return await dialog.ShowDialog<bool>(Owner);
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ConfirmRedactionAsync(IReadOnlyList<int> pageNumbers, int areaCount, string confirmText)
+    {
+        const int ShownPages = 12;
+        var list = string.Join(", ", pageNumbers.Take(ShownPages)) + (pageNumbers.Count > ShownPages ? ", …" : string.Empty);
+        var icon = new Border
+        {
+            Width = 36, Height = 36, CornerRadius = new CornerRadius(18), Background = new SolidColorBrush(Color.Parse("#FEE2E2")),
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock
+            {
+                Text = "!", FontWeight = FontWeight.Bold, FontSize = 18, Foreground = new SolidColorBrush(Color.Parse("#B91C1C")),
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            },
+        };
+        var text = new StackPanel
+        {
+            Spacing = 10, MaxWidth = 440,
+            Children =
+            {
+                Message(Loc.F("Redact.Message", pageNumbers.Count, areaCount)),
+                new Border
+                {
+                    Background = Resource("Surface2Brush"), CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8),
+                    Child = new TextBlock { Text = Loc.F("Redact.Pages", list), TextWrapping = TextWrapping.Wrap, FontSize = 12.5 },
+                },
+                new TextBlock { Text = Loc.T("Redact.Note"), Classes = { "hint" }, TextWrapping = TextWrapping.Wrap, FontSize = 12 },
+            },
+        };
+        var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, Children = { icon, text } };
+        var dialog = CreateDialog(Loc.T("Redact.Title"), content);
+        AddButtons(dialog, (Loc.T("Dialog.Cancel"), false), (confirmText, true));
+        return await dialog.ShowDialog<bool>(Owner);
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> PickImageFileAsync()
+    {
+        var files = await Owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = Loc.T("Stamp.ImageTitle"),
+            AllowMultiple = false,
+            FileTypeFilter =
+            [
+                new FilePickerFileType(Loc.T("Stamp.ImageFiles"))
+                {
+                    Patterns = ["*.png", "*.jpg", "*.jpeg"], MimeTypes = ["image/png", "image/jpeg"], AppleUniformTypeIdentifiers = ["public.png", "public.jpeg"],
+                },
+            ],
+        });
+        return files.Select(file => file.TryGetLocalPath()).OfType<string>().FirstOrDefault();
+    }
+
+    /// <inheritdoc />
+    public async Task<CustomStamp?> AskCustomStampAsync(string detail) => await new StampDialog(this, detail).ShowAsync();
+
+    /// <inheritdoc />
+    public async Task<LoadedImage?> ReadClipboardImageAsync()
+    {
+        if (Owner.Clipboard is not { } clipboard)
+        {
+            return null;
+        }
+
+        using var bitmap = await Avalonia.Input.Platform.ClipboardExtensions.TryGetBitmapAsync(clipboard);
+        return bitmap is null ? null : ImageLoader.FromBitmap(bitmap);
+    }
+
+    /// <inheritdoc />
     public async Task<SettingsChoice?> EditSettingsAsync(SettingsChoice current)
     {
         var theme = new ComboBox
@@ -187,6 +287,7 @@ public sealed class DialogService(Window owner) : IDialogService
         {
             Minimum = UndoHistory.MinLimit, Maximum = UndoHistory.MaxLimit, Value = current.UndoLimit, Increment = 1, FormatString = "0", MinWidth = 160,
         };
+        var userName = new TextBox { Text = current.UserName, MinWidth = 160, MaxLength = 60 };
         var content = new StackPanel
         {
             Spacing = 8,
@@ -194,12 +295,14 @@ public sealed class DialogService(Window owner) : IDialogService
             {
                 Labeled(Loc.T("Settings.Theme"), theme), Labeled(Loc.T("Settings.Language"), language),
                 Labeled(Loc.T("Settings.UndoSteps"), undo), new TextBlock { Text = Loc.T("Settings.UndoHelp"), Classes = { "hint" } },
+                Labeled(Loc.T("Settings.UserName"), userName), new TextBlock { Text = Loc.T("Settings.UserNameHelp"), Classes = { "hint" } },
             },
         };
         var dialog = CreateDialog(Loc.T("Settings.Title"), content);
         AddButtons(dialog, (Loc.T("Dialog.Cancel"), false), (Loc.T("Dialog.Ok"), true));
         return await dialog.ShowDialog<bool>(Owner)
-            ? new SettingsChoice((ThemePreference)theme.SelectedIndex, (UiLanguage)language.SelectedIndex, UndoHistory.ClampLimit((int)(undo.Value ?? current.UndoLimit)))
+            ? new SettingsChoice((ThemePreference)theme.SelectedIndex, (UiLanguage)language.SelectedIndex, UndoHistory.ClampLimit((int)(undo.Value ?? current.UndoLimit)),
+                (userName.Text ?? string.Empty).Trim())
             : null;
     }
 

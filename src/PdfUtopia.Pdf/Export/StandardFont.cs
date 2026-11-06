@@ -1,4 +1,5 @@
 using System.Text;
+using PdfUtopia.Core.Text;
 
 namespace PdfUtopia.Pdf.Export;
 
@@ -15,13 +16,6 @@ internal static class StandardFont
     /// <summary>Ressourcenname der fetten Schrift.</summary>
     public const string Bold = "/HelvB";
 
-    /// <summary>Breite unbekannter Zeichen in 1/1000 Schriftgröße.</summary>
-    private const int DefaultWidth = 556;
-
-    /// <summary>Fette Schrift ist im Mittel etwa 5 % breiter.</summary>
-    private const double BoldFactor = 1.05;
-
-    private static readonly Dictionary<char, int> Widths = BuildWidths();
     private static readonly Dictionary<char, byte> WinAnsiSpecials = BuildWinAnsiSpecials();
 
     /// <summary>
@@ -31,8 +25,7 @@ internal static class StandardFont
     /// <param name="size">Schriftgröße in Punkten.</param>
     /// <param name="bold">Ob die fette Schrift verwendet wird.</param>
     /// <returns>Die Breite.</returns>
-    public static double Width(string text, double size, bool bold = false) =>
-        text.Sum(c => Widths.GetValueOrDefault(c, DefaultWidth)) * size / 1000 * (bold ? BoldFactor : 1);
+    public static double Width(string text, double size, bool bold = false) => Helvetica.Width(text, size, bold);
 
     /// <summary>
     /// Kodiert Text als WinAnsi-Bytes; nicht darstellbare Zeichen werden zu „?“.
@@ -58,31 +51,6 @@ internal static class StandardFont
         _ => WinAnsiSpecials.GetValueOrDefault(c, (byte)'?'),
     };
 
-    /// <summary>
-    /// Zeichenbreiten der Helvetica (Adobe AFM), gruppiert nach Breite.
-    /// </summary>
-    private static Dictionary<char, int> BuildWidths()
-    {
-        var groups = new (string Chars, int Width)[]
-        {
-            (" !,./:;[\\]fIt·íìîïÍÌÎÏ", 278), ("ijl", 222), ("'", 191), ("|¦", 260), ("()-`r¨¯´¸ˆ˜¡²³¹‹›„“”", 333),
-            ("{}", 334), ("\"", 355), ("ª", 370), ("º", 365), ("*", 389), ("°", 400), ("^", 469),
-            ("Jckvxyzsçýÿšž", 500), ("¶", 537), ("#$0123456789?L_abdeghnopquäåàáâãéèêëöóòôõüúùûñµ€§¢£¥«»ðþƒ†‡–", 556),
-            ("+<=>~×÷¬±", 584), ("FTZßø¿Ž", 611), ("&ABEKPSVXYÄÅÀÁÂÃÉÈÊËÝÞŠŸ", 667), ("CDHNRUwÇÜÚÙÛÑÐ", 722),
-            ("©®", 737), ("GOQÖØÓÒÔÕ", 778), ("Mm", 833), ("¼½¾", 834), ("%æ", 889), ("Wœ", 944),
-            ("—…ÆŒ‰™", 1000), ("@", 1015), ("•", 350), ("‘’‚", 222),
-        };
-        var widths = new Dictionary<char, int>();
-        foreach (var (chars, width) in groups)
-        {
-            foreach (var c in chars)
-            {
-                widths[c] = width;
-            }
-        }
-
-        return widths;
-    }
 
     /// <summary>
     /// WinAnsi-Zeichen im Bereich 0x80–0x9F, die nicht mit Latin-1 übereinstimmen.

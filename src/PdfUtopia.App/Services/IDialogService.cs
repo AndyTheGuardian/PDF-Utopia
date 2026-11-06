@@ -1,5 +1,6 @@
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
+using PdfUtopia.Core.Signatures;
 using PdfUtopia.Pdf.Export;
 using PdfUtopia.Pdf.Rendering;
 
@@ -54,7 +55,8 @@ public sealed record InsertChoice(PdfSource Source, IReadOnlyList<int> Pages, in
 /// <param name="Theme">Erscheinungsbild.</param>
 /// <param name="Language">Sprache.</param>
 /// <param name="UndoLimit">Höchstzahl der Rückgängig-Schritte.</param>
-public sealed record SettingsChoice(ThemePreference Theme, UiLanguage Language, int UndoLimit);
+/// <param name="UserName">Name für Stempel (F35).</param>
+public sealed record SettingsChoice(ThemePreference Theme, UiLanguage Language, int UndoLimit, string UserName);
 
 /// <summary>
 /// Dialoge und Dateiauswahl, entkoppelt vom ViewModel (testbar, austauschbar).
@@ -83,8 +85,9 @@ public interface IDialogService
 
     /// <summary>Zeigt den Extract-Dialog mit Live-Vorschau.</summary>
     /// <param name="pageCount">Seitenanzahl der aktuellen Seitenliste.</param>
+    /// <param name="preset">Vorbelegte Eingabe (z. B. die Mehrfachauswahl) oder <c>null</c> für alle Seiten.</param>
     /// <returns>Die Seitenpositionen oder <c>null</c> bei Abbruch.</returns>
-    Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount);
+    Task<IReadOnlyList<int>?> AskPagesToExtractAsync(int pageCount, string? preset = null);
 
     /// <summary>
     /// Zeigt die Dateiauswahl für eine einzelne PDF-Datei.
@@ -99,6 +102,56 @@ public interface IDialogService
     /// <param name="request">Quellen und Vorgaben.</param>
     /// <returns>Die Auswahl (die Datei geht an den Aufrufer über) oder <c>null</c> bei Abbruch.</returns>
     Task<InsertChoice?> AskPagesToInsertAsync(InsertRequest request);
+
+    /// <summary>
+    /// Zeigt den Dialog „Unterschriften“ (A49): bis zu fünf Unterschriften schreiben, benennen und löschen.
+    /// </summary>
+    /// <param name="signatures">Gespeicherte Unterschriften.</param>
+    /// <param name="startSlot">Zuerst gewählter Platz.</param>
+    /// <param name="persist">Speichert die Unterschriften nach jeder Änderung.</param>
+    /// <returns>Die Unterschriften nach dem Schließen.</returns>
+    Task<IReadOnlyList<Signature>> EditSignaturesAsync(IReadOnlyList<Signature> signatures, int startSlot, Action<IReadOnlyList<Signature>> persist);
+
+    /// <summary>
+    /// Wählt ein Bild (PNG oder JPEG) zum Einfügen (A51).
+    /// </summary>
+    /// <returns>Der Pfad oder <c>null</c> bei Abbruch.</returns>
+    Task<string?> PickImageFileAsync();
+
+    /// <summary>
+    /// Fragt nach Text und Farbe eines eigenen Stempels (A51).
+    /// </summary>
+    /// <param name="detail">Zweite Zeile (Datum, Name) für die Vorschau.</param>
+    /// <returns>Der Stempel oder <c>null</c> bei Abbruch.</returns>
+    Task<CustomStamp?> AskCustomStampAsync(string detail);
+
+    /// <summary>
+    /// Liest ein Bild aus der Zwischenablage (A51).
+    /// </summary>
+    /// <returns>Das Bild oder <c>null</c>, wenn die Zwischenablage keines enthält.</returns>
+    Task<LoadedImage?> ReadClipboardImageAsync();
+
+    /// <summary>
+    /// Fragt vor dem Speichern, Extrahieren oder Drucken, ob die Schwärzungen angewendet werden (A52).
+    /// </summary>
+    /// <param name="pageNumbers">Betroffene Seiten (1-basiert, in der gespeicherten Datei).</param>
+    /// <param name="areaCount">Anzahl der Bereiche.</param>
+    /// <param name="confirmText">Text der bestätigenden Schaltfläche.</param>
+    /// <returns><c>true</c>, wenn geschwärzt werden soll.</returns>
+    Task<bool> ConfirmRedactionAsync(IReadOnlyList<int> pageNumbers, int areaCount, string confirmText);
+
+    /// <summary>
+    /// Zeigt den Dialog „Texterkennung“ (A53) und führt die Erkennung mit Fortschritt aus.
+    /// </summary>
+    /// <param name="request">Angaben und Erkennung.</param>
+    /// <returns>Das Ergebnis oder <c>null</c>, wenn nicht gestartet wurde.</returns>
+    Task<OcrOutcome?> RecognizeTextAsync(OcrRequest request);
+
+    /// <summary>
+    /// Erklärt, wie Tesseract installiert wird (A53, F41).
+    /// </summary>
+    /// <returns><c>true</c> für „Erneut suchen“.</returns>
+    Task<bool> ShowTesseractMissingAsync();
 
     /// <summary>Zeigt die Einstellungen.</summary>
     /// <param name="current">Aktuelle Werte.</param>

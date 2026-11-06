@@ -27,7 +27,9 @@ public sealed class SettingsStore(string path)
     public static string DefaultPath()
     {
         var folder = OperatingSystem.IsMacOS() ? Environment.SpecialFolder.LocalApplicationData : Environment.SpecialFolder.ApplicationData;
-        return Path.Combine(Environment.GetFolderPath(folder), "PDF Utopia", "settings.json");
+        // DoNotVerify: Fehlt der Ordner noch (frisches Benutzerkonto), liefert GetFolderPath sonst eine leere Zeichenkette,
+        // und die Einstellungen landeten relativ zum Arbeitsverzeichnis
+        return Path.Combine(Environment.GetFolderPath(folder, Environment.SpecialFolderOption.DoNotVerify), "PDF Utopia", "settings.json");
     }
 
     /// <summary>

@@ -17,13 +17,19 @@ namespace PdfUtopia.App.ViewModels;
 /// </summary>
 public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 {
+    /// <summary>Breite einer Miniatur bei der Standardbreite der linken Leiste.</summary>
     private const double ThumbnailWidth = 106;
 
     private readonly PageRenderer _renderer;
     private readonly List<PdfSource> _sources = [];
-    private readonly Dictionary<(int Source, int Page, PageRotation Rotation), Bitmap> _thumbnails = [];
+    private Dictionary<(int Source, int Page, PageRotation Rotation), Bitmap> _thumbnails = [];
+    private Dictionary<(int Source, int Page, PageRotation Rotation), Bitmap> _staleThumbnails = [];
+    private double _thumbnailScale;
+    private int _thumbnailRun;
     private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _textBlocks = [];
     private readonly Dictionary<(int Source, int Page), IReadOnlyList<PdfRect>> _searchHits = [];
+    private readonly Dictionary<(int Source, int Page, PdfRect Area), string> _highlightedTexts = [];
+    private bool _formNoticeDismissed;
     private string _searchTerm = string.Empty;
 
     /// <summary>
@@ -31,21 +37,75 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     /// <param name="source">Die Datei.</param>
     /// <param name="undoLimit">Höchstzahl der Rückgängig-Schritte.</param>
-    public DocumentViewModel(PdfSource source, int undoLimit)
+    /// <param name="thumbnailScale">Größe der Miniaturen relativ zur Standardbreite der linken Leiste.</param>
+    public DocumentViewModel(PdfSource source, int undoLimit, double thumbnailScale = 1)
     {
         Source = source;
+        _thumbnailScale = thumbnailScale;
         _sources.Add(source);
         Document = source.CreateDocument(undoLimit);
         _renderer = new PageRenderer(SourceOf);
+        AnnotationList = new AnnotationListViewModel(Document, HighlightedText);
+        BookmarkList = new BookmarkListViewModel(Document, source.Bookmarks);
+        Selection.Changed += (_, _) => OnSelectionChanged();
         Document.Pages.Changed += (_, _) => OnPagesChanged();
         Document.Annotations.Changed += (_, pageId) => OnAnnotationsChanged(pageId);
         Document.History.Changed += (_, _) => OnHistoryChanged();
+        Document.RecognizedTextChanged += (_, _) => OnRecognizedTextChanged();
         RebuildThumbnails();
         _ = RenderThumbnailsAsync();
     }
 
     /// <summary>Wird ausgelöst, wenn sich die Annotationen der angezeigten Seite ändern.</summary>
     public event EventHandler? CurrentPageAnnotationsChanged;
+
+    /// <summary>Wird ausgelöst, wenn eine Anmerkung der angezeigten Seite sichtbar gemacht und hervorgehoben werden soll.</summary>
+    public event EventHandler<Guid>? AnnotationFocusRequested;
+
+    /// <summary>Wird ausgelöst, bevor gespeichert, extrahiert, gedruckt oder geschlossen wird: laufende Eingaben übernehmen.</summary>
+    public event EventHandler? CommitEditsRequested;
+
+    /// <summary>
+    /// Übernimmt laufende Eingaben (z. B. einen gerade bearbeiteten Text), damit sie mitgespeichert werden.
+    /// </summary>
+    public void CommitEdits() => CommitEditsRequested?.Invoke(this, EventArgs.Empty);
+
+    /// <summary>Anmerkungsübersicht (A45).</summary>
+    public AnnotationListViewModel AnnotationList { get; }
+
+    /// <summary>Lesezeichen der geöffneten Datei (A46).</summary>
+    public BookmarkListViewModel BookmarkList { get; }
+
+    /// <summary>
+    /// Ob eine Seite ausfüllbare Felder zeigt: Seiten der geöffneten Datei, wenn sie ein Formular hat (7b). Ihre Felder
+    /// zeichnet die Seitenansicht als Eingabefelder, nicht PDFium.
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <returns><c>true</c>, wenn die Felder als Eingabefelder erscheinen.</returns>
+    public bool IsFillable(PageEntry page) => !page.IsInserted && Document.Form.HasFields;
+
+    /// <summary>Anzahl der Formularfelder der geöffneten Datei (A50).</summary>
+    public int FormFieldCount => Source.FormFieldCount;
+
+    /// <summary>Ob der Hinweis gezeigt wird: bei Formularen, bis er für dieses Dokument geschlossen wird.</summary>
+    public bool ShowFormNotice => FormFieldCount > 0 && !_formNoticeDismissed;
+
+    /// <summary>Ob der Hinweis auf Seiten ohne Text gezeigt wird (A53), bis er für dieses Dokument geschlossen wird.</summary>
+    public bool ShowOcrNotice => !_ocrNoticeDismissed && PagesWithoutText.Count > 0;
+
+    /// <summary>Hinweis auf Seiten ohne Text, z. B. „3 Seiten dieses Dokuments haben keinen Text …“.</summary>
+    public string OcrNotice => Loc.F("Ocr.Notice", PagesWithoutText.Count);
+
+    private bool _ocrNoticeDismissed;
+
+    /// <summary>Ob eine Seite der Datei keine Textebene hat (zwischengespeichert).</summary>
+    private readonly Dictionary<(int Source, int Page), bool> _emptyPages = [];
+
+    /// <summary>Mehrfachauswahl in der Seitenliste (A48).</summary>
+    public PageListSelection Selection { get; } = new();
+
+    /// <summary>Hinweis in der Statusleiste, z. B. „3 Seiten ausgewählt“; leer ohne Mehrfachauswahl.</summary>
+    public string SelectionStatus => Selection.IsMultiple ? Loc.F("Status.Selected", Selection.Count) : string.Empty;
 
     /// <summary>Die geöffnete Datei.</summary>
     public PdfSource Source { get; }
@@ -126,15 +186,69 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// Zeigt eine Seite an.
     /// </summary>
     /// <param name="index">Position (0-basiert).</param>
-    public void Show(int index)
+    public void Show(int index) => Show(index, resetSelection: true);
+
+    /// <summary>
+    /// Klick auf eine Miniatur (A48): Seite anzeigen; mit Strg hinzunehmen oder herausnehmen, mit Umschalt einen
+    /// Bereich wählen.
+    /// </summary>
+    /// <param name="index">Position der Seite.</param>
+    /// <param name="toggle">Strg gedrückt.</param>
+    /// <param name="range">Umschalt gedrückt.</param>
+    public void ClickPage(int index, bool toggle, bool range)
+    {
+        Selection.Click(Document.Pages.ToList(), index, toggle, range);
+        Show(index, resetSelection: false);
+    }
+
+    /// <summary>Wählt alle Seiten (A48).</summary>
+    public void SelectAllPages() => Selection.SelectAll(Document.Pages.ToList());
+
+    /// <summary>Hebt die Mehrfachauswahl auf; gewählt bleibt nur die angezeigte Seite.</summary>
+    public void ClearSelection() => Selection.Reset(CurrentPage.Id);
+
+    /// <summary>
+    /// Seiten, auf die ein Befehl wirkt: bei Mehrfachauswahl alle gewählten (sofern die angeklickte Seite dazugehört),
+    /// sonst die angeklickte bzw. angezeigte Seite.
+    /// </summary>
+    /// <param name="clickedIndex">Position einer angeklickten Miniatur oder <c>null</c> für die angezeigte Seite.</param>
+    /// <returns>Positionen, aufsteigend.</returns>
+    public IReadOnlyList<int> TargetIndices(int? clickedIndex = null)
+    {
+        var index = clickedIndex ?? CurrentIndex;
+        return Selection.IsMultiple && Selection.Contains(Document.Pages[index].Id) ? Selection.Indices(Document.Pages.ToList()) : [index];
+    }
+
+    /// <summary>
+    /// Fügt nach einer Seite eine leere Seite in deren angezeigter Größe ein und zeigt sie an (A48).
+    /// </summary>
+    /// <param name="afterIndex">Position der Seite davor.</param>
+    public void InsertBlankPage(int afterIndex)
+    {
+        var page = Document.Pages[afterIndex];
+        var (width, height) = SourceOf(page).PageSize(page.SourcePageNumber);
+        var (displayWidth, displayHeight) = PageTransform.RotatedSize(width, height, page.Rotation);
+        InsertPages(PdfSource.CreateBlankPage(displayWidth, displayHeight), [1], afterIndex + 1);
+    }
+
+    /// <summary>
+    /// Zeigt eine Seite an; auf Wunsch wird die Mehrfachauswahl auf diese Seite zurückgesetzt.
+    /// </summary>
+    private void Show(int index, bool resetSelection)
     {
         CurrentIndex = Math.Clamp(index, 0, Document.Pages.Count - 1);
+        if (resetSelection)
+        {
+            Selection.Reset(CurrentPage.Id);
+        }
+
         foreach (var thumbnail in Thumbnails)
         {
             thumbnail.IsSelected = thumbnail.Position == CurrentIndex + 1;
         }
 
         RebuildFootnotes();
+        BookmarkList.MarkCurrent(CurrentIndex);
         CurrentPageAnnotationsChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -146,7 +260,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public async Task RenderCurrentAsync(double scale)
     {
         var page = CurrentPage;
-        var bitmap = await _renderer.RenderAsync(page, scale);
+        var bitmap = await _renderer.RenderAsync(page, scale, drawForms: !IsFillable(page));
         if (page == CurrentPage)
         {
             CurrentBitmap = bitmap;
@@ -176,6 +290,61 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
+    /// Rendert die Miniaturen für eine neue Breite der linken Leiste (F30) neu, damit sie scharf bleiben. Bis die
+    /// neuen fertig sind, bleiben die bisherigen sichtbar.
+    /// </summary>
+    /// <param name="scale">Größe relativ zur Standardbreite.</param>
+    public void SetThumbnailScale(double scale)
+    {
+        if (Math.Abs(scale - _thumbnailScale) < 0.02)
+        {
+            return;
+        }
+
+        _thumbnailScale = scale;
+        foreach (var (key, bitmap) in _thumbnails)
+        {
+            _staleThumbnails.TryAdd(key, bitmap);
+        }
+
+        _thumbnails = [];
+        _ = RenderThumbnailsAsync();
+    }
+
+    /// <summary>Schließt den Hinweis auf Seiten ohne Text für dieses Dokument.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void DismissOcrNotice()
+    {
+        _ocrNoticeDismissed = true;
+        OnPropertyChanged(nameof(ShowOcrNotice));
+    }
+
+    /// <summary>Schließt den Formular-Hinweis für dieses Dokument.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void DismissFormNotice()
+    {
+        _formNoticeDismissed = true;
+        OnPropertyChanged(nameof(ShowFormNotice));
+    }
+
+    /// <summary>
+    /// Springt zu einer Anmerkung der Übersicht: zeigt ihre Seite und lässt sie hervorheben (A45).
+    /// </summary>
+    /// <param name="entry">Der Eintrag.</param>
+    public void ShowAnnotation(AnnotationEntry entry)
+    {
+        var index = Document.Pages.IndexOf(entry.Page.Id);
+        if (index < 0)
+        {
+            return;
+        }
+
+        AnnotationList.Select(entry.Annotation.Id);
+        Show(index);
+        AnnotationFocusRequested?.Invoke(this, entry.Annotation.Id);
+    }
+
+    /// <summary>
     /// Verschiebt eine Seite und behält die angezeigte Seite bei.
     /// </summary>
     /// <param name="fromIndex">Bisherige Position.</param>
@@ -183,33 +352,70 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public void MovePage(int fromIndex, int toIndex)
     {
         var shown = CurrentPage.Id;
-        Document.MovePage(fromIndex, toIndex);
-        Show(Document.Pages.IndexOf(shown));
+        if (Selection.IsMultiple && Selection.Contains(Document.Pages[fromIndex].Id))
+        {
+            // Mehrere gewählte Seiten als Block vor bzw. hinter die Zielseite (A48)
+            Document.MovePages(Selection.Indices(Document.Pages.ToList()), toIndex, after: toIndex > fromIndex);
+        }
+        else
+        {
+            Document.MovePage(fromIndex, toIndex);
+        }
+
+        Show(Document.Pages.IndexOf(shown), resetSelection: false);
     }
 
     /// <summary>
     /// Dreht eine Seite um 90° im Uhrzeigersinn (A19).
     /// </summary>
     /// <param name="index">Position.</param>
-    public void RotatePage(int index) => Document.RotatePage(index);
+    /// <param name="clockwise"><c>true</c> im, <c>false</c> gegen den Uhrzeigersinn.</param>
+    public void RotatePage(int index, bool clockwise = true) => Document.RotatePages(TargetIndices(index), clockwise);
 
     /// <summary>
     /// Löscht eine Seite, sofern es nicht die letzte ist.
     /// </summary>
     /// <param name="index">Position.</param>
-    public void DeletePage(int index)
-    {
-        if (Document.CanDeletePage)
-        {
-            Document.DeletePage(index);
-        }
-    }
+    public void DeletePage(int index) => Document.DeletePages(TargetIndices(index));
 
     /// <summary>
     /// Fügt der angezeigten Seite eine Annotation hinzu.
     /// </summary>
     /// <param name="annotation">Die Annotation.</param>
     public void AddAnnotation(Annotation annotation) => Document.AddAnnotation(CurrentPage.Id, annotation);
+
+    /// <summary>Angeklickter Stempel bzw. angeklicktes Bild der aktuellen Seite (Griffe zum Ändern, A51).</summary>
+    [ObservableProperty]
+    public partial Guid? SelectedBox { get; set; }
+
+    /// <summary>
+    /// Setzt einen Stempel oder ein Bild, das in Anzeige-Koordinaten angelegt wurde, auf die aktuelle Seite.
+    /// </summary>
+    /// <param name="display">Stempel oder Bild in Anzeige-Koordinaten.</param>
+    /// <returns>Die gesetzte Anmerkung (Koordinaten der ungedrehten Seite).</returns>
+    public BoxAnnotation PlaceBox(BoxAnnotation display)
+    {
+        var page = ToPage(display);
+        AddAnnotation(page);
+        return page;
+    }
+
+    /// <summary>
+    /// Rechnet einen Stempel oder ein Bild aus der Anzeige auf die ungedrehte aktuelle Seite um.
+    /// </summary>
+    /// <param name="display">In Anzeige-Koordinaten.</param>
+    /// <returns>In Koordinaten der ungedrehten Seite.</returns>
+    public BoxAnnotation ToPage(BoxAnnotation display)
+    {
+        var (width, height) = CurrentPageSize;
+        var rotation = CurrentPage.Rotation;
+        var center = PageTransform.Unrotate(display.Center, rotation, width, height);
+        return display with
+        {
+            Bounds = BoxAnnotation.Centered(center, display.Bounds.Width, display.Bounds.Height),
+            Angle = BoxAnnotation.NormalizeAngle(display.Angle - (int)rotation),
+        };
+    }
 
     /// <summary>
     /// Entfernt Annotationen der angezeigten Seite als einen Schritt.
@@ -236,7 +442,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
                 _textBlocks[page] = blocks;
             }
 
-            return blocks;
+            return Recognized(CurrentPage) is { } recognized ? [.. blocks, .. recognized.Paragraphs] : blocks;
         }
     }
 
@@ -278,7 +484,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
                 _searchHits[page] = hits;
             }
 
-            return hits;
+            return Recognized(CurrentPage) is { } recognized ? [.. hits, .. recognized.Find(_searchTerm, RecognizedHitPadding)] : hits;
         }
     }
 
@@ -289,7 +495,8 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public void Dispose()
     {
         _renderer.Dispose();
-        foreach (var bitmap in _thumbnails.Values)
+        _thumbnailRun++;
+        foreach (var bitmap in _thumbnails.Values.Concat(_staleThumbnails.Values).Distinct())
         {
             bitmap.Dispose();
         }
@@ -299,6 +506,88 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
             source.Dispose();
         }
     }
+
+    /// <summary>
+    /// Text unter einer Markierung (zwischengespeichert, da das Lesen der Textebene Zeit kostet).
+    /// </summary>
+    private string HighlightedText(PageEntry page, PdfRect area)
+    {
+        var key = (page.SourceIndex, page.SourcePageNumber, area);
+        if (!_highlightedTexts.TryGetValue(key, out var text))
+        {
+            text = SourceOf(page).TextInArea(page.SourcePageNumber, area);
+            _highlightedTexts[key] = text;
+        }
+
+        return Recognized(page) is { } recognized ? $"{text} {recognized.TextIn(area)}".Trim() : text;
+    }
+
+    /// <summary>Rand um Fundstellen im erkannten Text, wie bei der Textebene der Datei.</summary>
+    private const double RecognizedHitPadding = 3;
+
+    /// <summary>
+    /// Text einer Seite: Textebene der Datei und erkannter Text (A53).
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <returns>Der Text.</returns>
+    public string PageText(PageEntry page)
+    {
+        var text = SourceOf(page).PageText(page.SourcePageNumber);
+        return Recognized(page) is { } recognized ? $"{text}\n{recognized.Text}" : text;
+    }
+
+    /// <summary>
+    /// Fundstellen eines Begriffs auf einer Seite: in der Textebene der Datei und im erkannten Text (A53).
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <param name="term">Suchbegriff.</param>
+    /// <returns>Rechtecke in Koordinaten der ungedrehten Seite.</returns>
+    public IReadOnlyList<PdfRect> FindText(PageEntry page, string term)
+    {
+        var hits = SourceOf(page).FindText(page.SourcePageNumber, term);
+        return Recognized(page) is { } recognized ? [.. hits, .. recognized.Find(term, RecognizedHitPadding)] : hits;
+    }
+
+    /// <summary>
+    /// Ob eine Seite weder eine Textebene noch erkannten Text hat (z. B. ein Scan).
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <returns><c>true</c> ohne Text.</returns>
+    public bool HasNoText(PageEntry page)
+    {
+        if (Recognized(page) is not null)
+        {
+            return false;
+        }
+
+        var key = (page.SourceIndex, page.SourcePageNumber);
+        if (!_emptyPages.TryGetValue(key, out var empty))
+        {
+            empty = string.IsNullOrWhiteSpace(SourceOf(page).PageText(page.SourcePageNumber));
+            _emptyPages[key] = empty;
+        }
+
+        return empty;
+    }
+
+    /// <summary>Erkannter Text einer Seite oder <c>null</c>.</summary>
+    private Core.Text.RecognizedPage? Recognized(PageEntry page) => Document.RecognizedText.GetValueOrDefault(page.Id);
+
+    /// <summary>
+    /// Neuer erkannter Text: Hinterlegung, Absätze und Anmerkungsübersicht neu aufbauen.
+    /// </summary>
+    private void OnRecognizedTextChanged()
+    {
+        AnnotationList.RequestRefresh();
+        OnPropertyChanged(nameof(PagesWithoutText));
+        OnPropertyChanged(nameof(ShowOcrNotice));
+        OnPropertyChanged(nameof(OcrNotice));
+        CurrentPageAnnotationsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Seiten ohne Text (Position in der Seitenliste, 0-basiert) für die Texterkennung (A53).</summary>
+    public IReadOnlyList<int> PagesWithoutText =>
+        Document.Pages.Select((page, index) => (page, index)).Where(item => HasNoText(item.page)).Select(item => item.index).ToList();
 
     /// <summary>
     /// Quelldatei zu einer Kennung aus <see cref="PageEntry.SourceIndex"/>.
@@ -337,9 +626,12 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnPagesChanged()
     {
+        AnnotationList.RequestRefresh();
+        BookmarkList.Refresh(CurrentIndex);
+        Selection.Prune(Document.Pages.ToList());
         RebuildThumbnails();
         _ = RenderThumbnailsAsync();
-        Show(CurrentIndex);
+        Show(CurrentIndex, resetSelection: false);
     }
 
     /// <summary>
@@ -347,6 +639,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnAnnotationsChanged(int pageId)
     {
+        AnnotationList.RequestRefresh();
         foreach (var thumbnail in Thumbnails.Where(item => item.Entry.Id == pageId))
         {
             thumbnail.ShowAnnotationKinds(Document.Annotations.For(pageId));
@@ -366,6 +659,9 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnHistoryChanged()
     {
+        // Seiten eingefügt oder gelöscht: der Hinweis auf Seiten ohne Text kann sich ändern
+        OnPropertyChanged(nameof(ShowOcrNotice));
+        OnPropertyChanged(nameof(OcrNotice));
         OnPropertyChanged(nameof(UndoStatus));
         OnPropertyChanged(nameof(TabTitle));
     }
@@ -379,11 +675,13 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         for (var i = 0; i < Document.Pages.Count; i++)
         {
             var entry = Document.Pages[i];
-            var sourceName = entry.IsInserted ? Path.GetFileName(SourceOf(entry).FilePath) : null;
-            var thumbnail = new PageThumbnailViewModel(entry, i + 1, sourceName)
+            var sourceName = entry.IsInserted && !SourceOf(entry).IsGenerated ? Path.GetFileName(SourceOf(entry).FilePath) : null;
+            var thumbnail = new PageThumbnailViewModel(entry, i + 1, sourceName, isBlank: entry.IsInserted && SourceOf(entry).IsGenerated)
             {
-                Thumbnail = _thumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation)),
+                Thumbnail = _thumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation))
+                    ?? _staleThumbnails.GetValueOrDefault((entry.SourceIndex, entry.SourcePageNumber, entry.Rotation)),
                 IsSelected = i == CurrentIndex,
+                IsMarked = Selection.IsMultiple && Selection.Contains(entry.Id),
             };
             thumbnail.ShowAnnotationKinds(Document.Annotations.For(entry.Id));
             Thumbnails.Add(thumbnail);
@@ -393,26 +691,54 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     }
 
     /// <summary>
-    /// Rendert fehlende Miniaturen im Hintergrund.
+    /// Mehrfachauswahl geändert: Miniaturen markieren, Statusleiste aktualisieren.
+    /// </summary>
+    private void OnSelectionChanged()
+    {
+        foreach (var thumbnail in Thumbnails)
+        {
+            thumbnail.IsMarked = Selection.IsMultiple && Selection.Contains(thumbnail.Entry.Id);
+        }
+
+        OnPropertyChanged(nameof(SelectionStatus));
+    }
+
+    /// <summary>
+    /// Rendert fehlende oder für eine andere Leistenbreite gerenderte Miniaturen im Hintergrund. Ein neuer Durchlauf
+    /// beendet einen laufenden; danach werden nicht mehr gebrauchte Miniaturen freigegeben.
     /// </summary>
     private async Task RenderThumbnailsAsync()
     {
-        foreach (var thumbnail in Thumbnails.ToList().Where(item => item.Thumbnail is null))
+        var run = ++_thumbnailRun;
+        var cache = _thumbnails;
+        foreach (var thumbnail in Thumbnails.ToList())
         {
             var entry = thumbnail.Entry;
             var key = (entry.SourceIndex, entry.SourcePageNumber, entry.Rotation);
-            if (!_thumbnails.TryGetValue(key, out var bitmap))
+            if (!cache.TryGetValue(key, out var bitmap))
             {
                 var source = SourceOf(entry);
                 var (pageWidth, pageHeight) = source.PageSize(entry.SourcePageNumber);
                 var (width, height) = PageTransform.RotatedSize(pageWidth, pageHeight, entry.Rotation);
-                var scale = ThumbnailWidth / Math.Max(width, height / 1.414);
+                var scale = ThumbnailWidth * _thumbnailScale / Math.Max(width, height / 1.414);
                 var rendered = await Task.Run(() => source.Render(entry.SourcePageNumber, scale, entry.Rotation));
+                if (run != _thumbnailRun)
+                {
+                    return;
+                }
+
                 bitmap = PageRenderer.ToBitmap(rendered);
-                _thumbnails[key] = bitmap;
+                cache[key] = bitmap;
             }
 
             thumbnail.Thumbnail = bitmap;
         }
+
+        foreach (var stale in _staleThumbnails.Values.Except(cache.Values))
+        {
+            stale.Dispose();
+        }
+
+        _staleThumbnails.Clear();
     }
 }

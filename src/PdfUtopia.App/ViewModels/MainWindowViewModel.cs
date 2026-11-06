@@ -4,14 +4,29 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using PdfUtopia.App.Localization;
 using PdfUtopia.App.Services;
+using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Geometry;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
+using PdfUtopia.Core.Signatures;
 using PdfUtopia.Pdf;
 using PdfUtopia.Pdf.Export;
 using PdfUtopia.Pdf.Rendering;
 
 namespace PdfUtopia.App.ViewModels;
+
+/// <summary>Inhalt der linken Leiste.</summary>
+public enum SidebarView
+{
+    /// <summary>Seitenliste.</summary>
+    Pages,
+
+    /// <summary>Anmerkungsübersicht (A45).</summary>
+    Annotations,
+
+    /// <summary>Lesezeichen (A46).</summary>
+    Bookmarks,
+}
 
 /// <summary>
 /// ViewModel des Hauptfensters: geöffnete Dokumente (Tabs), Werkzeug, Zoom, Theme, Sprache, Farbwahl und alle
@@ -30,7 +45,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private readonly IDialogService _dialogs;
     private readonly ThemeService _theme;
     private readonly SettingsStore _settingsStore;
+    private readonly SignatureStore _signatureStore;
     private AppSettings _settings;
+    private Avalonia.Threading.DispatcherTimer? _thumbnailRenderDelay;
 
     /// <summary>
     /// Erzeugt das ViewModel.
@@ -45,12 +62,22 @@ public sealed partial class MainWindowViewModel : ObservableObject
         _theme = theme;
         _settings = settingsStore.Load();
         ToolOptions = new ToolOptionsViewModel(_settings);
+        HighlightFormFields = _settings.HighlightFormFields;
+        _signatureStore = new SignatureStore(SignatureStore.PathNextTo(settingsStore.FilePath));
+        ToolOptions.SetSignatures(_signatureStore.Load());
         ToolOptions.Changed += (_, _) => SaveSettings(ToolOptions.ApplyTo(_settings));
-        ToolOptions.PropertyChanged += (_, e) =>
+        ToolOptions.SignatureDialogRequested += async (_, _) => await EditSignaturesAsync(0);
+        ToolOptions.PropertyChanged += async (_, e) =>
         {
             if (e.PropertyName == nameof(ToolOptionsViewModel.Tool))
             {
                 OnPropertyChanged(nameof(CurrentTool));
+                OnPropertyChanged(nameof(FormNotice));
+                // Ohne gespeicherte Unterschrift öffnet die Wahl des Werkzeugs gleich das Unterschriftenfeld
+                if (ToolOptions.Tool == Tool.Signature && ToolOptions.HasNoSignature)
+                {
+                    await EditSignaturesAsync(0);
+                }
             }
         };
         ColorPicker = new ColorPickerViewModel(_settings.PastelSaturation, _settings.CustomColors, CurrentColorOf);
@@ -80,7 +107,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasDocument), nameof(NoDocument))]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand), nameof(ExtractCommand), nameof(InsertPagesCommand), nameof(PrintCommand), nameof(CloseDocumentCommand),
-        nameof(RotateCurrentPageCommand), nameof(DeleteCurrentPageCommand), nameof(UndoCommand), nameof(RedoCommand))]
+        nameof(RotateCurrentPageCommand), nameof(RotateCurrentPageClockwiseCommand), nameof(RotateCurrentPageCounterclockwiseCommand), nameof(DeleteCurrentPageCommand), nameof(InsertBlankPageCommand), nameof(UndoCommand), nameof(RedoCommand),
+        nameof(RecognizeTextCommand), nameof(MarkRedactionsCommand))]
     public partial DocumentViewModel? ActiveDocument { get; set; }
 
     /// <summary>Zoom (1 = 100 %).</summary>
@@ -99,6 +127,68 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     [ObservableProperty]
     public partial FitMode FitMode { get; set; } = FitMode.Page;
+
+    /// <summary>
+    /// Ob Strg gedrückt ist: Drehen-Knöpfe drehen dann gegen den Uhrzeigersinn und zeigen ein gespiegeltes Symbol.
+    /// </summary>
+    [ObservableProperty]
+    public partial bool ReverseRotation { get; set; }
+
+    /// <summary>Ob Formularfelder hervorgehoben werden (A50, Mockup v6); wird gespeichert.</summary>
+    [ObservableProperty]
+    public partial bool HighlightFormFields { get; set; }
+
+    /// <summary>
+    /// Hinweis über der Seite bei Formularen: mit dem Werkzeug „Auswählen“ wie man ausfüllt, sonst dass man dafür
+    /// „Auswählen“ wählt.
+    /// </summary>
+    public string FormNotice => ActiveDocument is { FormFieldCount: > 0 } document
+        ? Loc.F(ToolOptions.Tool == Tool.Select ? "Form.Notice" : "Form.NoticeOtherTool", document.FormFieldCount)
+        : string.Empty;
+
+    /// <summary>Was die linke Leiste zeigt: Seiten, Anmerkungen (A45) oder Lesezeichen (A46).</summary>
+    [ObservableProperty]
+    public partial SidebarView SidebarView { get; set; }
+
+    /// <summary>Ob die linke Leiste Reiter zeigt (das Dokument hat Anmerkungen oder Lesezeichen).</summary>
+    public bool ShowSidebarTabs => ActiveDocument is { } document && (document.AnnotationList.HasAny || document.BookmarkList.HasAny);
+
+    /// <summary>Breite der linken Leiste in Pixeln (F30).</summary>
+    public double SidebarWidth => _settings.SidebarWidth;
+
+    /// <summary>Größe der Miniaturen relativ zur Standardbreite der linken Leiste; wächst und schrumpft mit ihr.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(ThumbnailBoxWidth), nameof(ThumbnailBoxHeight), nameof(ThumbnailImageMaxWidth), nameof(ThumbnailImageMaxHeight))]
+    public partial double ThumbnailScale { get; set; } = 1;
+
+    /// <summary>
+    /// Neue Miniaturgröße: nach einer kurzen Pause scharf neu rendern lassen (nicht bei jedem Schritt des Ziehens).
+    /// </summary>
+    partial void OnThumbnailScaleChanged(double value)
+    {
+        _thumbnailRenderDelay ??= new Avalonia.Threading.DispatcherTimer(TimeSpan.FromMilliseconds(300), Avalonia.Threading.DispatcherPriority.Background, (_, _) =>
+        {
+            _thumbnailRenderDelay?.Stop();
+            foreach (var document in Documents)
+            {
+                document.SetThumbnailScale(ThumbnailScale);
+            }
+        });
+        _thumbnailRenderDelay.Stop();
+        _thumbnailRenderDelay.Start();
+    }
+
+    /// <summary>Breite des Miniaturfelds.</summary>
+    public double ThumbnailBoxWidth => 112 * ThumbnailScale;
+
+    /// <summary>Höhe des Miniaturfelds.</summary>
+    public double ThumbnailBoxHeight => 158 * ThumbnailScale;
+
+    /// <summary>Größte Breite des Miniaturbilds.</summary>
+    public double ThumbnailImageMaxWidth => 106 * ThumbnailScale;
+
+    /// <summary>Größte Höhe des Miniaturbilds.</summary>
+    public double ThumbnailImageMaxHeight => 150 * ThumbnailScale;
 
     /// <summary>Ob ein Suchbegriff eingegeben ist (× zum Leeren sichtbar).</summary>
     public bool HasSearchText => SearchText.Length > 0;
@@ -120,6 +210,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Zoom als Text.</summary>
     public string ZoomText => $"{Math.Round(Zoom * 100)} %";
+
+    /// <summary>
+    /// Inhalt des Zoom-Eingabefelds in der Statusleiste; folgt dem Zoom, bis eine Eingabe übernommen wird.
+    /// </summary>
+    [ObservableProperty]
+    public partial string ZoomInput { get; set; } = "100 %";
 
     /// <summary>Gewähltes Erscheinungsbild.</summary>
     public ThemePreference Theme => _settings.Theme;
@@ -211,11 +307,23 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Extrahiert Seiten in eine neue Datei.</summary>
     [RelayCommand(CanExecute = nameof(HasDocument))]
-    private async Task ExtractAsync()
+    private async Task ExtractAsync() => await ExtractAsync(null);
+
+    /// <summary>
+    /// Extrahiert Seiten; bei Mehrfachauswahl ist sie im Dialog vorbelegt (A48).
+    /// </summary>
+    /// <param name="clickedIndex">Angeklickte Miniatur oder <c>null</c>.</param>
+    private async Task ExtractAsync(int? clickedIndex)
     {
         var document = ActiveDocument!;
-        var positions = await _dialogs.AskPagesToExtractAsync(document.Document.Pages.Count);
-        if (positions is null || await AskSaveOptionsAsync(document) is not { } options)
+        document.CommitEdits();
+        var preset = document.Selection.IsMultiple || clickedIndex is not null
+            ? InsertPlacement.FormatSelection(document.TargetIndices(clickedIndex).Select(index => index + 1))
+            : null;
+        var positions = await _dialogs.AskPagesToExtractAsync(document.Document.Pages.Count, preset);
+        if (positions is null
+            || !await ConfirmRedactionsAsync(document, positions.Select(position => document.Document.Pages[position - 1]).ToList(), Loc.T("Redact.Save"))
+            || await AskSaveOptionsAsync(document) is not { } options)
         {
             return;
         }
@@ -289,8 +397,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private async Task PrintAsync()
     {
         var document = ActiveDocument!;
+        document.CommitEdits();
         var path = Path.Combine(Path.GetTempPath(), $"PDF Utopia – {Path.GetFileNameWithoutExtension(document.FileName)}.pdf");
         var options = new ExportOptions { FootnoteHeading = Loc.T("Footnotes.Heading"), PasswordMode = PasswordMode.Remove };
+        if (!await ConfirmRedactionsAsync(document, document.Document.Pages.ToList(), Loc.T("Redact.Print")))
+        {
+            return;
+        }
+
         if (await RunExportAsync(() => PdfExporter.Save(document.Sources, document.Document, path, options), markSaved: false, document))
         {
             await _dialogs.ShowMessageAsync(Loc.T("Print.Title"), Loc.T("Print.Message"));
@@ -322,7 +436,424 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Dreht die angezeigte Seite.</summary>
     [RelayCommand(CanExecute = nameof(HasDocument))]
-    private void RotateCurrentPage() => ActiveDocument?.RotatePage(ActiveDocument.CurrentIndex);
+    private void RotateCurrentPage() => ActiveDocument?.RotatePage(ActiveDocument.CurrentIndex, clockwise: !ReverseRotation);
+
+    /// <summary>Dreht die angezeigte bzw. gewählten Seiten im Uhrzeigersinn (Menü, unabhängig von Strg).</summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private void RotateCurrentPageClockwise() => ActiveDocument?.RotatePage(ActiveDocument.CurrentIndex, clockwise: true);
+
+    /// <summary>Dreht eine Seite bzw. die Auswahl im Uhrzeigersinn (Kontextmenü der Seitenliste, unabhängig von Strg).</summary>
+    /// <param name="page">Die angeklickte Seite.</param>
+    [RelayCommand]
+    private void RotatePageClockwise(PageThumbnailViewModel page) => ActiveDocument?.RotatePage(page.Position - 1, clockwise: true);
+
+    /// <summary>Dreht die angezeigte bzw. gewählten Seiten gegen den Uhrzeigersinn (Menü).</summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private void RotateCurrentPageCounterclockwise() => ActiveDocument?.RotatePage(ActiveDocument.CurrentIndex, clockwise: false);
+
+    /// <summary>Dreht eine Seite bzw. die Auswahl gegen den Uhrzeigersinn (Kontextmenü der Seitenliste).</summary>
+    /// <param name="page">Die angeklickte Seite.</param>
+    [RelayCommand]
+    private void RotatePageCounterclockwise(PageThumbnailViewModel page) => ActiveDocument?.RotatePage(page.Position - 1, clockwise: false);
+
+    /// <summary>Fügt nach der angezeigten Seite eine leere Seite ein (A48).</summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private void InsertBlankPage() => ActiveDocument?.InsertBlankPage(ActiveDocument.CurrentIndex);
+
+    /// <summary>Fügt nach einer Seite der Seitenliste eine leere Seite ein (Kontextmenü).</summary>
+    /// <param name="page">Die Seite davor.</param>
+    [RelayCommand]
+    private void InsertBlankPageAfter(PageThumbnailViewModel page) => ActiveDocument?.InsertBlankPage(page.Position - 1);
+
+    /// <summary>Extrahiert die Seite bzw. die gewählten Seiten (Kontextmenü der Seitenliste).</summary>
+    /// <param name="page">Die angeklickte Seite.</param>
+    [RelayCommand]
+    private async Task ExtractPageAsync(PageThumbnailViewModel page) => await ExtractAsync(page.Position - 1);
+
+    /// <summary>Öffnet den Dialog „Unterschriften“ (A49).</summary>
+    [RelayCommand]
+    private async Task ManageSignaturesAsync() => await EditSignaturesAsync(ToolOptions.SelectedSignatureIndex);
+
+    /// <summary>Öffnet den Dialog „Unterschriften“ auf dem nächsten freien Platz.</summary>
+    [RelayCommand]
+    private async Task NewSignatureAsync() => await EditSignaturesAsync(ToolOptions.Signatures.Count);
+
+    /// <summary>Wählt eine Unterschrift in der Optionsleiste.</summary>
+    /// <param name="choice">Die Unterschrift.</param>
+    [RelayCommand]
+    private void SelectSignature(SignatureChoice choice) => ToolOptions.SelectSignature(choice.Index);
+
+    /// <summary>Suchbegriff für „Suchen und schwärzen“ (A52, F39).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RedactHitsText))]
+    [NotifyCanExecuteChangedFor(nameof(MarkRedactionsCommand))]
+    public partial string RedactTerm { get; set; } = string.Empty;
+
+    /// <summary>Trefferzahl für „Suchen und schwärzen“, z. B. „13 Fundstellen auf 13 Seiten“.</summary>
+    public string RedactHitsText
+    {
+        get
+        {
+            if (ActiveDocument is not { } document || string.IsNullOrWhiteSpace(RedactTerm))
+            {
+                return string.Empty;
+            }
+
+            var hits = RedactionHits(document);
+            return hits.Count == 0 ? Loc.T("Redact.NoHits") : Loc.F("Redact.Hits", hits.Count, hits.Select(hit => hit.PageId).Distinct().Count());
+        }
+    }
+
+    /// <summary>Anzahl der markierten Bereiche im Dokument als Hinweis.</summary>
+    public string RedactPendingText => Loc.F("Redact.Pending", PendingRedactions(ActiveDocument).Count);
+
+    /// <summary>Ob im Dokument Bereiche zum Schwärzen markiert sind.</summary>
+    public bool HasPendingRedactions => PendingRedactions(ActiveDocument).Count > 0;
+
+    /// <summary>Ob „Alle markieren“ möglich ist.</summary>
+    private bool CanMarkRedactions => ActiveDocument is not null && !string.IsNullOrWhiteSpace(RedactTerm);
+
+    /// <summary>Markiert jede Fundstelle des Suchbegriffs im Dokument zum Schwärzen (ein Rückgängig-Schritt).</summary>
+    [RelayCommand(CanExecute = nameof(CanMarkRedactions))]
+    private void MarkRedactions()
+    {
+        if (ActiveDocument is not { } document)
+        {
+            return;
+        }
+
+        document.Document.AddAnnotations(RedactionHits(document)
+            .Select(hit => (hit.PageId, (Core.Annotations.Annotation)RedactionAnnotation.ForSearchHit(hit.Bounds))).ToList());
+    }
+
+    /// <summary>
+    /// Fundstellen des Suchbegriffs je Seite in der aktuellen Reihenfolge (Koordinaten der ungedrehten Seite).
+    /// </summary>
+    private List<(int PageId, PdfRect Bounds)> RedactionHits(DocumentViewModel document)
+    {
+        var term = RedactTerm.Trim();
+        return document.Document.Pages
+            .SelectMany(page => document.FindText(page, term).Select(rect => (page.Id, rect)))
+            .ToList();
+    }
+
+    /// <summary>Markierte Bereiche je Seite (Seite und Annotation).</summary>
+    private static List<(PageEntry Page, RedactionAnnotation Redaction)> PendingRedactions(DocumentViewModel? document, IEnumerable<PageEntry>? pages = null) =>
+        document is null
+            ? []
+            : (pages ?? document.Document.Pages)
+                .SelectMany(page => document.Document.Annotations.For(page.Id).OfType<RedactionAnnotation>().Select(redaction => (page, redaction)))
+                .ToList();
+
+    /// <summary>
+    /// Fragt vor dem Schreiben nach, wenn Seiten Schwärzungen enthalten (A52).
+    /// </summary>
+    /// <param name="document">Das Dokument.</param>
+    /// <param name="pages">Die zu schreibenden Seiten in Zielreihenfolge.</param>
+    /// <param name="confirmText">Text der bestätigenden Schaltfläche.</param>
+    /// <returns><c>true</c>, wenn weitergemacht wird (auch ohne Schwärzungen).</returns>
+    private async Task<bool> ConfirmRedactionsAsync(DocumentViewModel document, IReadOnlyList<PageEntry> pages, string confirmText)
+    {
+        var pending = PendingRedactions(document, pages);
+        if (pending.Count == 0)
+        {
+            return true;
+        }
+
+        var numbers = pages.Select((page, index) => (page, index)).Where(item => pending.Any(entry => entry.Page.Id == item.page.Id))
+            .Select(item => item.index + 1).ToList();
+        return await _dialogs.ConfirmRedactionAsync(numbers, pending.Count, confirmText);
+    }
+
+    /// <summary>
+    /// Texterkennung (A53): sucht Tesseract, zeigt den Dialog und übernimmt den erkannten Text als einen
+    /// Rückgängig-Schritt (auch die bis zu einem Abbruch erkannten Seiten).
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private async Task RecognizeTextAsync()
+    {
+        var document = ActiveDocument!;
+        var engine = await Task.Run(Pdf.Ocr.TesseractEngine.Find);
+        while (engine is null)
+        {
+            if (!await _dialogs.ShowTesseractMissingAsync())
+            {
+                return;
+            }
+
+            engine = await Task.Run(Pdf.Ocr.TesseractEngine.Find);
+        }
+
+        var results = new Dictionary<int, Core.Text.RecognizedPage>();
+        var request = new OcrRequest(
+            Loc.F("Ocr.Engine", engine.Version, string.Join(", ", engine.Languages.Select(LanguageName))),
+            document.Document.Pages.Count,
+            document.PagesWithoutText.Select(index => index + 1).ToList(),
+            OcrLanguages(engine.Languages),
+            (positions, language, progress, cancellation) => Task.Run(async () =>
+            {
+                var words = 0;
+                for (var i = 0; i < positions.Count; i++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    progress.Report(new OcrProgress(i, positions.Count, positions[i]));
+                    var page = document.Document.Pages[positions[i] - 1];
+                    var recognized = await engine.RecognizeAsync(document.SourceOf(page), page.SourcePageNumber, page.Rotation, language, cancellation);
+                    lock (results)
+                    {
+                        results[page.Id] = recognized;
+                    }
+
+                    words += recognized.Words.Count;
+                }
+
+                return words;
+            }, cancellation));
+
+        if (await _dialogs.RecognizeTextAsync(request) is not { } outcome)
+        {
+            return;
+        }
+
+        // Auch bei Abbruch oder Fehler bleiben die bis dahin erkannten Seiten erhalten
+        document.Document.SetRecognizedText(results);
+        if (outcome.Error is { } error)
+        {
+            await _dialogs.ShowMessageAsync(Loc.T("Ocr.Title"), Loc.F("Ocr.Failed", error));
+            return;
+        }
+
+        var wordCount = results.Values.Sum(page => page.Words.Count);
+        ShowStatusNotice(outcome.Cancelled ? Loc.F("Ocr.Cancelled", results.Count) : Loc.F("Ocr.Done", results.Count, wordCount));
+    }
+
+    /// <summary>Anzeigename eines Tesseract-Sprachkürzels.</summary>
+    private static string LanguageName(string code) => Loc.T($"Ocr.Lang.{code}") is var name && name != $"Ocr.Lang.{code}" ? name : code;
+
+    /// <summary>
+    /// Wählbare Sprachen: die Oberflächensprache zusammen mit Englisch zuerst, dann einzelne Sprachen.
+    /// </summary>
+    private static List<(string Code, string Name)> OcrLanguages(IReadOnlyList<string> installed)
+    {
+        var preferred = Loc.Language == UiLanguage.German ? "deu" : "eng";
+        var other = preferred == "deu" ? "eng" : "deu";
+        var codes = new List<string>();
+        if (installed.Contains(preferred) && installed.Contains(other))
+        {
+            codes.Add($"{preferred}+{other}");
+        }
+
+        codes.AddRange(installed.OrderBy(code => code == preferred ? 0 : code == other ? 1 : 2).ThenBy(code => code, StringComparer.Ordinal));
+        return codes.Select(code => (code, LanguageName(code))).ToList();
+    }
+
+    /// <summary>Wählt einen Stempel in der Optionsleiste (A51).</summary>
+    /// <param name="choice">Der Stempel.</param>
+    [RelayCommand]
+    private void SelectStamp(StampChoice choice)
+    {
+        ToolOptions.SelectStamp(choice.Index);
+        ToolOptions.PendingImage = null;
+    }
+
+    /// <summary>Setzt die Farbe des nächsten Stempels.</summary>
+    /// <param name="hex">Die Farbe.</param>
+    [RelayCommand]
+    private void SetStampColor(string hex) => ToolOptions.StampColor = hex;
+
+    /// <summary>Legt einen eigenen Stempel an und wählt ihn.</summary>
+    [RelayCommand]
+    private async Task NewStampAsync()
+    {
+        if (await _dialogs.AskCustomStampAsync(ToolOptions.StampDetail(DateTime.Today)) is not { } stamp)
+        {
+            return;
+        }
+
+        SaveCustomStamps([.. ToolOptions.CustomStamps, stamp]);
+        ToolOptions.SelectStamp(ToolOptions.Stamps.Count - 1);
+        ToolOptions.PendingImage = null;
+    }
+
+    /// <summary>Löscht einen eigenen Stempel.</summary>
+    /// <param name="choice">Der Stempel.</param>
+    [RelayCommand]
+    private void DeleteStamp(StampChoice choice)
+    {
+        if (!choice.IsCustom)
+        {
+            return;
+        }
+
+        var customIndex = choice.Index - StampAnnotation.Presets.Count;
+        var selected = ToolOptions.SelectedStampIndex;
+        SaveCustomStamps(ToolOptions.CustomStamps.Where((_, i) => i != customIndex).ToList());
+        if (selected == choice.Index)
+        {
+            ToolOptions.SelectStamp(0);
+        }
+        else if (selected > choice.Index)
+        {
+            ToolOptions.SelectStamp(selected - 1);
+        }
+    }
+
+    /// <summary>Wählt ein Bild, das mit dem nächsten Klick auf die Seite gesetzt wird (A51).</summary>
+    [RelayCommand]
+    private async Task ChooseImageAsync()
+    {
+        if (await _dialogs.PickImageFileAsync() is not { } path)
+        {
+            return;
+        }
+
+        if (await LoadImageAsync(path) is { } loaded)
+        {
+            ToolOptions.PendingImage = new PendingImage(loaded.Image, Path.GetFileName(path));
+        }
+    }
+
+    /// <summary>Verwirft das gewählte, noch nicht gesetzte Bild.</summary>
+    [RelayCommand]
+    private void CancelImage() => ToolOptions.PendingImage = null;
+
+    /// <summary>Fügt ein Bild aus der Zwischenablage mittig auf der aktuellen Seite ein (Strg+V).</summary>
+    [RelayCommand]
+    private async Task PasteImageAsync()
+    {
+        if (ActiveDocument is not { } document || await _dialogs.ReadClipboardImageAsync() is not { } loaded)
+        {
+            return;
+        }
+
+        var (width, height) = document.CurrentDisplaySize;
+        PlaceImage(document, loaded, new PdfPoint(width / 2, height / 2));
+    }
+
+    /// <summary>
+    /// Liest eine Bilddatei; meldet nicht lesbare Bilder und eine Verkleinerung.
+    /// </summary>
+    /// <param name="path">Pfad der Datei.</param>
+    /// <returns>Das Bild oder <c>null</c>.</returns>
+    public async Task<LoadedImage?> LoadImageAsync(string path)
+    {
+        LoadedImage? loaded = null;
+        try
+        {
+            loaded = ImageLoader.FromBytes(await File.ReadAllBytesAsync(path));
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // wie ein nicht lesbares Bild behandeln
+        }
+
+        if (loaded is null)
+        {
+            await _dialogs.ShowMessageAsync(Loc.T("Stamp.ImageTitle"), Loc.F("Stamp.ImageFailed", Path.GetFileName(path)));
+            return null;
+        }
+
+        ReportShrunk(loaded);
+        return loaded;
+    }
+
+    /// <summary>
+    /// Setzt ein Bild in Standardbreite mit der Mitte auf einen Punkt der Anzeige, schaltet auf das Werkzeug „Stempel“
+    /// und wählt das Bild, damit es gleich verschoben werden kann (Drag &amp; Drop, Zwischenablage).
+    /// </summary>
+    /// <param name="document">Das Dokument.</param>
+    /// <param name="loaded">Das Bild.</param>
+    /// <param name="display">Mitte in Anzeige-Koordinaten der aktuellen Seite.</param>
+    public void PlaceImage(DocumentViewModel document, LoadedImage loaded, PdfPoint display)
+    {
+        ReportShrunk(loaded);
+        var image = document.PlaceBox(ImageAnnotation.Create(loaded.Image, display, ImageAnnotation.DefaultWidth));
+        ToolOptions.Tool = Tool.Stamp;
+        document.SelectedBox = image.Id;
+    }
+
+    /// <summary>Meldet in der Statusleiste, dass ein Bild verkleinert wurde (F36).</summary>
+    private void ReportShrunk(LoadedImage loaded)
+    {
+        if (loaded.WasShrunk)
+        {
+            ShowStatusNotice(Loc.F("Stamp.ImageShrunk", loaded.Image.PixelWidth, loaded.Image.PixelHeight, loaded.OriginalWidth, loaded.OriginalHeight));
+        }
+    }
+
+    /// <summary>Kurzer Hinweis in der Statusleiste.</summary>
+    [ObservableProperty]
+    public partial string StatusNotice { get; set; } = string.Empty;
+
+    private Avalonia.Threading.DispatcherTimer? _noticeTimer;
+
+    /// <summary>
+    /// Zeigt einen Hinweis einige Sekunden lang in der Statusleiste.
+    /// </summary>
+    /// <param name="text">Der Hinweis.</param>
+    private void ShowStatusNotice(string text)
+    {
+        StatusNotice = text;
+        _noticeTimer?.Stop();
+        _noticeTimer = new Avalonia.Threading.DispatcherTimer(TimeSpan.FromSeconds(6), Avalonia.Threading.DispatcherPriority.Background, (_, _) =>
+        {
+            StatusNotice = string.Empty;
+            _noticeTimer?.Stop();
+        });
+        _noticeTimer.Start();
+    }
+
+    /// <summary>
+    /// Speichert die eigenen Stempel und baut die Auswahl neu auf.
+    /// </summary>
+    private void SaveCustomStamps(IReadOnlyList<CustomStamp> stamps)
+    {
+        SaveSettings(_settings with { CustomStamps = stamps });
+        ToolOptions.SetCustomStamps(_settings.CustomStamps);
+    }
+
+    /// <summary>
+    /// Zeigt den Unterschriften-Dialog; Änderungen werden sofort gespeichert.
+    /// </summary>
+    private async Task EditSignaturesAsync(int startSlot)
+    {
+        var signatures = await _dialogs.EditSignaturesAsync(ToolOptions.Signatures.Select(choice => choice.Signature).ToList(), startSlot, SaveSignatures);
+        ToolOptions.SetSignatures(signatures);
+    }
+
+    /// <summary>
+    /// Speichert die Unterschriften; ein nicht beschreibbarer Ordner lässt das Programm bedienbar.
+    /// </summary>
+    private void SaveSignatures(IReadOnlyList<Signature> signatures)
+    {
+        try
+        {
+            _signatureStore.Save(signatures);
+        }
+        catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+        {
+            // Unterschriften bleiben für diese Sitzung erhalten
+        }
+
+        // Eine neu angelegte Unterschrift gleich wählen (P13)
+        var added = signatures.Count > ToolOptions.Signatures.Count;
+        ToolOptions.SetSignatures(signatures);
+        if (added)
+        {
+            ToolOptions.SelectSignature(signatures.Count - 1);
+        }
+    }
+
+    /// <summary>Hervorhebung der Formularfelder gewählt: merken.</summary>
+    partial void OnHighlightFormFieldsChanged(bool value) => SaveSettings(_settings with { HighlightFormFields = value });
+
+    /// <summary>Wählt alle Seiten der Seitenliste (Strg+A, A48).</summary>
+    [RelayCommand]
+    private void SelectAllPages() => ActiveDocument?.SelectAllPages();
+
+    /// <summary>Hebt die Mehrfachauswahl auf (Esc).</summary>
+    [RelayCommand]
+    private void ClearPageSelection() => ActiveDocument?.ClearSelection();
 
     /// <summary>Löscht die angezeigte Seite.</summary>
     [RelayCommand(CanExecute = nameof(HasDocument))]
@@ -331,12 +862,34 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <summary>Dreht eine Seite aus der Seitenliste.</summary>
     /// <param name="page">Die Seite.</param>
     [RelayCommand]
-    private void RotatePage(PageThumbnailViewModel page) => ActiveDocument?.RotatePage(page.Position - 1);
+    private void RotatePage(PageThumbnailViewModel page) => ActiveDocument?.RotatePage(page.Position - 1, clockwise: !ReverseRotation);
 
     /// <summary>Löscht eine Seite aus der Seitenliste.</summary>
     /// <param name="page">Die Seite.</param>
     [RelayCommand]
     private void DeletePage(PageThumbnailViewModel page) => ActiveDocument?.DeletePage(page.Position - 1);
+
+    /// <summary>Springt zu einer Anmerkung aus der Übersicht (A45).</summary>
+    /// <param name="item">Die Zeile.</param>
+    [RelayCommand]
+    private void ShowAnnotation(AnnotationListItem item)
+    {
+        if (item.Entry is { } entry)
+        {
+            ActiveDocument?.ShowAnnotation(entry);
+        }
+    }
+
+    /// <summary>Zeigt die Zielseite eines Lesezeichens (A46).</summary>
+    /// <param name="item">Das Lesezeichen.</param>
+    [RelayCommand]
+    private void ShowBookmark(BookmarkItemViewModel item)
+    {
+        if (item.Bookmark.PageIndex is { } index)
+        {
+            ActiveDocument?.Show(index);
+        }
+    }
 
     /// <summary>Zeigt eine Seite aus der Seitenliste an.</summary>
     /// <param name="page">Die Seite.</param>
@@ -364,6 +917,29 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     /// <param name="zoom">Der berechnete Zoom.</param>
     public void ApplyFitZoom(double zoom) => Zoom = zoom;
+
+    /// <summary>
+    /// Übernimmt einen eingegebenen Zoom (beendet die Anpassung an den Anzeigebereich); ungültige Eingaben werden
+    /// verworfen.
+    /// </summary>
+    [RelayCommand]
+    private void ApplyZoomInput()
+    {
+        if (ZoomFit.ParsePercent(ZoomInput) is { } zoom)
+        {
+            FitMode = FitMode.None;
+            Zoom = zoom;
+        }
+
+        ResetZoomInput();
+    }
+
+    /// <summary>Stellt im Zoom-Eingabefeld den aktuellen Zoom wieder her.</summary>
+    [RelayCommand]
+    private void ResetZoomInput() => ZoomInput = ZoomText;
+
+    /// <summary>Neuer Zoom: Eingabefeld nachführen.</summary>
+    partial void OnZoomChanged(double value) => ZoomInput = ZoomText;
 
     /// <summary>Beendet die Suche und leert das Suchfeld.</summary>
     [RelayCommand]
@@ -405,6 +981,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (Loc.Language != language)
         {
             Loc.Language = language;
+            ToolOptions.SetCustomStamps(ToolOptions.CustomStamps);
             LanguageChanged?.Invoke(this, EventArgs.Empty);
         }
     }
@@ -413,13 +990,14 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenSettingsAsync()
     {
-        var choice = await _dialogs.EditSettingsAsync(new SettingsChoice(_settings.Theme, Loc.Language, _settings.UndoLimit));
+        var choice = await _dialogs.EditSettingsAsync(new SettingsChoice(_settings.Theme, Loc.Language, _settings.UndoLimit, _settings.UserName));
         if (choice is null)
         {
             return;
         }
 
-        SaveSettings(_settings with { UndoLimit = choice.UndoLimit });
+        SaveSettings(_settings with { UndoLimit = choice.UndoLimit, UserName = choice.UserName });
+        ToolOptions.UserName = _settings.UserName;
         foreach (var document in Documents)
         {
             document.Document.History.Limit = choice.UndoLimit;
@@ -458,7 +1036,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             try
             {
                 var source = await Task.Run(() => PdfSource.Open(fullPath, password));
-                Add(new DocumentViewModel(source, _settings.UndoLimit));
+                Add(new DocumentViewModel(source, _settings.UndoLimit, ThumbnailScale));
                 return;
             }
             catch (PdfOpenException exception) when (exception.Error == PdfOpenError.PasswordRequired)
@@ -495,6 +1073,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(UndoStatus));
                 OnPropertyChanged(nameof(SearchHitsText));
+                OnPropertyChanged(nameof(RedactHitsText));
+                OnPropertyChanged(nameof(RedactPendingText));
+                OnPropertyChanged(nameof(HasPendingRedactions));
             }
             else if (e.PropertyName is nameof(DocumentViewModel.PageStatus))
             {
@@ -511,7 +1092,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <returns><c>true</c>, wenn gespeichert wurde.</returns>
     private async Task<bool> SaveAsync(DocumentViewModel document)
     {
-        if (await AskSaveOptionsAsync(document) is not { } options)
+        document.CommitEdits();
+        if (!await ConfirmRedactionsAsync(document, document.Document.Pages.ToList(), Loc.T("Redact.Save"))
+            || await AskSaveOptionsAsync(document) is not { } options)
         {
             return false;
         }
@@ -560,6 +1143,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     private async Task CloseAsync(DocumentViewModel document)
     {
+        document.CommitEdits();
         if (!await ConfirmCloseAsync(document))
         {
             return;
@@ -580,6 +1164,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <returns><c>true</c>, wenn geschlossen werden darf.</returns>
     private async Task<bool> ConfirmCloseAsync(DocumentViewModel document)
     {
+        document.CommitEdits();
         if (!document.Document.IsModified)
         {
             return true;
@@ -601,7 +1186,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         for (var i = 0; i < document.Document.Pages.Count; i++)
         {
-            yield return (i, PdfSource.CountOccurrences(document.SourceOf(document.Document.Pages[i]).PageText(document.Document.Pages[i].SourcePageNumber), SearchText));
+            yield return (i, PdfSource.CountOccurrences(document.PageText(document.Document.Pages[i]), SearchText));
         }
     }
 
@@ -661,10 +1246,72 @@ public sealed partial class MainWindowViewModel : ObservableObject
     }
 
     /// <summary>
+    /// Beobachtet die Anmerkungsübersicht des angezeigten Dokuments.
+    /// </summary>
+    partial void OnActiveDocumentChanged(DocumentViewModel? oldValue, DocumentViewModel? newValue)
+    {
+        if (oldValue is not null)
+        {
+            oldValue.AnnotationList.PropertyChanged -= OnAnnotationListPropertyChanged;
+        }
+
+        if (newValue is not null)
+        {
+            newValue.AnnotationList.PropertyChanged += OnAnnotationListPropertyChanged;
+        }
+
+        LeaveEmptySidebarView();
+    }
+
+    /// <summary>
+    /// Letzte Anmerkung entfernt: Reiter und Ansicht der linken Leiste prüfen.
+    /// </summary>
+    private void OnAnnotationListPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AnnotationListViewModel.HasAny))
+        {
+            LeaveEmptySidebarView();
+        }
+    }
+
+    /// <summary>
+    /// Reiter gibt es nur für vorhandene Inhalte (A45, A46); ohne Inhalt zeigt die linke Leiste die Seitenliste.
+    /// </summary>
+    private void LeaveEmptySidebarView()
+    {
+        var document = ActiveDocument;
+        if ((SidebarView == SidebarView.Annotations && document?.AnnotationList.HasAny != true)
+            || (SidebarView == SidebarView.Bookmarks && document?.BookmarkList.HasAny != true))
+        {
+            SidebarView = SidebarView.Pages;
+        }
+
+        OnPropertyChanged(nameof(ShowSidebarTabs));
+        OnPropertyChanged(nameof(FormNotice));
+    }
+
+    /// <summary>
+    /// Merkt sich die per Ziehen gewählte Breite der linken Leiste (F30).
+    /// </summary>
+    /// <param name="width">Die Breite.</param>
+    public void SaveSidebarWidth(double width) => SaveSettings(_settings with { SidebarWidth = width });
+
+    /// <summary>
+    /// Passt die Miniaturen beim Ziehen an die Breite der linken Leiste an; scharf neu gerendert wird, sobald sich die
+    /// Breite kurz nicht mehr ändert.
+    /// </summary>
+    /// <param name="width">Aktuelle Breite der Leiste.</param>
+    public void ResizeSidebar(double width) =>
+        ThumbnailScale = Math.Clamp(width, AppSettings.MinSidebarWidth, AppSettings.MaxSidebarWidth) / AppSettings.DefaultSidebarWidth;
+
+    /// <summary>
     /// Aktualisiert abhängige Anzeigen beim Wechsel des Dokuments.
     /// </summary>
     partial void OnActiveDocumentChanged(DocumentViewModel? value)
     {
+        OnPropertyChanged(nameof(RedactHitsText));
+        OnPropertyChanged(nameof(RedactPendingText));
+        OnPropertyChanged(nameof(HasPendingRedactions));
         foreach (var document in Documents)
         {
             document.IsActive = document == value;

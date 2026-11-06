@@ -1,0 +1,1822 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF Utopia – Mockup v5 (Unterschrift)</title>
+<style>
+  :root {
+    --bg: #eceef2; --surface: #f7f8fa; --surface-2: #f1f2f5; --border: #dcdfe6;
+    --text: #1d2330; --muted: #6b7280; --hover: #eceef3;
+    --accent: #4f46e5; --accent-text: #ffffff;
+    /* Abgeleitet: passt sich jeder Akzentfarbe und jedem Theme an */
+    --accent-soft: color-mix(in srgb, var(--accent) 18%, var(--surface));
+    --canvas: #e4e6ec; --paper-shadow: 0 1px 3px rgba(0,0,0,.12), 0 8px 24px rgba(0,0,0,.08);
+    --danger: #dc2626; --warn-bg: #fff7e6; --warn-text: #8a5a00;
+    color-scheme: light;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #181818; --surface: #1f1f1f; --surface-2: #2b2b2b; --border: #3a3a3a;
+      --text: #e6e6e6; --muted: #a0a0a0; --hover: #303030;
+      --accent: #8b8cf8; --accent-text: #141414;
+      --canvas: #252525; --paper-shadow: 0 1px 3px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.4);
+      --warn-bg: #3a2e12; --warn-text: #f2c66d;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #181818; --surface: #1f1f1f; --surface-2: #2b2b2b; --border: #3a3a3a;
+    --text: #e6e6e6; --muted: #a0a0a0; --hover: #303030;
+    --accent: #8b8cf8; --accent-text: #141414;
+    --canvas: #252525; --paper-shadow: 0 1px 3px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.4);
+    --warn-bg: #3a2e12; --warn-text: #f2c66d;
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font: 13px/1.4 "Segoe UI", system-ui, -apple-system, "Inter", sans-serif;
+    overflow: hidden;
+  }
+  button { font: inherit; color: inherit; }
+  svg.i { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .app { display: grid; grid-template-rows: auto auto auto auto 1fr auto; height: 100vh; }
+
+  /* Menüleiste */
+  .menubar { display: flex; align-items: center; gap: 2px; padding: 4px 8px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .brand { display: flex; align-items: center; gap: 8px; font-weight: 600; margin-right: 12px; }
+  .brand .logo { width: 22px; height: 22px; border-radius: 6px; background: linear-gradient(135deg, #6366f1, #ec4899); display: grid; place-items: center; color: #fff; font-size: 11px; font-weight: 700; }
+  .menu { position: relative; }
+  .menu > button { background: none; border: 0; padding: 5px 10px; border-radius: 6px; cursor: pointer; }
+  .menu > button:hover, .menu.open > button { background: var(--hover); }
+  .dropdown { display: none; position: absolute; top: calc(100% + 4px); left: 0; min-width: 230px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,.18); padding: 4px; z-index: 50; }
+  .menu.open .dropdown { display: block; }
+  .dropdown button { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: 0; padding: 6px 10px; border-radius: 5px; cursor: pointer; text-align: left; }
+  .dropdown button:hover { background: var(--hover); }
+  .dropdown .kbd { margin-left: auto; color: var(--muted); font-size: 11px; }
+  .dropdown .sep { height: 1px; background: var(--border); margin: 4px 6px; }
+  .dropdown .label { padding: 6px 10px 2px; color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .04em; }
+  .dropdown .check { width: 14px; color: var(--accent); }
+
+  /* Werkzeugleiste */
+  .toolbar { display: flex; align-items: center; gap: 4px; padding: 6px 8px; background: var(--surface); border-bottom: 1px solid var(--border); overflow-x: auto; scrollbar-width: thin; }
+  .group { display: flex; align-items: center; gap: 2px; }
+  .divider { width: 1px; height: 26px; background: var(--border); margin: 0 6px; flex: none; }
+  .tb { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 58px; padding: 5px 6px 4px; border: 1px solid transparent; border-radius: 7px; background: none; cursor: pointer; font-size: 11px; color: var(--text); }
+  .tb:hover { background: var(--hover); }
+  .tb.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .tb:disabled { opacity: .4; cursor: default; background: none; }
+  .zoom-value { white-space: nowrap; min-width: 52px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface-2); text-align: center; font-variant-numeric: tabular-nums; }
+  .search { margin-left: auto; display: flex; align-items: center; gap: 6px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 5px 8px; min-width: 220px; }
+  .search input { border: 0; background: none; outline: none; color: var(--text); font: inherit; width: 100%; }
+  .search .hits { color: var(--muted); font-size: 11px; white-space: nowrap; }
+
+  /* Werkzeugoptionen (Farbe / Strichstärke) */
+  .options { display: flex; align-items: center; gap: 14px; padding: 6px 12px; background: var(--surface-2); border-bottom: 1px solid var(--border); min-height: 40px; }
+  .options .title { font-weight: 600; }
+  .swatches { display: flex; gap: 6px; }
+  .swatch { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); cursor: pointer; padding: 0; }
+  .swatch.sel { box-shadow: 0 0 0 2px var(--accent); }
+  .options label { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+  .options input[type=range] { accent-color: var(--accent); width: 120px; }
+  .width-preview { width: 40px; height: 22px; display: grid; place-items: center; }
+  .options .hint { margin-left: auto; color: var(--muted); font-style: italic; }
+  .options .warn { background: var(--warn-bg); color: var(--warn-text); padding: 3px 9px; border-radius: 6px; font-size: 12px; }
+
+  /* Dokument-Tabs */
+  .tabs { display: flex; align-items: end; gap: 2px; padding: 6px 8px 0; background: var(--bg); border-bottom: 1px solid var(--border); }
+  .tab { display: flex; align-items: center; gap: 8px; padding: 6px 10px 6px 12px; border: 1px solid transparent; border-bottom: 0; border-radius: 7px 7px 0 0; background: none; cursor: pointer; color: var(--muted); }
+  .tab.active { background: var(--canvas); border-color: var(--border); color: var(--text); margin-bottom: -1px; }
+  .tab .x { opacity: .6; } .tab .x:hover { opacity: 1; }
+  .tab .lock { width: 14px; height: 14px; }
+
+  /* Hauptbereich */
+  main { display: grid; grid-template-columns: 220px 1fr; min-height: 0; }
+  .sidebar { display: flex; flex-direction: column; background: var(--surface); border-right: 1px solid var(--border); min-height: 0; }
+  .sidebar header { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; font-weight: 600; border-bottom: 1px solid var(--border); }
+  .sidebar header .count { color: var(--muted); font-weight: 400; }
+  .thumbs { overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 14px; }
+  .thumb { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px; border-radius: 8px; border: 2px solid transparent; cursor: pointer; user-select: none; }
+  .thumb:hover { background: var(--hover); }
+  .thumb.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .thumb.dragging { opacity: .35; }
+  .thumb.drop-before::before { content: ""; position: absolute; top: -9px; left: 8px; right: 8px; height: 3px; border-radius: 2px; background: var(--accent); }
+  .thumb.drop-after::after { content: ""; position: absolute; bottom: -9px; left: 8px; right: 8px; height: 3px; border-radius: 2px; background: var(--accent); }
+  .mini-wrap { width: 112px; height: 158px; display: grid; place-items: center; }
+  .mini { width: 106px; height: 150px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); padding: 12px 10px; display: flex; flex-direction: column; gap: 5px; transition: transform .2s; }
+  .mini i { display: block; height: 3px; background: #d4d7de; border-radius: 2px; }
+  .mini i.h { height: 6px; width: 60%; background: #9aa0ab; margin-bottom: 3px; }
+  .mini i.img { height: 26px; background: #e7e9f0; }
+  .mini i.mk { background: #fde047; }
+  .thumb .num { font-size: 12px; color: var(--muted); }
+  .thumb.sel .num { color: var(--accent); font-weight: 600; }
+  .thumb .actions { position: absolute; top: 12px; right: 12px; display: none; flex-direction: column; gap: 4px; }
+  .thumb:hover .actions { display: flex; }
+  .thumb .actions button { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; }
+  .thumb .actions button:hover { color: var(--accent); }
+  .thumb .actions button.del:hover { color: var(--danger); }
+  .thumb .actions svg.i { width: 14px; height: 14px; }
+
+  .viewer { overflow: auto; background: var(--canvas); padding: 32px; display: flex; justify-content: center; align-items: flex-start; }
+  .page-holder { transform-origin: top center; transition: transform .15s; }
+  .page { position: relative; width: 600px; background: #fff; color: #222; box-shadow: var(--paper-shadow); transition: transform .2s; }
+  .page-body { position: relative; height: 848px; padding: 64px 70px; font-family: Georgia, "Times New Roman", serif; font-size: 13.5px; line-height: 1.6; }
+  .page-body h1 { font-size: 24px; margin: 0 0 4px; font-weight: 600; }
+  .page-body .sub { color: #777; margin-bottom: 22px; font-size: 12px; font-family: system-ui, sans-serif; }
+  .page-body p { margin: 0 0 14px; padding: 6px 8px; margin-left: -8px; margin-right: -8px; border-radius: 4px; position: relative; border: 2px solid transparent; }
+  .page-body p.commented { background: color-mix(in srgb, var(--c) 14%, transparent); border-color: var(--cb); }
+  .page-body p .badge .x { display: none; font-size: 15px; }
+  .page-body p .badge:hover { cursor: pointer; transform: scale(1.12); }
+  .page-body p .badge:hover .n { display: none; }
+  .page-body p .badge:hover .x { display: inline; }
+  .page-body p .badge { z-index: 2; transition: transform .1s; position: absolute; top: -11px; right: -11px; width: 22px; height: 22px; border-radius: 50%; background: var(--c); color: var(--ct); font: 600 11px/22px system-ui, sans-serif; text-align: center; box-shadow: 0 0 0 1px var(--cb), 0 1px 3px rgba(0,0,0,.25); }
+  .page-body .figure { height: 150px; margin: 6px 0 18px; border-radius: 4px; background: linear-gradient(135deg, #e8ebf3, #d9deea); display: grid; place-items: center; color: #8a92a6; font: 12px system-ui, sans-serif; }
+  .page-body .pno { position: absolute; bottom: 28px; left: 0; right: 0; text-align: center; color: #999; font-size: 11px; }
+  .page.tool-comment .page-body p { cursor: copy; }
+  .page.tool-comment .page-body p:hover:not(.commented) { outline: 2px dashed #a5b4fc; outline-offset: 2px; }
+  svg.overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; touch-action: none; }
+  .page.drawing svg.overlay { pointer-events: all; cursor: crosshair; }
+  svg.overlay .marker { mix-blend-mode: multiply; opacity: .55; }
+  /* Radierer: getroffene Formen werden blass, Kreis zeigt die Radiergröße */
+  svg.overlay .erasing { opacity: .2; }
+  svg.overlay .eraser-cursor { fill: rgba(107, 114, 128, .12); stroke: #6B7280; stroke-width: 1; stroke-dasharray: 3 2; pointer-events: none; }
+  .page.tool-eraser svg.overlay { cursor: none; }
+  .eraser-preview { fill: rgba(107, 114, 128, .12); stroke: var(--muted); stroke-dasharray: 3 2; }
+
+  .page-ext { border-top: 2px dashed #c9cdd8; padding: 14px 70px 22px; font-family: Georgia, serif; font-size: 12px; color: #333; background: #fcfcfd; }
+  .page-ext .ext-label { font: 600 10px system-ui, sans-serif; color: #9aa0ab; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 8px; }
+  .fn { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 6px; }
+  .fn .n { flex: none; width: 18px; height: 18px; border-radius: 50%; background: var(--c); color: var(--ct); font: 600 10px/18px system-ui, sans-serif; text-align: center; margin-top: 1px; box-shadow: 0 0 0 1px var(--cb); }
+  .fn .t { flex: 1; outline: none; border-radius: 3px; padding: 0 3px; }
+  .fn .t:focus { background: #eef0ff; }
+
+  .statusbar { display: flex; gap: 18px; align-items: center; padding: 4px 12px; background: var(--surface); border-top: 1px solid var(--border); color: var(--muted); font-size: 12px; }
+  .statusbar .zoom { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  .statusbar .zoom button { background: none; border: 1px solid var(--border); border-radius: 5px; width: 22px; height: 22px; cursor: pointer; display: grid; place-items: center; }
+  .statusbar .zoom svg.i { width: 13px; height: 13px; }
+
+  /* Dialoge */
+  dialog { border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--text); padding: 0; width: min(520px, calc(100vw - 32px)); box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+  dialog::backdrop { background: rgba(10,12,20,.45); }
+  dialog header { padding: 16px 20px 0; font-size: 16px; font-weight: 600; }
+  dialog .body { padding: 14px 20px; display: flex; flex-direction: column; gap: 12px; }
+  dialog footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px 16px; }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field .help { color: var(--muted); font-size: 12px; }
+  /* Textboxen mit neutralem Rahmen, Auswahlfelder (select) mit Rahmen in Akzentfarbe */
+  .input, select.input { background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 8px 10px; color: var(--text); font: inherit; outline: none; }
+  select.input { border-color: var(--accent); }
+  /* Fokus der Textboxen neutral sichtbar (Tastaturbedienung), ohne Akzentfarbe */
+  .input:focus { border-color: var(--muted); box-shadow: 0 0 0 3px var(--hover); }
+  select.input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .btn { padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-text); font-weight: 600; }
+  .btn:disabled { opacity: .5; cursor: default; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; padding: 8px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); }
+  .chip { padding: 1px 8px; border: 1px solid var(--accent); border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 12px; }
+  .chips .empty { color: var(--muted); font-style: italic; }
+  .hints { display: flex; flex-direction: column; gap: 4px; }
+  .hints div { background: var(--warn-bg); color: var(--warn-text); padding: 5px 9px; border-radius: 6px; font-size: 12px; }
+  .row { display: flex; gap: 12px; } .row > * { flex: 1; }
+
+  /* Seiten einfügen (Mockup v3) */
+  #dlgMerge [hidden] { display: none; }
+  dialog.wide { width: min(640px, calc(100vw - 32px)); }
+  .src-info { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
+  .src-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 8px; max-height: 210px; overflow: auto; padding: 8px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); }
+  .src-page { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 5px; border-radius: 7px; border: 2px solid transparent; cursor: pointer; font-size: 11px; color: var(--muted); user-select: none; }
+  .src-page:hover { background: var(--hover); }
+  .src-page .sheet { width: 44px; height: 62px; background: #fff; border-radius: 2px; box-shadow: 0 1px 3px rgba(0,0,0,.3); padding: 6px 5px; display: flex; flex-direction: column; gap: 3px; opacity: .45; }
+  .src-page .sheet i { display: block; height: 2px; background: #c9ccd6; border-radius: 1px; }
+  .src-page .sheet i.h { height: 4px; width: 60%; background: #9aa0b0; }
+  .src-page.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .src-page.on .sheet { opacity: 1; }
+  .pos-row { display: flex; align-items: center; gap: 8px; }
+  .pos-row select { flex: 1; }
+  .pos-row input { width: 70px; }
+  .thumb .src-tag { color: var(--accent); }
+  .thumb.inserted .mini { box-shadow: 0 0 0 2px var(--accent), 0 1px 3px rgba(0,0,0,.3); }
+  /* Anmerkungsübersicht (Mockup v4) */
+  .side-tabs { display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border); align-items: center; }
+  .side-tabs button { flex: 1; padding: 6px 8px; border-radius: 7px; border: 1px solid transparent; background: transparent; cursor: pointer; font-weight: 600; color: var(--muted); display: flex; align-items: center; justify-content: center; gap: 6px; }
+  .side-tabs button:hover { background: var(--hover); }
+  .side-tabs button.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+  .side-tabs .count { font-weight: 400; font-size: 11px; color: var(--muted); }
+  .side-tabs button.on .count { color: var(--accent); }
+  .ann-panel { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+  .ann-panel[hidden], .thumbs[hidden] { display: none; }
+  .ann-filter { padding: 8px 10px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
+  .ann-filter select { flex: 1; padding: 5px 8px; }
+  .ann-list { overflow-y: auto; padding: 4px 6px 12px; }
+  .ann-group { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 600; padding: 10px 8px 4px; position: sticky; top: 0; background: var(--surface); }
+  .ann-item { display: flex; align-items: flex-start; gap: 8px; padding: 7px 8px; border-radius: 7px; cursor: pointer; border: 1px solid transparent; }
+  .ann-item:hover { background: var(--hover); }
+  .ann-item.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .ann-item .ico { width: 22px; height: 22px; flex: none; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; }
+  .ann-item .ico svg.i { width: 14px; height: 14px; stroke: var(--accent); }
+  .ann-item .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; margin-top: 7px; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+  .ann-item .txt { font-size: 12px; line-height: 1.35; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .ann-item .txt .kind { color: var(--muted); }
+  .ann-empty { padding: 24px 14px; color: var(--muted); text-align: center; font-size: 12px; }
+  @keyframes annFlash { 0% { opacity: 1; } 70% { opacity: 1; } 100% { opacity: 0; } }
+  .flash-frame { fill: none; stroke: var(--accent); stroke-width: 3; stroke-dasharray: 6 4; animation: annFlash 1.6s ease-out forwards; pointer-events: none; }
+  .page-body p.flash { outline: 3px dashed var(--accent); outline-offset: 4px; animation: annFlash 1.6s ease-out forwards; }
+  /* Unterschrift (Mockup v5) */
+  .page.tool-signature svg.overlay { pointer-events: all; cursor: copy; }
+  .sig-chips { display: flex; gap: 6px; align-items: center; }
+  .sig-chip { height: 30px; min-width: 60px; padding: 2px 6px; border-radius: 7px; border: 1px solid var(--border); background: #fff; cursor: pointer; display: grid; place-items: center; }
+  .sig-chip svg { height: 24px; width: auto; max-width: 90px; }
+  .sig-chip.sel { border: 2px solid var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .sig-add { height: 30px; padding: 0 10px; border-radius: 7px; border: 1px dashed var(--muted); background: transparent; color: var(--muted); cursor: pointer; }
+  dialog.sign { width: min(720px, calc(100vw - 32px)); }
+  .sign-layout { display: grid; grid-template-columns: 170px 1fr; gap: 16px; }
+  .sign-slots { display: flex; flex-direction: column; gap: 6px; }
+  .sign-slot { display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 7px; border: 1px solid var(--border); background: var(--surface-2); cursor: pointer; min-height: 44px; }
+  .sign-slot.sel { border-color: var(--accent); background: var(--accent-soft); }
+  .sign-slot .prev { flex: 1; height: 30px; background: #fff; border-radius: 4px; display: grid; place-items: center; overflow: hidden; }
+  .sign-slot .prev svg { height: 26px; width: auto; max-width: 100%; }
+  .sign-slot .name { font-size: 11px; color: var(--muted); }
+  .sign-slot .del { border: 0; background: transparent; cursor: pointer; color: var(--muted); font-size: 16px; }
+  .sign-slot.empty { border-style: dashed; color: var(--muted); justify-content: center; font-size: 12px; }
+  .sign-pad { position: relative; height: 200px; background: #fff; border-radius: 8px; border: 1px solid var(--border); touch-action: none; }
+  .sign-pad svg { width: 100%; height: 100%; display: block; cursor: crosshair; }
+  .sign-pad .baseline { position: absolute; left: 24px; right: 24px; bottom: 46px; border-bottom: 1px solid #c9ccd6; pointer-events: none; }
+  .sign-pad .cross { position: absolute; left: 26px; bottom: 50px; color: #9aa0b0; font-size: 18px; pointer-events: none; }
+  .sign-pad .placeholder { position: absolute; inset: 0; display: grid; place-items: center; color: #9aa0b0; pointer-events: none; font-size: 13px; }
+  .sign-pad .placeholder[hidden] { display: none; }
+  .sign-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .sign-colors button { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); cursor: pointer; }
+  .sign-colors button.sel { box-shadow: 0 0 0 2px var(--accent); }
+  .sign-note { background: var(--warn-bg); color: var(--warn-text); padding: 7px 10px; border-radius: 7px; font-size: 12px; }
+  #thumbs.file-over { outline: 2px dashed var(--accent); outline-offset: -6px; border-radius: 8px; }
+
+  /* Akzentfarbe (wie FileRenamer) */
+  .accent-dot { width: 26px; height: 26px; flex: none; margin-left: 10px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); background: var(--accent); cursor: pointer; padding: 0; }
+  .accent-dot:hover { box-shadow: 0 0 0 2px var(--accent); }
+  .accent-pop { display: none; position: fixed; z-index: 60; width: 320px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+  .accent-pop.open { display: block; }
+  .accent-pop .pop-title { font-weight: 600; margin-bottom: 10px; }
+  .color-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); cursor: pointer; padding: 0; }
+  .color-btn:hover { box-shadow: 0 0 0 2px var(--accent); }
+  .accent-pop h3 { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; font-weight: 600; }
+  .accent-pop h3.with-control { display: flex; align-items: center; justify-content: space-between; }
+  .accent-pop .sat { display: inline-flex; align-items: center; gap: 4px; text-transform: none; letter-spacing: 0; font-weight: 400; color: var(--text); font-size: 12px; }
+  .accent-pop .sat input[type=range] { width: 90px; accent-color: var(--accent); }
+  .accent-pop .sat input[type=number] { width: 52px; padding: 2px 4px; }
+  .accent-pop .sat .muted { width: 38px; color: var(--muted); }
+  .acc-swatches { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; min-height: 30px; }
+  .acc-swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--border); cursor: pointer; padding: 0; }
+  .acc-swatch.on { box-shadow: 0 0 0 2px var(--accent); }
+  .acc-swatches .empty { color: var(--muted); font-size: 12px; align-self: center; }
+  .acc-wrap { position: relative; }
+  .acc-wrap .remove { display: none; position: absolute; top: -6px; right: -6px; width: 16px; height: 16px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 10px; line-height: 14px; padding: 0; cursor: pointer; }
+  .acc-wrap:hover .remove { display: block; }
+  .accent-pop .hex-row { display: flex; gap: 6px; align-items: center; }
+  .accent-pop .hex-row input { width: 100px; font-family: Consolas, Menlo, monospace; padding: 5px 8px; }
+  .accent-pop .hex-row input.invalid { border-color: var(--danger); }
+  .accent-pop .msg { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .accent-pop .msg.err { color: var(--danger); }
+  .accent-pop .foot { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; font-size: 12px; color: var(--muted); }
+  .linkbtn { background: none; border: 0; color: var(--text); cursor: pointer; padding: 0; font: inherit; text-decoration: underline; }
+  /* Zu geringer Kontrast der Akzentfarbe zum Hintergrund: Akzentflächen erhalten einen Rahmen.
+     --accent-outline ist eine sattere Variante der Akzentfarbe (z. B. Goldgelb zu Gelb), bei neutralen Farben die Textfarbe. */
+  .low-contrast .tb.active { border-color: var(--accent-outline); color: var(--text); }
+  .low-contrast .btn.primary { border-color: var(--accent-outline); }
+  .low-contrast .thumb.sel { border-color: var(--accent-outline); }
+  .low-contrast .thumb.sel .num { color: var(--text); }
+  .low-contrast .chip { box-shadow: inset 0 0 0 1px var(--accent-outline); color: var(--text); }
+  .low-contrast .accent-dot { box-shadow: 0 0 0 1px var(--accent-outline); }
+  .low-contrast select.input, .low-contrast .chip { border-color: var(--accent-outline); }
+  .low-contrast .acc-swatch.on { box-shadow: 0 0 0 2px var(--accent-outline); }
+
+  .toast { position: fixed; bottom: 40px; left: 50%; transform: translateX(-50%) translateY(20px); background: #2b2b2b; color: #f2f2f2; padding: 9px 16px; border-radius: 8px; opacity: 0; transition: .2s; pointer-events: none; z-index: 100; }
+  .toast.show { opacity: 1; transform: translateX(-50%); }
+
+  @media (max-width: 760px) {
+    main { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .tb span { display: none; } .tb { min-width: 36px; }
+    .search { min-width: 140px; }
+    .viewer { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-open" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M5 3h11l3 3v13a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z"/><path d="M7 3v5h8V3M7 21v-7h10v7"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><path d="M6 14h12v7H6z"/></symbol>
+  <symbol id="i-undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></symbol>
+  <symbol id="i-redo" viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H9a5 5 0 0 0 0 10h3"/></symbol>
+  <symbol id="i-select" viewBox="0 0 24 24"><path d="m4 4 7 17 2.5-7.5L21 11z"/></symbol>
+  <symbol id="i-comment" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 9h8M8 12h5"/></symbol>
+  <symbol id="i-marker" viewBox="0 0 24 24"><path d="m9 15 9.5-9.5a2.1 2.1 0 0 0-3-3L6 12l-1 4z"/><path d="M4 21h16" stroke-width="3" stroke="#facc15"/></symbol>
+  <symbol id="i-pen" viewBox="0 0 24 24"><path d="M3 17c3-5 5 3 8-2s4-8 7-6 1 6-2 8"/></symbol>
+  <symbol id="i-rect" viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="12" rx="1"/></symbol>
+  <symbol id="i-eraser" viewBox="0 0 24 24"><path d="M15.5 4.5 20 9a1.5 1.5 0 0 1 0 2.1L12 19H7l-3-3a1.5 1.5 0 0 1 0-2.1l9.4-9.4a1.5 1.5 0 0 1 2.1 0z"/><path d="M9 10.5 14 15.5M7 19h13"/></symbol>
+  <symbol id="i-extract" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5"/><path d="M14 3v5h5"/><path d="M14 3l5 5v4"/><path d="M15 18h6m-3-3 3 3-3 3"/></symbol>
+  <symbol id="i-rotate" viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-merge" viewBox="0 0 24 24"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9"/><path d="M14 3v5h5"/><path d="M14 3l5 5"/><path d="M9 14h7m-3-3 3 3-3 3"/></symbol>
+  <symbol id="i-text" viewBox="0 0 24 24"><path d="M5 7V4h14v3M12 4v16M9 20h6"/></symbol>
+  <symbol id="i-shapes" viewBox="0 0 24 24"><path d="M3 13h8v8H3z"/><circle cx="17" cy="7" r="4"/><path d="M13 21l8-8"/></symbol>
+  <symbol id="i-sign" viewBox="0 0 24 24"><path d="M3 16c2-5 4-6 5-3s-1 6 2 3 3-6 5-4 1 4 3 3"/><path d="M3 21h18"/></symbol>
+  <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></symbol>
+  <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+</svg>
+
+<div class="app">
+  <!-- Menüleiste -->
+  <nav class="menubar">
+    <div class="brand"><div class="logo">PU</div>PDF Utopia</div>
+    <div class="menu"><button data-i18n="menuFile"></button>
+      <div class="dropdown">
+        <button data-act="open"><svg class="i"><use href="#i-open"/></svg><span data-i18n="open"></span><span class="kbd">Ctrl+O</span></button>
+        <button data-act="saveAs"><svg class="i"><use href="#i-save"/></svg><span data-i18n="saveAs"></span><span class="kbd">Ctrl+Shift+S</span></button>
+        <div class="sep"></div>
+        <button data-act="extract"><svg class="i"><use href="#i-extract"/></svg><span data-i18n="extract"></span><span class="kbd">Ctrl+E</span></button>
+        <button data-act="merge"><svg class="i"><use href="#i-merge"/></svg><span data-i18n="merge"></span><span class="kbd">Ctrl+I</span></button>
+        <button data-act="print"><svg class="i"><use href="#i-print"/></svg><span data-i18n="print"></span><span class="kbd">Ctrl+P</span></button>
+        <div class="sep"></div>
+        <button data-act="closeDoc"><svg class="i"><use href="#i-x"/></svg><span data-i18n="closeDoc"></span><span class="kbd">Ctrl+W</span></button>
+      </div>
+    </div>
+    <div class="menu"><button data-i18n="menuEdit"></button>
+      <div class="dropdown">
+        <button data-act="undo"><svg class="i"><use href="#i-undo"/></svg><span data-i18n="undo"></span><span class="kbd">Ctrl+Z</span></button>
+        <button data-act="redo"><svg class="i"><use href="#i-redo"/></svg><span data-i18n="redo"></span><span class="kbd">Ctrl+Y</span></button>
+        <div class="sep"></div>
+        <button data-act="rotate"><svg class="i"><use href="#i-rotate"/></svg><span data-i18n="rotatePage"></span></button>
+        <button data-act="delete"><svg class="i"><use href="#i-trash"/></svg><span data-i18n="deletePage"></span><span class="kbd">Del</span></button>
+        <div class="sep"></div>
+        <button data-act="find"><svg class="i"><use href="#i-search"/></svg><span data-i18n="search"></span><span class="kbd">Ctrl+F</span></button>
+        <button data-act="settings"><svg class="i"><use href="#i-gear"/></svg><span data-i18n="settings"></span></button>
+      </div>
+    </div>
+    <div class="menu"><button data-i18n="menuView"></button>
+      <div class="dropdown">
+        <div class="label" data-i18n="theme"></div>
+        <button data-theme-opt="system"><span class="check"></span><span data-i18n="themeSystem"></span></button>
+        <button data-theme-opt="light"><span class="check"></span><span data-i18n="themeLight"></span></button>
+        <button data-theme-opt="dark"><span class="check"></span><span data-i18n="themeDark"></span></button>
+        <button data-act="accent"><span class="check"></span><span data-i18n="accentMenu"></span></button>
+        <div class="sep"></div>
+        <button data-act="zoomIn"><svg class="i"><use href="#i-plus"/></svg><span data-i18n="zoomIn"></span><span class="kbd">Ctrl++</span></button>
+        <button data-act="zoomOut"><svg class="i"><use href="#i-minus"/></svg><span data-i18n="zoomOut"></span><span class="kbd">Ctrl+-</span></button>
+      </div>
+    </div>
+    <div class="menu"><button data-i18n="menuLang"></button>
+      <div class="dropdown">
+        <button data-lang-opt="de"><span class="check"></span>Deutsch</button>
+        <button data-lang-opt="en"><span class="check"></span>English</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Werkzeugleiste -->
+  <div class="toolbar">
+    <div class="group">
+      <button class="tb" data-act="open"><svg class="i"><use href="#i-open"/></svg><span data-i18n="tOpen"></span></button>
+      <button class="tb" data-act="saveAs"><svg class="i"><use href="#i-save"/></svg><span data-i18n="tSaveAs"></span></button>
+      <button class="tb" data-act="print"><svg class="i"><use href="#i-print"/></svg><span data-i18n="tPrint"></span></button>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <button class="tb" id="btnUndo" data-act="undo"><svg class="i"><use href="#i-undo"/></svg><span data-i18n="undo"></span></button>
+      <button class="tb" id="btnRedo" data-act="redo"><svg class="i"><use href="#i-redo"/></svg><span data-i18n="redo"></span></button>
+    </div>
+    <div class="divider"></div>
+    <div class="group" id="tools">
+      <button class="tb active" data-tool="select"><svg class="i"><use href="#i-select"/></svg><span data-i18n="toolSelect"></span></button>
+      <button class="tb" data-tool="comment"><svg class="i"><use href="#i-comment"/></svg><span data-i18n="toolComment"></span></button>
+      <button class="tb" data-tool="marker"><svg class="i"><use href="#i-marker"/></svg><span data-i18n="toolMarker"></span></button>
+      <button class="tb" data-tool="freehand"><svg class="i"><use href="#i-pen"/></svg><span data-i18n="toolFreehand"></span></button>
+      <button class="tb" data-tool="rect"><svg class="i"><use href="#i-rect"/></svg><span data-i18n="toolRect"></span></button>
+      <button class="tb" data-tool="signature"><svg class="i"><use href="#i-sign"/></svg><span data-i18n="toolSignature"></span></button>
+      <button class="tb" data-tool="eraser"><svg class="i"><use href="#i-eraser"/></svg><span data-i18n="toolEraser"></span></button>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <button class="tb" data-act="extract"><svg class="i"><use href="#i-extract"/></svg><span data-i18n="tExtract"></span></button>
+      <button class="tb" data-act="merge"><svg class="i"><use href="#i-merge"/></svg><span data-i18n="tMerge"></span></button>
+      <button class="tb" data-act="rotate"><svg class="i"><use href="#i-rotate"/></svg><span data-i18n="tRotate"></span></button>
+      <button class="tb" data-act="delete"><svg class="i"><use href="#i-trash"/></svg><span data-i18n="tDelete"></span></button>
+    </div>
+    <div class="divider"></div>
+    <div class="group">
+      <button class="tb" data-act="zoomOut"><svg class="i"><use href="#i-minus"/></svg><span data-i18n="zoomOut"></span></button>
+      <span class="zoom-value" id="tbZoom"></span>
+      <button class="tb" data-act="zoomIn"><svg class="i"><use href="#i-plus"/></svg><span data-i18n="zoomIn"></span></button>
+    </div>
+    <div class="search">
+      <svg class="i"><use href="#i-search"/></svg>
+      <input id="search" data-i18n-ph="searchPh">
+      <span class="hits" id="hits"></span>
+    </div>
+    <button class="accent-dot" id="accentDot" data-act="accent" data-i18n-title="accent"></button>
+  </div>
+
+  <!-- Werkzeugoptionen -->
+  <div class="options" id="options"></div>
+
+  <!-- Dokument-Tabs -->
+  <div class="tabs">
+    <button class="tab active"><span>musterdokument.pdf</span><svg class="i x" style="width:14px;height:14px"><use href="#i-x"/></svg></button>
+    <button class="tab" data-act="pwd"><svg class="i lock"><use href="#i-lock"/></svg><span>vertrag-2026.pdf</span><svg class="i x" style="width:14px;height:14px"><use href="#i-x"/></svg></button>
+    <button class="tab" data-act="open" title="+"><svg class="i" style="width:14px;height:14px"><use href="#i-plus"/></svg></button>
+  </div>
+
+  <main>
+    <aside class="sidebar">
+      <div class="side-tabs">
+        <button class="on" data-side="pages"><span data-i18n="pages"></span><span class="count" id="pageCount"></span></button>
+        <button data-side="ann"><span data-i18n="annTab"></span><span class="count" id="annCount"></span></button>
+      </div>
+      <div class="thumbs" id="thumbs"></div>
+      <div class="ann-panel" id="annPanel" hidden>
+        <div class="ann-filter">
+          <select class="input" id="annFilter">
+            <option value="all" data-i18n="fAll"></option>
+            <option value="comment" data-i18n="fComment"></option>
+            <option value="marker" data-i18n="fMarker"></option>
+            <option value="freehand" data-i18n="fFreehand"></option>
+            <option value="shape" data-i18n="fShape"></option>
+            <option value="text" data-i18n="fText"></option>
+          </select>
+        </div>
+        <div class="ann-list" id="annList"></div>
+      </div>
+    </aside>
+    <section class="viewer" id="viewer">
+      <div class="page-holder" id="holder">
+        <div class="page" id="page">
+          <div class="page-body" id="pageBody"></div>
+          <div class="page-ext" id="pageExt" hidden></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="statusbar">
+    <span id="stPage"></span>
+    <span id="stUndo"></span>
+    <span>musterdokument.pdf · 2,4 MB</span>
+    <div class="zoom">
+      <button data-act="zoomOut"><svg class="i"><use href="#i-minus"/></svg></button>
+      <span id="stZoom" style="min-width:42px;text-align:center"></span>
+      <button data-act="zoomIn"><svg class="i"><use href="#i-plus"/></svg></button>
+    </div>
+  </footer>
+</div>
+
+<!-- Dialog: Seiten extrahieren -->
+<dialog id="dlgExtract">
+  <header data-i18n="extractTitle"></header>
+  <div class="body">
+    <div class="field">
+      <label for="extractInput" data-i18n="extractLabel"></label>
+      <input class="input" id="extractInput" value="2,4,8,13-15">
+      <span class="help" data-i18n="extractHelp"></span>
+    </div>
+    <div class="field">
+      <span data-i18n="extractResult"></span>
+      <div class="chips" id="extractChips"></div>
+      <div class="hints" id="extractHints"></div>
+    </div>
+  </div>
+  <footer>
+    <button class="btn" data-close data-i18n="cancel"></button>
+    <button class="btn primary" id="extractGo" data-i18n="extractSave"></button>
+  </footer>
+</dialog>
+
+<!-- Dialog: Seiten einfügen (Mockup v3) -->
+<dialog id="dlgMerge" class="wide">
+  <header data-i18n="mergeTitle"></header>
+  <div class="body">
+    <div class="field">
+      <label for="mergeSource" data-i18n="mergeSource"></label>
+      <select class="input" id="mergeSource"></select>
+      <div class="src-info" id="mergeSrcInfo"></div>
+    </div>
+    <div class="field" id="mergePwdField" hidden>
+      <label for="mergePwd" data-i18n="mergePwd"></label>
+      <input class="input" id="mergePwd" type="password" data-i18n-ph="mergePwdPh">
+      <span class="help" data-i18n="mergePwdHelp"></span>
+    </div>
+    <div id="mergePagesPart">
+      <div class="field">
+        <label for="mergeInput" data-i18n="mergePages"></label>
+        <input class="input" id="mergeInput" data-i18n-ph="mergeAll">
+        <span class="help" data-i18n="mergeHelp"></span>
+        <div class="src-grid" id="mergeGrid"></div>
+        <div class="hints" id="mergeHints"></div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label for="mergePos" data-i18n="mergePos"></label>
+        <div class="pos-row">
+          <select class="input" id="mergePos">
+            <option value="after" data-i18n="posAfterCurrent"></option>
+            <option value="start" data-i18n="posStart"></option>
+            <option value="end" data-i18n="posEnd"></option>
+            <option value="page" data-i18n="posAfterPage"></option>
+          </select>
+          <input class="input" id="mergePosPage" type="number" min="1" hidden>
+        </div>
+        <span class="help" id="mergePosHelp"></span>
+      </div>
+    </div>
+  </div>
+  <footer>
+    <button class="btn" data-close data-i18n="cancel"></button>
+    <button class="btn primary" id="mergeGo"></button>
+  </footer>
+</dialog>
+
+<!-- Dialog: Einstellungen -->
+<!-- Dialog: Unterschriften verwalten (Mockup v5) -->
+<dialog id="dlgSign" class="sign">
+  <header data-i18n="signTitle"></header>
+  <div class="body">
+    <div class="sign-layout">
+      <div>
+        <div class="sign-slots" id="signSlots"></div>
+      </div>
+      <div class="field">
+        <div class="sign-pad" id="signPad">
+          <div class="placeholder" id="signPlaceholder" data-i18n="signHere"></div>
+          <div class="baseline"></div><div class="cross">×</div>
+          <svg id="signSvg" viewBox="0 0 480 200"></svg>
+        </div>
+        <div class="sign-row">
+          <label><span data-i18n="signName"></span> <input class="input" id="signName" style="width:150px"></label>
+          <span class="sign-colors" id="signColors"></span>
+          <label><input type="checkbox" id="signPressure" checked> <span data-i18n="pressure"></span></label>
+          <button class="btn" id="signClear" data-i18n="signClear" style="margin-left:auto"></button>
+        </div>
+        <div class="sign-note" data-i18n="signNote"></div>
+      </div>
+    </div>
+  </div>
+  <footer>
+    <button class="btn" data-close data-i18n="close"></button>
+    <button class="btn primary" id="signSave" data-i18n="signSave"></button>
+  </footer>
+</dialog>
+
+<dialog id="dlgSettings">
+  <header data-i18n="settingsTitle"></header>
+  <div class="body">
+    <div class="row">
+      <div class="field"><label data-i18n="theme"></label>
+        <select class="input" id="setTheme"><option value="system" data-i18n="themeSystem"></option><option value="light" data-i18n="themeLight"></option><option value="dark" data-i18n="themeDark"></option></select></div>
+      <div class="field"><label data-i18n="menuLang"></label>
+        <select class="input" id="setLang"><option value="de">Deutsch</option><option value="en">English</option></select></div>
+    </div>
+    <div class="field">
+      <label for="setUndo" data-i18n="undoSteps"></label>
+      <input class="input" id="setUndo" type="number" min="1" max="500" value="50">
+      <span class="help" data-i18n="undoHelp"></span>
+    </div>
+  </div>
+  <footer><button class="btn primary" data-close data-i18n="ok"></button></footer>
+</dialog>
+
+<!-- Dialog: Passwort -->
+<dialog id="dlgPwd">
+  <header data-i18n="pwdTitle"></header>
+  <div class="body">
+    <span class="help" data-i18n="pwdHelp"></span>
+    <input class="input" type="password" data-i18n-ph="pwdPh">
+  </div>
+  <footer><button class="btn" data-close data-i18n="cancel"></button><button class="btn primary" data-close data-i18n="unlock"></button></footer>
+</dialog>
+
+<!-- Akzentfarbe (Aufbau wie FileRenamer) -->
+<div class="accent-pop" id="accentPop" role="dialog">
+  <div class="pop-title" id="pickerTitle"></div>
+  <h3 class="with-control"><span data-i18n="accPastel"></span>
+    <span class="sat" data-i18n-title="accSatTip">
+      <input type="range" id="satRange" min="10" max="90" value="30"><input class="input" type="number" id="satNumber" min="10" max="90" value="30">%
+      <span class="muted" id="satByte"></span>
+    </span>
+  </h3>
+  <div class="acc-swatches" data-group="pastel"></div>
+  <h3 data-i18n="accStrong"></h3>
+  <div class="acc-swatches" data-group="strong"></div>
+  <h3 data-i18n="accNeutral"></h3>
+  <div class="acc-swatches" data-group="neutral"></div>
+  <h3 data-i18n="accCustom"></h3>
+  <div class="acc-swatches" id="customSwatches"></div>
+  <h3 data-i18n="accOwn"></h3>
+  <div class="hex-row"><input class="input" type="text" id="hexInput" maxlength="7" placeholder="#25A0C3"><button class="btn" id="hexApply" data-i18n="accApply"></button></div>
+  <div class="msg" id="hexMsg"></div>
+  <div class="foot"><button class="linkbtn" id="accentReset" data-i18n="accDefault"></button><span data-i18n="accSaved"></span></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const I18N = {
+  de: {
+    menuFile: "Datei", menuEdit: "Bearbeiten", menuView: "Ansicht", menuLang: "Sprache",
+    open: "Öffnen…", saveAs: "Speichern unter…", extract: "Seiten extrahieren…", print: "Drucken…", closeDoc: "Dokument schließen",
+    undo: "Rückgängig", redo: "Wiederholen", rotatePage: "Seite drehen", deletePage: "Seite löschen",
+    search: "Suchen", settings: "Einstellungen…",
+    theme: "Design", themeSystem: "System", themeLight: "Hell", themeDark: "Dunkel", zoomIn: "Vergrößern", zoomOut: "Verkleinern",
+    tOpen: "Öffnen", tSaveAs: "Speichern unter", tPrint: "Drucken", tExtract: "Extrahieren", tRotate: "Drehen", tDelete: "Löschen",
+    removeComment: "Kommentar entfernen",
+    toolSelect: "Auswählen", toolComment: "Kommentar", toolMarker: "Marker", toolFreehand: "Freihand", toolRect: "Rechteck",
+    toolEraser: "Radierer", eraserSize: "Größe",
+    hintEraser: "Über Marker, Freihand oder Rechtecke streichen, um sie zu entfernen – auch mit dem Radierer-Ende des Stifts",
+    searchPh: "Im Dokument suchen…", hits: "{n} Treffer",
+    pages: "Seiten", page: "Seite", color: "Farbe", width: "Strichstärke", pressure: "Druckempfindlich (Stylus)", smoothing: "Glättung",
+    accent: "Akzentfarbe", accentMenu: "Akzentfarbe…", accPastel: "Pastell", accStrong: "Kräftig", accNeutral: "Neutral",
+    accCustom: "Benutzerdefiniert", accOwn: "Eigene Farbe", accApply: "Übernehmen", accDefault: "Standard", accSaved: "wird gespeichert",
+    accHexHint: "Hex-Code im Format #25A0C3", accHexInvalid: "Ungültig – bitte im Format #25A0C3 eingeben.",
+    accNoCustom: "Noch keine – eigene Farbe unten per Hex-Code übernehmen.", accRemove: "Entfernen",
+    accSatTip: "Sättigung der Pastellfarben nach HSV (0 % = 0, 100 % = 255)",
+    noPressure: "Der Stift meldet hier keinen Andruck (Wert 0) – Linie bleibt gleich dick",
+    hintSelect: "Seiten links per Drag & Drop umsortieren", hintComment: "Absatz anklicken, um einen Kommentar hinzuzufügen",
+    hintMarker: "Mit Maus oder Stift über den Text ziehen", hintFreehand: "Mit Maus oder Stift auf der Seite zeichnen", hintRect: "Rechteck aufziehen",
+    stPage: "Seite {a} von {b}", stUndo: "Rückgängig: {a} / {b} Schritte",
+    footnotes: "Kommentare – Seitenverlängerung", newComment: "Neuer Kommentar – Text hier eingeben",
+    demoComment: "Zahlen bitte mit der Quartalsauswertung abgleichen.",
+    extractTitle: "Seiten extrahieren", extractLabel: "Seiten", extractHelp: "Einzeln: 2 · Bereich: 4-8 · Auswahl: 2,4,8,13-15",
+    extractResult: "Vorschau der neuen Datei", extractSave: "Extrahieren & speichern unter…", cancel: "Abbrechen", ok: "OK",
+    extractEmpty: "Keine gültigen Seiten", extractCount: "{n} Seiten",
+    hSwap: "„{t}“: Bereich umgekehrt → als {a}-{b} interpretiert",
+    hClamp: "„{t}“: Seite {p} existiert nicht → höchste Seite {m} verwendet",
+    hDup: "Seite {p} mehrfach angegeben → wird nur einmal extrahiert",
+    hInvalid: "„{t}“ ist ungültig und wird ignoriert",
+    settingsTitle: "Einstellungen", undoSteps: "Anzahl Rückgängig-Schritte", undoHelp: "Zwischen 1 und 500. Ältere Schritte werden verworfen.",
+    pwdTitle: "Passwortgeschütztes Dokument", pwdHelp: "„vertrag-2026.pdf“ ist geschützt. Bitte Passwort eingeben.", pwdPh: "Passwort", unlock: "Entsperren",
+    toastSave: "Mockup: „Speichern unter“-Dialog des Systems", toastOpen: "Mockup: Datei-öffnen-Dialog des Systems",
+    toastPrint: "Mockup: Druckdialog des Systems", toastExtract: "Mockup: {n} Seiten würden als neue Datei gespeichert",
+    merge: "Seiten einfügen…", tMerge: "Einfügen", mergeTitle: "Seiten aus anderer PDF-Datei einfügen", mergeSource: "Quelle",
+    mergeChoose: "Datei wählen…", mergeOpenTab: "Geöffnetes Dokument", mergeSrcCount: "{n} Seiten",
+    mergePwd: "Passwort der Quelldatei", mergePwdPh: "Passwort", mergePwdHelp: "Die Datei ist geschützt. Das Passwort wird nur zum Lesen gebraucht; gespeichert wird mit den Einstellungen des aktuellen Dokuments.",
+    mergeWrongPwd: "Falsches Passwort", mergePages: "Seiten der Quelle", mergeAll: "leer = alle Seiten",
+    mergeHelp: "Wie beim Extrahieren: 2 · 4-8 · 2,4,8,13-15 – oder Seiten unten anklicken",
+    mergePos: "Einfügen", posAfterCurrent: "nach der aktuellen Seite", posStart: "am Anfang", posEnd: "am Ende", posAfterPage: "nach Seite …",
+    mergePosHint: "Neue Seiten {a}–{b} von {n}", mergeGo: "{n} Seiten einfügen", mergeGo1: "1 Seite einfügen", mergeNone: "Keine Seiten gewählt",
+    toastMerge: "{n} Seiten aus {f} eingefügt – Rückgängig mit Strg+Z",
+    toolSignature: "Unterschrift", hintSignature: "Unterschrift wählen, auf die Seite klicken oder Größe aufziehen · gesetzte Unterschrift ziehen zum Verschieben",
+    signTitle: "Unterschriften", signHere: "Hier mit Stift oder Maus unterschreiben", signName: "Name", signClear: "Feld leeren", signSave: "Speichern",
+    close: "Schließen", signManage: "Verwalten…", signNew: "+ Neue", signEmpty: "Freier Platz", signCount: "{n} von 5",
+    signNone: "Noch keine Unterschrift – „Verwalten…“ öffnet das Unterschriftenfeld.", signDefaultName: "Unterschrift {n}",
+    signNote: "Sichtbare Unterschrift wie auf Papier – keine digitale (kryptografische) Signatur. Sie belegt nicht, dass das Dokument danach unverändert ist.",
+    signFull: "Alle fünf Plätze belegt – zuerst eine Unterschrift löschen.", kSignature: "Unterschrift",
+    annTab: "Anmerkungen", fAll: "Alle Arten", fComment: "Kommentare", fMarker: "Markierungen", fFreehand: "Freihand", fShape: "Formen", fText: "Text",
+    kMarker: "Markierung", kFreehand: "Freihand", kRect: "Rechteck", kEllipse: "Ellipse", kArrow: "Pfeil", kLine: "Linie", kText: "Text",
+    annNone: "Noch keine Anmerkungen. Kommentare, Markierungen, Zeichnungen, Formen und Texte erscheinen hier.", annNoneFilter: "Keine Anmerkungen dieser Art.", srcPage: "S.", dropHint: "PDF hier ablegen, um Seiten einzufügen",
+    toastClose: "Mockup: Dokument würde geschlossen (mit Rückfrage bei Änderungen)"
+  },
+  en: {
+    menuFile: "File", menuEdit: "Edit", menuView: "View", menuLang: "Language",
+    open: "Open…", saveAs: "Save as…", extract: "Extract pages…", print: "Print…", closeDoc: "Close document",
+    undo: "Undo", redo: "Redo", rotatePage: "Rotate page", deletePage: "Delete page",
+    search: "Find", settings: "Settings…",
+    theme: "Theme", themeSystem: "System", themeLight: "Light", themeDark: "Dark", zoomIn: "Zoom in", zoomOut: "Zoom out",
+    tOpen: "Open", tSaveAs: "Save as", tPrint: "Print", tExtract: "Extract", tRotate: "Rotate", tDelete: "Delete",
+    removeComment: "Remove comment",
+    toolSelect: "Select", toolComment: "Comment", toolMarker: "Highlighter", toolFreehand: "Freehand", toolRect: "Rectangle",
+    toolEraser: "Eraser", eraserSize: "Size",
+    hintEraser: "Stroke over highlights, freehand lines or rectangles to remove them – also with the stylus eraser end",
+    searchPh: "Search document…", hits: "{n} hits",
+    pages: "Pages", page: "Page", color: "Color", width: "Stroke width", pressure: "Pressure-sensitive (stylus)", smoothing: "Smoothing",
+    accent: "Accent color", accentMenu: "Accent color…", accPastel: "Pastel", accStrong: "Strong", accNeutral: "Neutral",
+    accCustom: "Custom", accOwn: "Own color", accApply: "Apply", accDefault: "Default", accSaved: "is saved",
+    accHexHint: "Hex code in the format #25A0C3", accHexInvalid: "Invalid – please use the format #25A0C3.",
+    accNoCustom: "None yet – add your own color below via hex code.", accRemove: "Remove",
+    accSatTip: "Saturation of the pastel colors (HSV, 0 % = 0, 100 % = 255)",
+    noPressure: "The stylus reports no pressure here (value 0) – line width stays constant",
+    hintSelect: "Drag & drop pages on the left to reorder", hintComment: "Click a paragraph to add a comment",
+    hintMarker: "Drag across the text with mouse or stylus", hintFreehand: "Draw on the page with mouse or stylus", hintRect: "Drag to draw a rectangle",
+    stPage: "Page {a} of {b}", stUndo: "Undo: {a} / {b} steps",
+    footnotes: "Comments – page extension", newComment: "New comment – type here",
+    demoComment: "Please verify these figures against the quarterly report.",
+    extractTitle: "Extract pages", extractLabel: "Pages", extractHelp: "Single: 2 · Range: 4-8 · Selection: 2,4,8,13-15",
+    extractResult: "Preview of the new file", extractSave: "Extract & save as…", cancel: "Cancel", ok: "OK",
+    extractEmpty: "No valid pages", extractCount: "{n} pages",
+    hSwap: "“{t}”: reversed range → interpreted as {a}-{b}",
+    hClamp: "“{t}”: page {p} does not exist → last page {m} used",
+    hDup: "Page {p} given more than once → extracted only once",
+    hInvalid: "“{t}” is invalid and will be ignored",
+    settingsTitle: "Settings", undoSteps: "Number of undo steps", undoHelp: "Between 1 and 500. Older steps are discarded.",
+    pwdTitle: "Password-protected document", pwdHelp: "“vertrag-2026.pdf” is protected. Please enter the password.", pwdPh: "Password", unlock: "Unlock",
+    toastSave: "Mockup: system “Save as” dialog", toastOpen: "Mockup: system open-file dialog",
+    toastPrint: "Mockup: system print dialog", toastExtract: "Mockup: {n} pages would be saved as a new file",
+    merge: "Insert pages…", tMerge: "Insert", mergeTitle: "Insert pages from another PDF file", mergeSource: "Source",
+    mergeChoose: "Choose file…", mergeOpenTab: "Open document", mergeSrcCount: "{n} pages",
+    mergePwd: "Password of the source file", mergePwdPh: "Password", mergePwdHelp: "The file is protected. The password is only needed for reading; saving uses the settings of the current document.",
+    mergeWrongPwd: "Wrong password", mergePages: "Source pages", mergeAll: "empty = all pages",
+    mergeHelp: "Same as extracting: 2 · 4-8 · 2,4,8,13-15 – or click pages below",
+    mergePos: "Insert", posAfterCurrent: "after the current page", posStart: "at the beginning", posEnd: "at the end", posAfterPage: "after page …",
+    mergePosHint: "New pages {a}–{b} of {n}", mergeGo: "Insert {n} pages", mergeGo1: "Insert 1 page", mergeNone: "No pages selected",
+    toastMerge: "{n} pages inserted from {f} – undo with Ctrl+Z",
+    toolSignature: "Signature", hintSignature: "Pick a signature, click on the page or drag a size · drag a placed signature to move it",
+    signTitle: "Signatures", signHere: "Sign here with pen or mouse", signName: "Name", signClear: "Clear", signSave: "Save",
+    close: "Close", signManage: "Manage…", signNew: "+ New", signEmpty: "Free slot", signCount: "{n} of 5",
+    signNone: "No signature yet – “Manage…” opens the signing field.", signDefaultName: "Signature {n}",
+    signNote: "A visible signature like on paper – not a digital (cryptographic) signature. It does not prove that the document stays unchanged afterwards.",
+    signFull: "All five slots are used – delete a signature first.", kSignature: "Signature",
+    annTab: "Annotations", fAll: "All kinds", fComment: "Comments", fMarker: "Highlights", fFreehand: "Freehand", fShape: "Shapes", fText: "Text",
+    kMarker: "Highlight", kFreehand: "Freehand", kRect: "Rectangle", kEllipse: "Ellipse", kArrow: "Arrow", kLine: "Line", kText: "Text",
+    annNone: "No annotations yet. Comments, highlights, drawings, shapes and texts appear here.", annNoneFilter: "No annotations of this kind.", srcPage: "p.", dropHint: "Drop a PDF here to insert pages",
+    toastClose: "Mockup: document would close (asking to save changes)"
+  }
+};
+
+const MARKER_COLORS = ["#fde047", "#86efac", "#f9a8d4", "#7dd3fc", "#fdba74"];
+const PEN_COLORS = ["#111827", "#dc2626", "#2563eb", "#16a34a", "#9333ea", "#ea580c"];
+const PARAGRAPHS = [
+  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante venenatis dapibus posuere velit aliquet. Cras mattis consectetur purus sit amet fermentum.",
+  "Donec ullamcorper nulla non metus auctor fringilla. Maecenas faucibus mollis interdum. Vestibulum id ligula porta felis euismod semper. Nullam quis risus eget urna mollis ornare vel eu leo.",
+  "Aenean lacinia bibendum nulla sed consectetur. Etiam porta sem malesuada magna mollis euismod. Curabitur blandit tempus porttitor. Praesent commodo cursus magna, vel scelerisque nisl consectetur et.",
+  "Sed posuere consectetur est at lobortis. Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh."
+];
+
+const state = {
+  lang: "de", theme: "system", tool: "select", zoom: 1, undoLimit: 50, pressure: false, noPressureHint: false, smoothing: 50,
+  colors: { marker: MARKER_COLORS[0], freehand: "#C93434", rect: "#2F6FDF", comment: "#4F46E5" },
+  widths: { marker: 18, freehand: 3, rect: 2 }, eraserSize: 12,
+  pages: Array.from({ length: 14 }, (_, i) => ({ id: i + 1, rot: 0 })),
+  current: 0,
+  ann: {},            // pageId -> { shapes: [], comments: [] }
+  undo: [], redo: []
+};
+
+const $ = s => document.querySelector(s);
+const t = (k, vars = {}) => (I18N[state.lang][k] ?? k).replace(/\{(\w+)\}/g, (_, v) => vars[v]);
+const annOf = id => state.ann[id] ??= { shapes: [], comments: [] };
+const currentPage = () => state.pages[state.current];
+
+// Demo-Inhalt auf Seite 1
+annOf(1).comments.push({ para: 1, color: "#4F46E5", text: null, demo: true });
+annOf(1).shapes.push(
+  { type: "marker", color: MARKER_COLORS[0], width: 18, d: "M68 168 L522 168" },
+  { type: "rect", color: PEN_COLORS[2], width: 2, x: 62, y: 328, w: 476, h: 166 },
+  { type: "freehand", color: PEN_COLORS[1], width: 3, d: "M440 720 C460 700 480 740 500 715 S530 700 540 725" }
+);
+// Weitere Beispiele für die Übersicht (Mockup v4); Markierungen tragen den markierten Text der Seite
+annOf(1).shapes[0].text = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer posuere erat a ante";
+annOf(3).comments.push({ para: 2, color: "#16a34a", text: "Quelle für diese Aussage ergänzen?" });
+annOf(3).shapes.push({ type: "arrow", color: PEN_COLORS[2], width: 3, x1: 420, y1: 700, x2: 500, y2: 610 });
+annOf(4).shapes.push({ type: "text", color: "#1F2328", x: 70, y: 720, size: 14, text: "Bitte bis Freitag freigeben – danke!" });
+annOf(4).shapes.push({ type: "marker", color: MARKER_COLORS[1], width: 18, d: "M68 452 L380 452", text: "Aenean lacinia bibendum nulla sed consectetur" });
+annOf(7).shapes.push({ type: "ellipse", color: PEN_COLORS[1], width: 2, cx: 300, cy: 395, rx: 230, ry: 60 });
+
+/* ---------- Undo/Redo ---------- */
+function execute(cmd) {
+  cmd.do(); state.undo.push(cmd);
+  if (state.undo.length > state.undoLimit) state.undo.shift();
+  state.redo = []; render();
+}
+function undo() { const c = state.undo.pop(); if (!c) return; c.undo(); state.redo.push(c); render(); }
+function redo() { const c = state.redo.pop(); if (!c) return; c.do(); state.undo.push(c); render(); }
+
+/* ---------- Rendering ---------- */
+function applyI18n() {
+  document.documentElement.lang = state.lang;
+  document.querySelectorAll("[data-i18n]").forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll("[data-i18n-ph]").forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  document.querySelectorAll("[data-i18n-title]").forEach(el => el.title = t(el.dataset.i18nTitle));
+  document.querySelectorAll("[data-lang-opt]").forEach(b => b.querySelector(".check").textContent = b.dataset.langOpt === state.lang ? "✓" : "");
+  $("#setLang").value = state.lang;
+}
+function applyTheme() {
+  if (state.theme === "system") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.dataset.theme = state.theme;
+  document.querySelectorAll("[data-theme-opt]").forEach(b => b.querySelector(".check").textContent = b.dataset.themeOpt === state.theme ? "✓" : "");
+  $("#setTheme").value = state.theme;
+  updateAccentOutline();
+}
+
+/* ---------- Akzentfarbe (Paletten und Regeln wie FileRenamer) ---------- */
+const DEFAULT_ACCENT = "#4F46E5";
+const SAT_MIN = 10, SAT_MAX = 90, SAT_DEFAULT = 30, MAX_CUSTOM = 10, MIN_CONTRAST = 1.6;
+const PASTEL_BASE = [["#A7C7E7", "Pastellblau", "Pastel blue"], ["#B5EAD7", "Mint", "Mint"], ["#FFE599", "Pastellgelb", "Pastel yellow"], ["#FFDAC1", "Pfirsich", "Peach"],
+  ["#E2B6CF", "Rosé", "Rose"], ["#C7CEEA", "Lavendel", "Lavender"]];
+const STRONG = [[DEFAULT_ACCENT, "Indigo", "Indigo"], ["#2F6FDF", "Blau", "Blue"], ["#1F9D55", "Grün", "Green"],
+  ["#FACC15", "Gelb", "Yellow"], ["#E8740C", "Orange", "Orange"], ["#C93434", "Rot", "Red"], ["#8B4FD6", "Violett", "Violet"]];
+const NEUTRAL = [["#0D0D0D", "95 % Schwarz", "95 % black"], ["#F2F2F2", "95 % Weiß", "95 % white"]];
+
+// Einstellungen: in der App die Einstellungsdatei, im Mockup der Browser-Speicher
+const accentStore = {
+  load() { try { return JSON.parse(localStorage.getItem("pdfu-mockup-accent")) ?? {}; } catch { return {}; } },
+  save(v) { try { localStorage.setItem("pdfu-mockup-accent", JSON.stringify(v)); } catch { /* ohne Speicher weiter */ } }
+};
+const clampSat = v => Math.max(SAT_MIN, Math.min(SAT_MAX, Math.round(Number(v) || SAT_DEFAULT)));
+const savedAccent = accentStore.load();
+const accent = {
+  hex: /^#[0-9A-F]{6}$/.test(savedAccent.hex ?? "") ? savedAccent.hex : null,   // null = Standard des Themes
+  saturation: clampSat(savedAccent.saturation ?? SAT_DEFAULT),
+  custom: Array.isArray(savedAccent.custom) ? savedAccent.custom.slice(-MAX_CUSTOM) : []
+};
+const persistAccent = () => accentStore.save(accent);
+
+const rgbOf = hex => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+const toHexColor = rgb => "#" + rgb.map(c => Math.round(Math.max(0, Math.min(255, c))).toString(16).padStart(2, "0")).join("").toUpperCase();
+// HSV-Sättigung S = (max − min) / max setzen; Farbton und Hellwert V bleiben
+function withHsvSaturation(hex, percent) {
+  const rgb = rgbOf(hex), max = Math.max(...rgb), min = Math.min(...rgb);
+  const newMin = max * (1 - percent / 100);
+  return toHexColor(rgb.map(c => max === min ? max : newMin + (c - min) / (max - min) * (max - newMin)));
+}
+const relativeLuminance = hex => rgbOf(hex).map(c => c / 255).map(c => c <= .03928 ? c / 12.92 : ((c + .055) / 1.055) ** 2.4)
+  .reduce((sum, c, i) => sum + c * [.2126, .7152, .0722][i], 0);
+const contrastRatio = (a, b) => { const [x, y] = [relativeLuminance(a), relativeLuminance(b)].sort((m, n) => n - m); return (x + .05) / (y + .05); };
+const textOn = hex => relativeLuminance(hex) > .45 ? "#1D2330" : "#F4F7FC";
+const pastelColors = () => PASTEL_BASE.map(([hex, de, en]) => [withHsvSaturation(hex, accent.saturation), de, en]);
+const colorName = (de, en) => state.lang === "de" ? de : en;
+const isDarkTheme = () => state.theme === "dark" || (state.theme === "system" && matchMedia("(prefers-color-scheme: dark)").matches);
+
+const OUTLINE_CONTRAST = 2;          // Rahmen deutlich sichtbar, aber farblich nah an der Akzentfarbe
+const NEUTRAL_SATURATION = 0.15;     // darunter gilt eine Farbe als neutral (Grau, Weiß, Schwarz)
+const hsvSaturation = hex => { const rgb = rgbOf(hex), max = Math.max(...rgb); return max === 0 ? 0 : (max - Math.min(...rgb)) / max; };
+const mixColor = (hex, targetHex, amount) => { const a = rgbOf(hex), b = rgbOf(targetHex); return toHexColor(a.map((c, i) => c + (b[i] - c) * amount)); };
+
+// Sattere Variante der Akzentfarbe für Rahmen: schrittweise zu Schwarz (helles Theme) bzw. Weiß (Dark Theme) mischen,
+// bis der Rahmen sich vom Hintergrund abhebt. Neutrale Farben erhalten die Textfarbe.
+function outlineColor(accentHex, surfaceHex, dark) {
+  if (hsvSaturation(accentHex) < NEUTRAL_SATURATION) return null;
+  for (let amount = 0.05; amount <= 1; amount += 0.05) {
+    const candidate = mixColor(accentHex, dark ? "#FFFFFF" : "#000000", amount);
+    if (contrastRatio(candidate, surfaceHex) >= OUTLINE_CONTRAST) return candidate;
+  }
+  return null;
+}
+
+function updateAccentOutline() {
+  const root = document.documentElement;
+  const current = (accent.hex ?? getComputedStyle(root).getPropertyValue("--accent").trim()).toUpperCase();
+  const surface = getComputedStyle(root).getPropertyValue("--surface").trim();
+  const lowContrast = contrastRatio(current, surface) < MIN_CONTRAST;
+  root.classList.toggle("low-contrast", lowContrast);
+  const outline = lowContrast ? outlineColor(current, surface, isDarkTheme()) : null;
+  if (outline) root.style.setProperty("--accent-outline", outline); else root.style.setProperty("--accent-outline", "var(--text)");
+}
+
+/* Gemeinsame Farbwahl: Akzentfarbe sowie Strichfarbe von Freihand und Rechteck.
+   Sättigung und benutzerdefinierte Farben gelten für alle Ziele gemeinsam. */
+const TOOL_DEFAULT_COLORS = { freehand: "#C93434", rect: "#2F6FDF", comment: DEFAULT_ACCENT };
+const TOOL_LABEL_KEYS = { freehand: "toolFreehand", rect: "toolRect", comment: "toolComment" };
+let pickerTarget = "accent";
+const pickerDefault = () => pickerTarget === "accent" ? DEFAULT_ACCENT : TOOL_DEFAULT_COLORS[pickerTarget];
+const pickerCurrent = () => pickerTarget === "accent" ? accent.hex ?? DEFAULT_ACCENT : state.colors[pickerTarget];
+function applyPickerColor(hex) {
+  if (pickerTarget === "accent") { setAccent(hex); return; }
+  state.colors[pickerTarget] = hex ?? pickerDefault();
+  $("#hexInput").classList.remove("invalid");
+  renderOptions(); renderAccent(); persistAccent();
+}
+
+function renderAccent() {
+  const defaultTag = hex => hex === pickerDefault() ? ` (${t("accDefault")})` : "";
+  const swatch = ([hex, de, en]) => `<button class="acc-swatch" data-hex="${hex}" title="${colorName(de, en)}${defaultTag(hex)} ${hex}" style="background:${hex}"></button>`;
+  $("#pickerTitle").textContent = pickerTarget === "accent" ? t("accent") : `${t("color")} – ${t(TOOL_LABEL_KEYS[pickerTarget])}`;
+  const groups = { pastel: pastelColors(), strong: STRONG, neutral: NEUTRAL };
+  document.querySelectorAll(".acc-swatches[data-group]").forEach(box => box.innerHTML = groups[box.dataset.group].map(swatch).join(""));
+  $("#customSwatches").innerHTML = accent.custom.length === 0
+    ? `<span class="empty">${t("accNoCustom")}</span>`
+    : accent.custom.map(hex => `<span class="acc-wrap">${swatch([hex, t("accCustom"), t("accCustom")])}<button class="remove" data-remove="${hex}" title="${t("accRemove")}">✕</button></span>`).join("");
+  const current = pickerCurrent();
+  document.querySelectorAll(".acc-swatch").forEach(s => s.classList.toggle("on", s.dataset.hex === current));
+  $("#satRange").value = $("#satNumber").value = accent.saturation;
+  $("#satByte").textContent = `≙ ${Math.round(accent.saturation * 255 / 100)}`;
+  if (!$("#hexInput").classList.contains("invalid")) { $("#hexInput").value = current; $("#hexMsg").className = "msg"; $("#hexMsg").textContent = t("accHexHint"); }
+}
+
+function setAccent(hex) {
+  accent.hex = hex;
+  const root = document.documentElement;
+  if (hex) { root.style.setProperty("--accent", hex); root.style.setProperty("--accent-text", textOn(hex)); }
+  else { root.style.removeProperty("--accent"); root.style.removeProperty("--accent-text"); }
+  $("#hexInput").classList.remove("invalid");
+  updateAccentOutline(); renderAccent(); persistAccent();
+}
+
+function setSaturation(value) {
+  // Eine gewählte Pastellfarbe passt sich der neuen Sättigung sofort an
+  const pastelIndex = pastelColors().findIndex(([hex]) => hex === pickerCurrent());
+  accent.saturation = clampSat(value);
+  if (pastelIndex >= 0) applyPickerColor(pastelColors()[pastelIndex][0]); else { renderAccent(); persistAccent(); }
+}
+
+// Eigene Farbe: in „Benutzerdefiniert“ aufnehmen, sofern neu; höchstens 10, die älteste fällt weg
+function applyHex() {
+  const value = $("#hexInput").value.trim().toUpperCase();
+  if (!/^#[0-9A-F]{6}$/.test(value)) {
+    $("#hexInput").classList.add("invalid"); $("#hexMsg").className = "msg err"; $("#hexMsg").textContent = t("accHexInvalid");
+    return;
+  }
+  const known = [...pastelColors(), ...STRONG, ...NEUTRAL].map(([hex]) => hex);
+  if (!known.includes(value) && !accent.custom.includes(value)) accent.custom = [...accent.custom, value].slice(-MAX_CUSTOM);
+  applyPickerColor(value);
+}
+
+function toggleAccentPopup(open, target = "accent", anchor = $("#accentDot")) {
+  const pop = $("#accentPop");
+  open ??= !(pop.classList.contains("open") && pickerTarget === target);
+  pop.classList.toggle("open", open);
+  if (!open) return;
+  pickerTarget = target;
+  $("#hexInput").classList.remove("invalid");
+  renderAccent();
+  // Außerhalb der Werkzeugleiste positioniert, da diese horizontal scrollt und Popups abschneiden würde
+  const r = anchor.getBoundingClientRect();
+  pop.style.top = `${r.bottom + 8}px`;
+  pop.style.left = `${Math.max(16, Math.min(r.right - pop.offsetWidth, innerWidth - pop.offsetWidth - 16))}px`;
+}
+
+$("#accentPop").addEventListener("click", e => {
+  e.stopPropagation();
+  const remove = e.target.closest("[data-remove]");
+  if (remove) { accent.custom = accent.custom.filter(c => c !== remove.dataset.remove); renderAccent(); persistAccent(); return; }
+  const sw = e.target.closest(".acc-swatch");
+  if (sw) applyPickerColor(sw.dataset.hex);
+  if (e.target.id === "hexApply") applyHex();
+  if (e.target.id === "accentReset") applyPickerColor(null);
+});
+$("#satRange").addEventListener("input", e => setSaturation(e.target.value));
+$("#satNumber").addEventListener("change", e => setSaturation(e.target.value));
+$("#hexInput").addEventListener("keydown", e => { if (e.key === "Enter") applyHex(); });
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", updateAccentOutline);
+
+function renderThumbs() {
+  const box = $("#thumbs");
+  box.innerHTML = "";
+  state.pages.forEach((p, idx) => {
+    const hasMarker = annOf(p.id).shapes.some(s => s.type === "marker");
+    const el = document.createElement("div");
+    el.className = "thumb" + (idx === state.current ? " sel" : "") + (p.src ? " inserted" : "");
+    el.draggable = true;
+    el.dataset.idx = idx;
+    el.innerHTML = `
+      <div class="mini-wrap"><div class="mini" style="transform:rotate(${p.rot}deg)">
+        <i class="h"></i><i class="${hasMarker ? "mk" : ""}"></i><i></i><i style="width:80%"></i><i class="img"></i><i></i><i style="width:65%"></i><i></i>
+      </div></div>
+      <span class="num">${idx + 1}${p.src ? ` <span class="src-tag">(${p.src} ${t("srcPage")} ${p.srcPage})</span>`
+        : p.id !== idx + 1 ? ` <span style="opacity:.6">(${t("page")} ${p.id})</span>` : ""}</span>
+      <div class="actions">
+        <button title="${t("rotatePage")}" data-thumb-act="rotate"><svg class="i"><use href="#i-rotate"/></svg></button>
+        <button class="del" title="${t("deletePage")}" data-thumb-act="delete"><svg class="i"><use href="#i-trash"/></svg></button>
+      </div>`;
+    box.appendChild(el);
+  });
+  $("#pageCount").textContent = state.pages.length;
+}
+
+// Druck 0..1 → Faktor 0.3..1.7; Maus liefert konstant 0.5 → Faktor 1
+const pressureWidth = (width, pressure) => +(width * (0.3 + 1.4 * pressure)).toFixed(2);
+const pathData = pts => "M" + pts.map(q => `${q.x} ${q.y}`).join(" L");
+const round1 = v => Math.round(v * 10) / 10;
+
+// Catmull-Rom → kubische Bézier-Kurve; smooth 0 = gerade Stücke, 1 = volle Rundung
+function curveSegment(pts, i, smooth) {
+  const p0 = pts[i - 1] ?? pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] ?? p2;
+  const f = smooth / 6;
+  const c1 = { x: round1(p1.x + (p2.x - p0.x) * f), y: round1(p1.y + (p2.y - p0.y) * f) };
+  const c2 = { x: round1(p2.x - (p3.x - p1.x) * f), y: round1(p2.y - (p3.y - p1.y) * f) };
+  return `C${c1.x} ${c1.y} ${c2.x} ${c2.y} ${p2.x} ${p2.y}`;
+}
+const smoothPathData = (pts, smooth) =>
+  `M${pts[0].x} ${pts[0].y} ` + pts.slice(0, -1).map((_, i) => curveSegment(pts, i, smooth)).join(" ");
+// Bei Druckempfindlichkeit braucht jedes Kurvenstück eine eigene Strichstärke
+const pressureSegments = (s) => s.pts.slice(0, -1).map((a, i) =>
+  `<path d="M${a.x} ${a.y} ${curveSegment(s.pts, i, s.smooth ?? 0)}" stroke-width="${pressureWidth(s.width, s.pts[i + 1].p)}"/>`).join("");
+
+function shapeSvg(s) {
+  if (s.type === "signature") return signatureSvg(s.sig, s);
+  if (s.type === "ellipse") return `<ellipse cx="${s.cx}" cy="${s.cy}" rx="${s.rx}" ry="${s.ry}" fill="none" stroke="${s.color}" stroke-width="${s.width}"/>`;
+  if (s.type === "arrow") {
+    const a = Math.atan2(s.y2 - s.y1, s.x2 - s.x1), l = 6 + 3 * s.width, sp = 28 * Math.PI / 180;
+    const leg = d => `${s.x2 - l * Math.cos(d)} ${s.y2 - l * Math.sin(d)}`;
+    return `<path d="M${s.x1} ${s.y1} L${s.x2} ${s.y2} M${leg(a - sp)} L${s.x2} ${s.y2} L${leg(a + sp)}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  }
+  if (s.type === "text") return `<text x="${s.x}" y="${s.y + s.size}" font-family="Helvetica, Arial, sans-serif" font-size="${s.size}" fill="${s.color}">${s.text}</text>`;
+  if (s.type === "rect") return `<rect x="${s.x}" y="${s.y}" width="${s.w}" height="${s.h}" fill="none" stroke="${s.color}" stroke-width="${s.width}" rx="2"/>`;
+  if (s.pressure) return `<g stroke="${s.color}" stroke-linecap="round" fill="none">${pressureSegments(s)}</g>`;
+  const cls = s.type === "marker" ? ' class="marker"' : "";
+  const cap = s.type === "marker" ? "butt" : "round";
+  return `<path${cls} d="${shapeData(s)}" fill="none" stroke="${s.color}" stroke-width="${s.width}" stroke-linecap="${cap}" stroke-linejoin="round"/>`;
+}
+const shapeData = s => s.d ?? (s.smooth ? smoothPathData(s.pts, s.smooth) : pathData(s.pts));
+
+// Kommentarfarbe auf der (weißen) PDF-Seite: lesbare Zahl, und bei zu hellen Farben ein grauer Rahmen
+const PAPER = "#FFFFFF", FALLBACK_BORDER = "#8A8F99";
+const commentColorVars = color =>
+  `--c:${color};--ct:${textOn(color)};--cb:${contrastRatio(color, PAPER) < MIN_CONTRAST ? FALLBACK_BORDER : color}`;
+
+function renderPage() {
+  const p = currentPage();
+  const a = annOf(p.id);
+  const body = $("#pageBody");
+  const commentByPara = new Map(a.comments.map((c, i) => [c.para, { ...c, n: i + 1 }]));
+  const para = i => {
+    const c = commentByPara.get(i);
+    if (!c) return `<p data-para="${i}">${PARAGRAPHS[i]}</p>`;
+    return `<p data-para="${i}" class="commented" style="${commentColorVars(c.color)}">${PARAGRAPHS[i]}<span class="badge" title="${t("removeComment")}"><span class="n">${c.n}</span><span class="x">×</span></span></p>`;
+  };
+  body.innerHTML = `
+    <h1>${p.src ? `${p.src} – ${t("page")} ${p.srcPage}` : `Lorem Ipsum ${p.id}`}</h1>
+    <div class="sub">${p.src ? "Eingefügte Seite · Inserted page" : "Dolor sit amet · 2026"}</div>
+    ${para(0)}${para(1)}
+    <div class="figure">[ Abbildung / Figure ]</div>
+    ${para(2)}${para(3)}
+    <div class="pno">— ${p.src ? p.srcPage : p.id} —</div>
+    <svg class="overlay" id="overlay" viewBox="0 0 600 848">${a.shapes.map(shapeSvg).join("")}</svg>`;
+
+  const ext = $("#pageExt");
+  ext.hidden = a.comments.length === 0;
+  ext.innerHTML = `<div class="ext-label">${t("footnotes")}</div>` + a.comments.map((c, i) =>
+    `<div class="fn" style="${commentColorVars(c.color)}"><span class="n">${i + 1}</span><span class="t" contenteditable="true" data-c="${i}">${c.text ?? t(c.demo ? "demoComment" : "newComment")}</span></div>`).join("");
+
+  const page = $("#page");
+  page.style.transform = `rotate(${p.rot}deg)`;
+  page.className = "page" + (["marker", "freehand", "rect", "eraser"].includes(state.tool) ? " drawing" : "")
+    + (state.tool === "signature" ? " tool-signature" : "")
+    + (state.tool === "comment" ? " tool-comment" : "") + (state.tool === "eraser" ? " tool-eraser" : "");
+  bindOverlay();
+}
+
+function renderOptions() {
+  const o = $("#options");
+  const tool = state.tool;
+  const hint = `<span class="hint">${t("hint" + tool[0].toUpperCase() + tool.slice(1))}</span>`;
+  if (tool === "select") { o.innerHTML = hint; return; }
+  let html = `<span class="title">${t("tool" + tool[0].toUpperCase() + tool.slice(1))}</span>`;
+  if (tool === "eraser") {
+    const size = state.eraserSize;
+    o.innerHTML = html + `<label>${t("eraserSize")} <input type="range" id="eraserSize" min="4" max="40" value="${size}">
+      <span class="width-preview"><svg width="40" height="40"><circle cx="20" cy="20" r="${size / 2}" class="eraser-preview"/></svg></span>
+      <span style="min-width:34px">${size} px</span></label>` + hint;
+    return;
+  }
+  if (tool === "signature") {
+    html += state.signatures.length
+      ? `<span class="sig-chips">${state.signatures.map((sig, i) =>
+          `<button class="sig-chip${i === state.selectedSignature ? " sel" : ""}" data-sig="${i}" title="${sig.name}">${signPreviewSvg(sig)}</button>`).join("")}</span>`
+      : `<span class="warn">${t("signNone")}</span>`;
+    if (state.signatures.length < MAX_SIGNATURES) html += `<button class="sig-add" data-act="signNew">${t("signNew")}</button>`;
+    html += `<button class="btn" data-act="signManage">${t("signManage")}</button>`;
+    o.innerHTML = html + hint;
+    return;
+  }
+  if (tool in TOOL_DEFAULT_COLORS) {
+    // Freihand, Rechteck und Kommentar: dieselbe Farbwahl wie die Akzentfarbe
+    html += `<label>${t("color")} <button class="color-btn" data-pick="${tool}" style="background:${state.colors[tool]}" title="${state.colors[tool]}"></button></label>`;
+  } else {
+    html += `<label>${t("color")} <span class="swatches">${MARKER_COLORS.map(c =>
+      `<button class="swatch${state.colors[tool] === c ? " sel" : ""}" style="background:${c}" data-color="${c}"></button>`).join("")}</span></label>`;
+  }
+  if (tool !== "comment") {
+    const [min, max] = tool === "marker" ? [8, 30] : [1, 12];
+    const w = state.widths[tool];
+    html += `<label>${t("width")} <input type="range" id="width" min="${min}" max="${max}" value="${w}">
+      <span class="width-preview"><svg width="40" height="22"><line x1="4" y1="11" x2="36" y2="11" stroke="${state.colors[tool]}" stroke-width="${Math.min(w, 20)}" stroke-linecap="round" ${tool === "marker" ? 'opacity=".6"' : ""}/></svg></span>
+      <span style="min-width:34px">${w} px</span></label>`;
+  }
+  if (tool === "freehand") {
+    html += `<label>${t("smoothing")} <input type="range" id="smoothing" min="0" max="100" step="10" value="${state.smoothing}">
+      <span style="min-width:38px">${state.smoothing} %</span></label>
+      <label><input type="checkbox" id="pressure" ${state.pressure ? "checked" : ""}> ${t("pressure")}</label>`;
+    if (state.pressure && state.noPressureHint) html += `<span class="warn">⚠ ${t("noPressure")}</span>`;
+  }
+  o.innerHTML = html + hint;
+}
+
+function renderStatus() {
+  $("#stPage").textContent = t("stPage", { a: state.current + 1, b: state.pages.length });
+  $("#stUndo").textContent = t("stUndo", { a: state.undo.length, b: state.undoLimit });
+  $("#stZoom").textContent = $("#tbZoom").textContent = Math.round(state.zoom * 100) + " %";
+  $("#holder").style.transform = `scale(${state.zoom})`;
+  $("#btnUndo").disabled = !state.undo.length;
+  $("#btnRedo").disabled = !state.redo.length;
+}
+
+function render() {
+  state.current = Math.min(state.current, state.pages.length - 1);
+  applyI18n(); applyTheme(); renderThumbs(); renderPage(); renderOptions(); renderStatus(); renderAccent(); renderAnnotations();
+}
+
+/* ---------- Anmerkungsübersicht (Mockup v4) ---------- */
+const KIND = { signature: "freehand", comment: "comment", marker: "marker", freehand: "freehand", rect: "shape", ellipse: "shape", arrow: "shape", line: "shape", text: "text" };
+const ICON = { comment: "i-comment", marker: "i-marker", freehand: "i-pen", shape: "i-shapes", text: "i-text" };
+const shorten = (s, n = 70) => s.length > n ? s.slice(0, n - 1) + "…" : s;
+function annotationEntries() {
+  const entries = [];
+  state.pages.forEach((p, idx) => {
+    const a = annOf(p.id);
+    a.comments.forEach((c, i) => entries.push({ idx, kind: "comment", color: c.color, ref: { comment: i },
+      html: `<b>${i + 1}</b> ${shorten(c.text ?? t(c.demo ? "demoComment" : "newComment"))}` }));
+    a.shapes.forEach((s, i) => {
+      const kind = KIND[s.type] ?? "shape";
+      const label = { signature: "kSignature", marker: "kMarker", freehand: "kFreehand", rect: "kRect", ellipse: "kEllipse", arrow: "kArrow", line: "kLine", text: "kText" }[s.type];
+      const html = s.type === "text" ? shorten(s.text)
+        : s.type === "marker" && s.text ? `<span class="kind">${t(label)}:</span> „${shorten(s.text, 60)}“`
+        : `<span class="kind">${t(label)}</span>`;
+      entries.push({ idx, kind, color: s.color, ref: { shape: i }, html });
+    });
+  });
+  return entries;
+}
+let selectedEntry = null;
+function renderAnnotations() {
+  const all = annotationEntries();
+  const filter = $("#annFilter").value;
+  const shown = all.filter(e => filter === "all" || e.kind === filter);
+  $("#annCount").textContent = all.length;
+  const list = $("#annList");
+  if (!shown.length) { list.innerHTML = `<div class="ann-empty">${t(all.length ? "annNoneFilter" : "annNone")}</div>`; return; }
+  let html = "", lastIdx = -1;
+  shown.forEach((e, n) => {
+    if (e.idx !== lastIdx) { html += `<div class="ann-group">${t("page")} ${e.idx + 1}</div>`; lastIdx = e.idx; }
+    const key = `${state.pages[e.idx].id}:${JSON.stringify(e.ref)}`;
+    html += `<div class="ann-item${key === selectedEntry ? " sel" : ""}" data-ann="${n}" data-key='${key}'>
+      <span class="ico"><svg class="i"><use href="#${ICON[e.kind]}"/></svg></span>
+      <span class="dot" style="background:${e.color}"></span><span class="txt">${e.html}</span></div>`;
+  });
+  list.innerHTML = html;
+  list._entries = shown;
+}
+// Zur Seite springen, Anmerkung sichtbar machen und kurz hervorheben
+function jumpTo(entry, key) {
+  selectedEntry = key;
+  state.current = entry.idx; render();
+  requestAnimationFrame(() => {
+    let target;
+    if (entry.ref.comment !== undefined) {
+      const c = annOf(state.pages[entry.idx].id).comments[entry.ref.comment];
+      target = document.querySelector(`.page-body p[data-para="${c.para}"]`);
+      target?.classList.add("flash");
+    } else {
+      const shape = $("#overlay").children[entry.ref.shape];
+      const box = shape.getBBox(), pad = 8;
+      $("#overlay").insertAdjacentHTML("beforeend",
+        `<rect class="flash-frame" x="${box.x - pad}" y="${box.y - pad}" width="${box.width + 2 * pad}" height="${box.height + 2 * pad}" rx="6"/>`);
+      target = $("#overlay").lastElementChild;
+    }
+    target?.scrollIntoView({ block: "center", behavior: "smooth" });
+    document.querySelector("#thumbs .thumb.sel")?.scrollIntoView({ block: "nearest" });
+  });
+}
+
+/* ---------- Zeichnen auf dem Overlay ---------- */
+function bindOverlay() {
+  const svg = $("#overlay");
+  let draft = null;
+  const pt = e => {
+    const m = svg.getScreenCTM().inverse();
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m);
+    return { x: round1(p.x), y: round1(p.y), p: e.pressure || 0.5 };
+  };
+  const MIN_POINT_DISTANCE = 1.5;   // filtert Zittern, ohne Rundungen zu verlieren
+  // Ausdehnung statt Start-End-Abstand – sonst würden geschlossene Formen (Kreise) verworfen
+  const isTooSmall = s => s.type === "rect" ? s.w < 4 || s.h < 4
+    : !s.pts.some(q => Math.hypot(q.x - s.pts[0].x, q.y - s.pts[0].y) >= 4);
+
+  // Strich nur bei Kontakt: endet bei Abheben, Abbruch oder Verlust des Pointer-Captures
+  const finish = () => {
+    if (!draft) return;
+    const { shape, penWithoutPressure } = draft; draft = null;
+    if (shape.pressure && penWithoutPressure !== state.noPressureHint) { state.noPressureHint = penWithoutPressure; renderOptions(); }
+    if (isTooSmall(shape)) { renderPage(); return; }
+    const list = annOf(currentPage().id).shapes;
+    execute({ do: () => list.push(shape), undo: () => list.splice(list.indexOf(shape), 1) });
+  };
+
+  // Kontakt: gedrückte Taste ODER Druck > 0 – manche Stift-Treiber melden während des Kontakts buttons = 0
+  const inContact = e => e.buttons !== 0 || e.pressure > 0;
+  const isExtraTouch = e => e.pointerType === "touch" && !e.isPrimary;
+
+  svg.onpointerdown = e => {
+    if (!["marker", "freehand", "rect"].includes(state.tool) || isExtraTouch(e) || isEraserInput(e)) return;
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.preventDefault();
+    // Capture ist nur eine Komfortfunktion; bei gemischten Maus-/Stift-Ereignissen kann sie fehlschlagen
+    try { svg.setPointerCapture(e.pointerId); } catch { /* Zeichnen funktioniert auch ohne Capture */ }
+    const start = pt(e);
+    const shape = { type: state.tool, color: state.colors[state.tool], width: state.widths[state.tool] };
+    if (shape.type === "rect") Object.assign(shape, { x: start.x, y: start.y, w: 0, h: 0 });
+    else shape.pts = [start];
+    if (shape.type === "freehand") {
+      shape.smooth = state.smoothing / 100;
+      if (state.pressure) shape.pressure = true;
+    }
+    draft = { shape, start, penWithoutPressure: false };
+    svg.insertAdjacentHTML("beforeend", shapeSvg(shape));
+    draft.el = svg.lastElementChild;
+  };
+  svg.onpointermove = e => {
+    // Keine Prüfung von pointerId/isPrimary: Manche Tablet-Treiber melden das Drücken als „mouse“,
+    // die Bewegungen aber als „pen“ mit eigener ID. Nur zusätzliche Finger (Multi-Touch) ignorieren.
+    if (!draft || isExtraTouch(e)) return;
+    // Stift schwebt (Hover) → kein Kontakt mehr, Strich beenden
+    if (!inContact(e)) { finish(); return; }
+    const { shape, start, el } = draft;
+    if (shape.type === "rect") {
+      const p = pt(e);
+      Object.assign(shape, { x: Math.min(start.x, p.x), y: Math.min(start.y, p.y), w: Math.abs(p.x - start.x), h: Math.abs(p.y - start.y) });
+      ["x", "y"].forEach(k => el.setAttribute(k, shape[k]));
+      el.setAttribute("width", shape.w); el.setAttribute("height", shape.h);
+    } else if (shape.type === "marker") {
+      // Marker bleibt waagerecht wie ein echter Textmarker
+      shape.pts = [start, { ...start, x: pt(e).x }];
+      el.setAttribute("d", pathData(shape.pts));
+    } else {
+      // Zwischenpunkte des Geräts nutzen, wo der Browser sie liefert (nur in sicheren Kontexten)
+      const events = e.getCoalescedEvents?.() ?? [e];
+      for (const ev of events) {
+        const p = pt(ev);
+        const last = shape.pts.at(-1);
+        if (Math.hypot(p.x - last.x, p.y - last.y) < MIN_POINT_DISTANCE) continue;
+        shape.pts.push(p);
+      }
+      if (e.pointerType === "pen" && e.pressure === 0) draft.penWithoutPressure = true;
+      if (shape.pressure) el.innerHTML = pressureSegments(shape);
+      else el.setAttribute("d", shapeData(shape));
+    }
+  };
+  svg.onpointerup = finish;
+  svg.onpointercancel = finish;
+  svg.onlostpointercapture = finish;
+  bindSignaturePlacing(svg, pt);
+  bindEraser(svg, pt, inContact, isExtraTouch);
+}
+
+/* ---------- Unterschrift setzen und verschieben (Mockup v5) ---------- */
+function bindSignaturePlacing(svg, pt) {
+  const inner = { down: svg.onpointerdown, move: svg.onpointermove, up: svg.onpointerup };
+  let act = null;
+  const sig = () => state.signatures[state.selectedSignature];
+  const boxAt = (p, w) => { const b = signBounds(sig().strokes), h = w * b.h / b.w; return { x: p.x - w / 2, y: p.y - h / 2, w, h }; };
+  const ghost = box => {
+    svg.querySelector(".sign-ghost")?.remove();
+    if (box) svg.insertAdjacentHTML("beforeend", signatureSvg(sig(), box, "sign-ghost").replace("<g ", '<g opacity=".45" '));
+  };
+  const hitSignature = p => annOf(currentPage().id).shapes.findLastIndex(s => s.type === "signature" && p.x >= s.x && p.x <= s.x + s.w && p.y >= s.y && p.y <= s.y + s.h);
+  svg.onpointerdown = e => {
+    if (state.tool !== "signature") return inner.down?.(e);
+    e.preventDefault();
+    try { svg.setPointerCapture(e.pointerId); } catch {}
+    const p = pt(e), hit = hitSignature(p);
+    if (hit >= 0) { const s = annOf(currentPage().id).shapes[hit]; act = { move: s, index: hit, start: p, from: { x: s.x, y: s.y } }; ghost(null); return; }
+    if (!sig()) { openSignDialog(); return; }
+    act = { start: p };
+  };
+  svg.onpointermove = e => {
+    if (state.tool !== "signature") return inner.move?.(e);
+    const p = pt(e);
+    if (act?.move) {
+      // Nur die gezogene Unterschrift neu zeichnen, damit das Ziehen nicht abreißt
+      Object.assign(act.move, { x: act.from.x + p.x - act.start.x, y: act.from.y + p.y - act.start.y });
+      svg.children[act.index].outerHTML = shapeSvg(act.move);
+      return;
+    }
+    if (!sig()) return;
+    if (act) {
+      // Breite aufziehen, Seitenverhältnis bleibt
+      const w = Math.max(30, Math.abs(p.x - act.start.x)), b = signBounds(sig().strokes);
+      ghost({ x: Math.min(act.start.x, p.x), y: act.start.y, w, h: w * b.h / b.w });
+    } else if (hitSignature(p) < 0) ghost(boxAt(p, SIGN_DEFAULT_WIDTH));
+    else ghost(null);
+  };
+  svg.onpointerleave = () => { if (state.tool === "signature" && !act) ghost(null); };
+  svg.onpointerup = e => {
+    if (state.tool !== "signature") return inner.up?.(e);
+    const p = pt(e), a = act; act = null;
+    if (!a) return;
+    if (a.move) {
+      const s = a.move, to = { x: s.x, y: s.y }, from = a.from;
+      if (from.x === to.x && from.y === to.y) return;
+      execute({ do: () => Object.assign(s, to), undo: () => Object.assign(s, from) });
+      return;
+    }
+    const b = signBounds(sig().strokes), dragged = Math.abs(p.x - a.start.x) >= 4;
+    const w = dragged ? Math.max(30, Math.abs(p.x - a.start.x)) : SIGN_DEFAULT_WIDTH;
+    const box = dragged ? { x: Math.min(a.start.x, p.x), y: a.start.y, w, h: w * b.h / b.w } : boxAt(a.start, w);
+    const shape = { type: "signature", sig: sig(), color: sig().color, width: 2, ...box };
+    const list = annOf(currentPage().id).shapes;
+    execute({ do: () => list.push(shape), undo: () => list.splice(list.indexOf(shape), 1) });
+  };
+}
+
+/* ---------- Radierer (Objekt-Radierer, Logik wie Core: EraserHitTest) ---------- */
+const PEN_ERASER_BUTTON = 32;   // Radierer-Ende des Stifts (Pointer-Events: buttons-Bit 5)
+const isEraserInput = e => state.tool === "eraser" || (e.pointerType === "pen" && (e.buttons & PEN_ERASER_BUTTON) !== 0);
+
+// Punkte einer Form: aufgezeichnete Punkte oder die Koordinaten aus dem Pfad (Demo-Formen)
+const pointsOf = s => s.pts ?? [...s.d.matchAll(/(-?[\d.]+)[ ,](-?[\d.]+)/g)].map(m => ({ x: +m[1], y: +m[2] }));
+function distanceToSegment(p, a, b) {
+  const dx = b.x - a.x, dy = b.y - a.y, len = dx * dx + dy * dy;
+  const t = len === 0 ? 0 : Math.max(0, Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / len));
+  return Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+}
+function distanceToArea(r, p) {
+  const dx = Math.max(r.x - p.x, 0, p.x - (r.x + r.w)), dy = Math.max(r.y - p.y, 0, p.y - (r.y + r.h));
+  return Math.hypot(dx, dy);
+}
+function hitsShape(s, p, radius) {
+  if (s.type === "signature") return distanceToArea(s, p) <= radius;
+  if (s.type === "rect") {
+    const outside = distanceToArea(s, p);
+    const inside = Math.min(p.x - s.x, s.x + s.w - p.x, p.y - s.y, s.y + s.h - p.y);
+    return (outside > 0 ? outside : inside) <= radius + s.width / 2;
+  }
+  const pts = pointsOf(s);
+  if (s.type === "marker") {
+    const xs = pts.map(q => q.x);
+    const band = { x: Math.min(...xs), y: pts[0].y - s.width / 2, w: Math.max(...xs) - Math.min(...xs), h: s.width };
+    return distanceToArea(band, p) <= radius;
+  }
+  const tolerance = radius + s.width * 0.85;   // halbe Strichstärke bei vollem Andruck
+  return pts.some((q, i) => i > 0 && distanceToSegment(p, pts[i - 1], q) <= tolerance);
+}
+
+function bindEraser(svg, pt, inContact, isExtraTouch) {
+  const page = $("#page");
+  let erasing = null;
+  const shapes = () => annOf(currentPage().id).shapes;
+  const radius = () => state.eraserSize;
+
+  const cursor = () => svg.querySelector(".eraser-cursor") ?? (() => {
+    svg.insertAdjacentHTML("beforeend", `<circle class="eraser-cursor" r="0"/>`);
+    return svg.lastElementChild;
+  })();
+  const showCursor = p => { const c = cursor(); c.setAttribute("cx", p.x); c.setAttribute("cy", p.y); c.setAttribute("r", radius()); };
+  const hideCursor = () => svg.querySelector(".eraser-cursor")?.remove();
+
+  const eraseAt = p => shapes().forEach((s, i) => {
+    if (!erasing.hits.has(i) && hitsShape(s, p, radius())) {
+      erasing.hits.add(i);
+      svg.children[i]?.classList.add("erasing");
+    }
+  });
+  const finishErase = () => {
+    if (!erasing) return;
+    const indices = [...erasing.hits].sort((a, b) => a - b);
+    erasing = null;
+    hideCursor();
+    if (!indices.length) { renderPage(); return; }
+    // Ein Radierstrich = ein Rückgängig-Schritt
+    const list = shapes(), removed = indices.map(i => list[i]);
+    execute({
+      do: () => indices.slice().reverse().forEach(i => list.splice(i, 1)),
+      undo: () => indices.forEach((i, k) => list.splice(i, 0, removed[k])),
+    });
+  };
+
+  // Am Seitenelement, damit das Radierer-Ende des Stifts mit jedem Werkzeug funktioniert
+  page.onpointerdown = e => {
+    if (!isEraserInput(e) || isExtraTouch(e) || e.target.closest(".badge")) return;
+    e.preventDefault();
+    e.stopPropagation();
+    try { page.setPointerCapture(e.pointerId); } catch { /* Radieren funktioniert auch ohne Capture */ }
+    erasing = { hits: new Set() };
+    const p = pt(e);
+    showCursor(p);
+    eraseAt(p);
+  };
+  page.onpointermove = e => {
+    if (isExtraTouch(e)) return;
+    const eraserHover = state.tool === "eraser" || (e.pointerType === "pen" && (e.buttons & PEN_ERASER_BUTTON) !== 0);
+    if (!erasing) {
+      if (eraserHover && e.target.closest("svg.overlay, .page-body")) showCursor(pt(e)); else hideCursor();
+      return;
+    }
+    if (!inContact(e)) { finishErase(); return; }
+    for (const ev of e.getCoalescedEvents?.() ?? [e]) {
+      const p = pt(ev);
+      showCursor(p);
+      eraseAt(p);
+    }
+  };
+  page.onpointerup = finishErase;
+  page.onpointercancel = finishErase;
+  page.onpointerleave = () => { if (!erasing) hideCursor(); };
+}
+
+/* ---------- Seitenoperationen ---------- */
+function rotatePage(idx) {
+  const p = state.pages[idx];
+  execute({ do: () => p.rot = (p.rot + 90) % 360, undo: () => p.rot = (p.rot + 270) % 360 });
+}
+function deletePage(idx) {
+  if (state.pages.length <= 1) return;
+  const p = state.pages[idx];
+  execute({ do: () => state.pages.splice(idx, 1), undo: () => state.pages.splice(idx, 0, p) });
+}
+function movePage(from, to) {
+  if (from === to) return;
+  const doMove = (a, b) => { const [p] = state.pages.splice(a, 1); state.pages.splice(b, 0, p); state.current = b; };
+  execute({ do: () => doMove(from, to), undo: () => doMove(to, from) });
+}
+
+/* ---------- Seiten einfügen (Mockup v3) ---------- */
+// Beispielquellen: eine Datei vom Datenträger, eine geschützte Datei und ein bereits geöffneter Tab
+const MERGE_SOURCES = [
+  { key: "anhang", name: "anhang.pdf", pages: 6 },
+  { key: "bericht", name: "bericht-geschuetzt.pdf", pages: 9, password: "utopia" },
+  { key: "tab", name: "vertrag-2026.pdf", pages: 3, openTab: true }
+];
+let nextInsertedId = 1000;
+const merge = { source: MERGE_SOURCES[0], unlocked: false };
+
+/* ---------- Unterschrift (Mockup v5) ---------- */
+const MAX_SIGNATURES = 5, SIGN_DEFAULT_WIDTH = 150;
+const SIGN_COLORS = ["#1E3A8A", "#111827", "#2563EB"];
+// Beispiel: eine gespeicherte Unterschrift (Striche im Unterschriftenfeld 480 × 200)
+state.signatures = [{ name: "Unterschrift 1", color: "#1E3A8A", pressure: true, strokes: [
+  [{x:40,y:130,p:.3},{x:60,y:90,p:.6},{x:75,y:70,p:.8},{x:85,y:110,p:.7},{x:95,y:140,p:.5},{x:110,y:95,p:.6},{x:125,y:120,p:.7},{x:140,y:100,p:.6},{x:160,y:125,p:.5}],
+  [{x:170,y:120,p:.4},{x:190,y:95,p:.7},{x:205,y:125,p:.8},{x:225,y:90,p:.7},{x:240,y:128,p:.6},{x:265,y:100,p:.7},{x:290,y:122,p:.5},{x:330,y:112,p:.3}],
+  [{x:60,y:150,p:.3},{x:200,y:146,p:.5},{x:340,y:150,p:.3}]]}];
+state.selectedSignature = 0;
+const sign = { slot: 0, strokes: [], color: SIGN_COLORS[0], pressure: true, drawing: null };
+
+// Umriss der Striche einer Unterschrift
+function signBounds(strokes) {
+  const pts = strokes.flat();
+  const xs = pts.map(q => q.x), ys = pts.map(q => q.y);
+  return { x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs) || 1, h: Math.max(...ys) - Math.min(...ys) || 1 };
+}
+// Striche als SVG-Pfade; bei Druck je Stück eigene Stärke
+function signPaths(sig, width = 3) {
+  return sig.strokes.map(st => sig.pressure
+    ? st.slice(1).map((q, i) => `<path d="M${st[i].x} ${st[i].y} L${q.x} ${q.y}" stroke-width="${(width * (0.3 + 1.4 * q.p)).toFixed(2)}"/>`).join("")
+    : `<path d="${pathData(st)}" stroke-width="${width}"/>`).join("");
+}
+// Unterschrift skaliert in ein Rechteck
+function signatureSvg(sig, box, cls = "") {
+  const b = signBounds(sig.strokes), k = box.w / b.w;
+  return `<g class="${cls}" transform="translate(${box.x} ${box.y}) scale(${k}) translate(${-b.x} ${-b.y})" stroke="${sig.color}" fill="none" stroke-linecap="round" stroke-linejoin="round">${signPaths(sig)}</g>`;
+}
+function signPreviewSvg(sig) {
+  const b = signBounds(sig.strokes);
+  return `<svg viewBox="${b.x - 6} ${b.y - 6} ${b.w + 12} ${b.h + 12}"><g stroke="${sig.color}" fill="none" stroke-linecap="round" stroke-linejoin="round">${signPaths(sig)}</g></svg>`;
+}
+
+function openSignDialog() {
+  sign.slot = Math.min(state.signatures.length, MAX_SIGNATURES - 1);
+  loadSlot(sign.slot);
+  $("#dlgSign").showModal(); renderSignDialog();
+}
+function loadSlot(i) {
+  sign.slot = i;
+  const sig = state.signatures[i];
+  sign.strokes = sig ? sig.strokes.map(st => st.map(q => ({ ...q }))) : [];
+  sign.color = sig?.color ?? SIGN_COLORS[0];
+  sign.pressure = sig?.pressure ?? true;
+  $("#signName").value = sig?.name ?? t("signDefaultName", { n: i + 1 });
+}
+function renderSignDialog() {
+  $("#signSlots").innerHTML = Array.from({ length: MAX_SIGNATURES }, (_, i) => {
+    const sig = state.signatures[i];
+    if (!sig) return `<div class="sign-slot empty${i === sign.slot ? " sel" : ""}" data-slot="${i}">${t("signEmpty")}</div>`;
+    return `<div class="sign-slot${i === sign.slot ? " sel" : ""}" data-slot="${i}"><div><div class="prev">${signPreviewSvg(sig)}</div><div class="name">${sig.name}</div></div>
+      <button class="del" data-slot-del="${i}" title="×">×</button></div>`;
+  }).join("") + `<div class="name" style="text-align:center;margin-top:4px">${t("signCount", { n: state.signatures.length })}</div>`;
+  $("#signColors").innerHTML = SIGN_COLORS.map(c => `<button class="${c === sign.color ? "sel" : ""}" style="background:${c}" data-sign-color="${c}"></button>`).join("");
+  $("#signPressure").checked = sign.pressure;
+  drawPad();
+}
+function drawPad() {
+  const sig = { strokes: sign.strokes.filter(st => st.length > 1), color: sign.color, pressure: sign.pressure };
+  $("#signSvg").innerHTML = `<g stroke="${sign.color}" fill="none" stroke-linecap="round" stroke-linejoin="round">${signPaths(sig)}</g>`;
+  $("#signPlaceholder").hidden = sign.strokes.length > 0;
+  $("#signSave").disabled = !sig.strokes.length;
+}
+function bindSignPad() {
+  const svg = $("#signSvg");
+  const pt = e => { const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse()); return { x: round1(p.x), y: round1(p.y), p: e.pressure || 0.5 }; };
+  svg.onpointerdown = e => { e.preventDefault(); try { svg.setPointerCapture(e.pointerId); } catch {} sign.drawing = [pt(e)]; sign.strokes.push(sign.drawing); drawPad(); };
+  svg.onpointermove = e => {
+    if (!sign.drawing) return;
+    if (e.buttons === 0 && !(e.pressure > 0)) { sign.drawing = null; return; }
+    const p = pt(e), last = sign.drawing.at(-1);
+    if (Math.hypot(p.x - last.x, p.y - last.y) >= 1.5) { sign.drawing.push(p); drawPad(); }
+  };
+  svg.onpointerup = svg.onpointercancel = () => { if (sign.drawing && sign.drawing.length < 2) sign.strokes.pop(); sign.drawing = null; drawPad(); };
+}
+function saveSignature() {
+  const strokes = sign.strokes.filter(st => st.length > 1);
+  if (!strokes.length) return;
+  const sig = { name: $("#signName").value.trim() || t("signDefaultName", { n: sign.slot + 1 }), color: sign.color, pressure: sign.pressure, strokes };
+  if (sign.slot < state.signatures.length) state.signatures[sign.slot] = sig; else state.signatures.push(sig);
+  state.selectedSignature = Math.min(sign.slot, state.signatures.length - 1);
+  toast(`✓ ${sig.name}`);
+  renderSignDialog(); renderOptions();
+}
+
+function openMerge(preset = {}) {
+  if (preset.file) {
+    MERGE_SOURCES.unshift({ key: "drop" + nextInsertedId, name: preset.file, pages: 5 });
+  }
+  merge.source = MERGE_SOURCES[0]; merge.unlocked = false;
+  $("#mergeInput").value = ""; $("#mergePwd").value = "";
+  $("#mergePos").value = preset.afterIndex === undefined ? "after" : "page";
+  $("#mergePosPage").value = preset.afterIndex === undefined ? state.current + 1 : preset.afterIndex;
+  $("#dlgMerge").showModal(); renderMerge();
+}
+// Seitennummern als kurze Eingabe: [1,2,3,5] → "1-3,5"
+function compressPages(pages) {
+  const parts = [];
+  for (let i = 0; i < pages.length; i++) {
+    let j = i; while (j + 1 < pages.length && pages[j + 1] === pages[j] + 1) j++;
+    parts.push(j > i ? `${pages[i]}-${pages[j]}` : `${pages[i]}`); i = j;
+  }
+  return parts.join(",");
+}
+function mergeSelection() {
+  const src = merge.source;
+  if (!$("#mergeInput").value.trim()) return { pages: Array.from({ length: src.pages }, (_, i) => i + 1), hints: [] };
+  return parsePageSelection($("#mergeInput").value, src.pages);
+}
+// Position, nach der eingefügt wird (0 = am Anfang)
+function mergeInsertIndex() {
+  switch ($("#mergePos").value) {
+    case "start": return 0;
+    case "end": return state.pages.length;
+    case "page": return Math.max(0, Math.min(state.pages.length, +$("#mergePosPage").value || 0));
+    default: return state.current + 1;
+  }
+}
+function renderMerge() {
+  const sel = $("#mergeSource");
+  sel.innerHTML = MERGE_SOURCES.map(s => `<option value="${s.key}">${s.openTab ? t("mergeOpenTab") + ": " : ""}${s.name}${s.password ? " 🔒" : ""}</option>`).join("")
+    + `<option value="choose">${t("mergeChoose")}</option>`;
+  sel.value = merge.source.key;
+  const src = merge.source;
+  $("#mergeSrcInfo").textContent = `${t("mergeSrcCount", { n: src.pages })}`;
+  const locked = src.password && !merge.unlocked;
+  $("#mergePwdField").hidden = !locked;
+  $("#mergePagesPart").hidden = locked;
+  const go = $("#mergeGo");
+  if (locked) { go.textContent = "OK"; go.disabled = false; return []; }
+
+  const { pages, hints } = mergeSelection();
+  const chosen = new Set(pages);
+  $("#mergeGrid").innerHTML = Array.from({ length: src.pages }, (_, i) => i + 1).map(n =>
+    `<div class="src-page${chosen.has(n) ? " on" : ""}" data-src-page="${n}"><div class="sheet"><i class="h"></i><i></i><i></i><i style="width:70%"></i><i></i></div>${n}</div>`).join("");
+  $("#mergeHints").innerHTML = [...new Set(hints)].map(h => `<div>⚠ ${h}</div>`).join("");
+  $("#mergePosPage").hidden = $("#mergePos").value !== "page";
+  $("#mergePosPage").max = state.pages.length;
+  const at = mergeInsertIndex();
+  $("#mergePosHelp").textContent = pages.length ? t("mergePosHint", { a: at + 1, b: at + pages.length, n: state.pages.length + pages.length }) : "";
+  go.disabled = !pages.length;
+  go.textContent = !pages.length ? t("mergeNone") : pages.length === 1 ? t("mergeGo1") : t("mergeGo", { n: pages.length });
+  return pages;
+}
+function runMerge() {
+  const src = merge.source;
+  if (src.password && !merge.unlocked) {
+    if ($("#mergePwd").value === src.password) { merge.unlocked = true; renderMerge(); }
+    else toast(t("mergeWrongPwd"));
+    return;
+  }
+  const pages = renderMerge(); if (!pages.length) return;
+  const at = mergeInsertIndex();
+  const entries = pages.map(n => ({ id: nextInsertedId++, rot: 0, src: src.name, srcPage: n }));
+  const before = state.current;
+  // Ein Rückgängig-Schritt für das ganze Einfügen; danach wird die erste eingefügte Seite angezeigt
+  execute({
+    do: () => { state.pages.splice(at, 0, ...entries); state.current = at; },
+    undo: () => { state.pages.splice(at, entries.length); state.current = before; }
+  });
+  $("#dlgMerge").close();
+  document.querySelector("#thumbs .thumb.sel")?.scrollIntoView({ block: "nearest" });
+  toast(t("toastMerge", { n: entries.length, f: src.name }));
+}
+
+/* ---------- Extract: Eingabe auswerten ---------- */
+function parsePageSelection(input, max) {
+  const pages = [], hints = [], seen = new Set();
+  const add = p => { if (seen.has(p)) { hints.push(t("hDup", { p })); return; } seen.add(p); pages.push(p); };
+  const clamp = (n, token) => { if (n > max) { hints.push(t("hClamp", { t: token, p: n, m: max })); return max; } return n; };
+  for (const raw of input.split(",")) {
+    const token = raw.trim();
+    if (!token) continue;
+    const range = token.match(/^(\d+)\s*-\s*(\d+)$/);
+    const single = token.match(/^\d+$/);
+    if (!range && !single) { hints.push(t("hInvalid", { t: token })); continue; }
+    let a = Number(range ? range[1] : token), b = Number(range ? range[2] : token);
+    if (a < 1 || b < 1) { hints.push(t("hInvalid", { t: token })); continue; }
+    if (a > b) { [a, b] = [b, a]; hints.push(t("hSwap", { t: token, a, b })); }
+    a = clamp(a, token); b = clamp(b, token);
+    for (let p = a; p <= b; p++) add(p);
+  }
+  return { pages, hints };
+}
+function renderExtract() {
+  const { pages, hints } = parsePageSelection($("#extractInput").value, state.pages.length);
+  $("#extractChips").innerHTML = pages.length
+    ? pages.map(p => `<span class="chip">${p}</span>`).join("") + `<span style="margin-left:auto;color:var(--muted)">${t("extractCount", { n: pages.length })}</span>`
+    : `<span class="empty">${t("extractEmpty")}</span>`;
+  $("#extractHints").innerHTML = [...new Set(hints)].map(h => `<div>⚠ ${h}</div>`).join("");
+  $("#extractGo").disabled = !pages.length;
+  return pages;
+}
+
+/* ---------- Ereignisse ---------- */
+function toast(msg) {
+  const el = $("#toast"); el.textContent = msg; el.classList.add("show");
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => el.classList.remove("show"), 2200);
+}
+const ACTIONS = {
+  open: () => toast(t("toastOpen")), saveAs: () => toast(t("toastSave")), print: () => toast(t("toastPrint")),
+  closeDoc: () => toast(t("toastClose")),
+  undo, redo,
+  rotate: () => rotatePage(state.current), delete: () => deletePage(state.current),
+  zoomIn: () => { state.zoom = Math.min(3, +(state.zoom + .1).toFixed(2)); renderStatus(); },
+  zoomOut: () => { state.zoom = Math.max(.3, +(state.zoom - .1).toFixed(2)); renderStatus(); },
+  find: () => $("#search").focus(),
+  extract: () => { $("#dlgExtract").showModal(); renderExtract(); },
+  merge: () => openMerge(),
+  signManage: () => openSignDialog(),
+  signNew: () => { openSignDialog(); loadSlot(state.signatures.length); renderSignDialog(); },
+  settings: () => $("#dlgSettings").showModal(),
+  pwd: () => $("#dlgPwd").showModal(),
+  accent: () => toggleAccentPopup(undefined, "accent")
+};
+
+document.addEventListener("click", e => {
+  const pick = e.target.closest("[data-pick]");
+  if (pick) { toggleAccentPopup(undefined, pick.dataset.pick, pick); return; }
+  if (!e.target.closest("[data-act=accent]")) toggleAccentPopup(false);
+  const menuBtn = e.target.closest(".menu > button");
+  document.querySelectorAll(".menu.open").forEach(m => { if (!menuBtn || m !== menuBtn.parentElement) m.classList.remove("open"); });
+  if (menuBtn) { menuBtn.parentElement.classList.toggle("open"); return; }
+
+  const act = e.target.closest("[data-act]");
+  if (act) { ACTIONS[act.dataset.act]?.(); return; }
+
+  const themeOpt = e.target.closest("[data-theme-opt]");
+  if (themeOpt) { state.theme = themeOpt.dataset.themeOpt; applyTheme(); return; }
+  const langOpt = e.target.closest("[data-lang-opt]");
+  if (langOpt) { state.lang = langOpt.dataset.langOpt; render(); return; }
+
+  const toolBtn = e.target.closest("[data-tool]");
+  if (toolBtn) {
+    state.tool = toolBtn.dataset.tool;
+    document.querySelectorAll("[data-tool]").forEach(b => b.classList.toggle("active", b === toolBtn));
+    renderPage(); renderOptions();
+    if (state.tool === "signature" && !state.signatures.length) openSignDialog();
+    return;
+  }
+  const sw = e.target.closest("[data-color]");
+  if (sw) { state.colors[state.tool] = sw.dataset.color; renderOptions(); return; }
+
+  const sigChip = e.target.closest("[data-sig]");
+  if (sigChip) { state.selectedSignature = +sigChip.dataset.sig; renderOptions(); return; }
+  const slotDel = e.target.closest("[data-slot-del]");
+  if (slotDel) {
+    const i = +slotDel.dataset.slotDel;
+    state.signatures.splice(i, 1);
+    state.selectedSignature = Math.max(0, Math.min(state.selectedSignature, state.signatures.length - 1));
+    loadSlot(Math.min(sign.slot, state.signatures.length)); renderSignDialog(); renderOptions(); return;
+  }
+  const slot = e.target.closest("[data-slot]");
+  if (slot) {
+    const i = +slot.dataset.slot;
+    if (i > state.signatures.length) { toast(t("signEmpty")); return; }
+    loadSlot(i); renderSignDialog(); return;
+  }
+  const signColor = e.target.closest("[data-sign-color]");
+  if (signColor) { sign.color = signColor.dataset.signColor; renderSignDialog(); return; }
+  if (e.target.id === "signClear") { sign.strokes = []; drawPad(); return; }
+  if (e.target.id === "signSave") { saveSignature(); return; }
+  const sideTab = e.target.closest("[data-side]");
+  if (sideTab) {
+    document.querySelectorAll("[data-side]").forEach(b => b.classList.toggle("on", b === sideTab));
+    $("#thumbs").hidden = sideTab.dataset.side !== "pages";
+    $("#annPanel").hidden = sideTab.dataset.side !== "ann";
+    return;
+  }
+  const annItem = e.target.closest(".ann-item");
+  if (annItem) { jumpTo($("#annList")._entries[+annItem.dataset.ann], annItem.dataset.key); return; }
+  const srcPage = e.target.closest("[data-src-page]");
+  if (srcPage) {
+    const set = new Set(mergeSelection().pages), n = +srcPage.dataset.srcPage;
+    set.has(n) ? set.delete(n) : set.add(n);
+    const sorted = [...set].sort((a, b) => a - b);
+    $("#mergeInput").value = sorted.length === merge.source.pages ? "" : sorted.length ? compressPages(sorted) : "0";
+    renderMerge(); return;
+  }
+  const thumbAct = e.target.closest("[data-thumb-act]");
+  if (thumbAct) {
+    const idx = +thumbAct.closest(".thumb").dataset.idx;
+    thumbAct.dataset.thumbAct === "rotate" ? rotatePage(idx) : deletePage(idx);
+    return;
+  }
+  const thumb = e.target.closest(".thumb");
+  if (thumb) { state.current = +thumb.dataset.idx; render(); return; }
+
+  // Fußnotenzahl wird beim Darüberfahren zum ×: Klick entfernt den Kommentar (rückgängig machbar)
+  const badge = e.target.closest(".page-body p .badge");
+  if (badge) {
+    const list = annOf(currentPage().id).comments;
+    const index = list.findIndex(c => c.para === +badge.closest("p").dataset.para);
+    const removed = list[index];
+    execute({ do: () => list.splice(index, 1), undo: () => list.splice(index, 0, removed) });
+    return;
+  }
+
+  const para = e.target.closest(".page-body p");
+  if (para && state.tool === "comment" && !para.classList.contains("commented")) {
+    const list = annOf(currentPage().id).comments;
+    const c = { para: +para.dataset.para, color: state.colors.comment, text: null };
+    execute({ do: () => list.push(c), undo: () => list.splice(list.indexOf(c), 1) });
+  }
+  if (e.target.matches("[data-close]")) e.target.closest("dialog").close();
+});
+
+document.addEventListener("input", e => {
+  if (e.target.id === "width") { state.widths[state.tool] = +e.target.value; renderOptions(); $("#width").focus(); }
+  if (e.target.id === "smoothing") { state.smoothing = +e.target.value; renderOptions(); $("#smoothing").focus(); }
+  if (e.target.id === "eraserSize") { state.eraserSize = +e.target.value; renderOptions(); $("#eraserSize").focus(); }
+  if (e.target.id === "extractInput") renderExtract();
+  if (e.target.id === "mergeInput" || e.target.id === "mergePosPage") renderMerge();
+  if (e.target.id === "setUndo") state.undoLimit = Math.max(1, Math.min(500, +e.target.value || 1)), renderStatus();
+  if (e.target.id === "search") $("#hits").textContent = e.target.value ? t("hits", { n: e.target.value.length > 2 ? 7 : 23 }) : "";
+  if (e.target.matches(".fn .t")) { annOf(currentPage().id).comments[+e.target.dataset.c].text = e.target.textContent; renderAnnotations(); }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "setTheme") { state.theme = e.target.value; applyTheme(); }
+  if (e.target.id === "pressure") state.pressure = e.target.checked;
+  if (e.target.id === "setLang") { state.lang = e.target.value; render(); }
+  if (e.target.id === "mergeSource") {
+    if (e.target.value === "choose") { toast("Mockup: Dateiauswahl des Systems"); e.target.value = merge.source.key; return; }
+    merge.source = MERGE_SOURCES.find(s => s.key === e.target.value); merge.unlocked = false;
+    $("#mergeInput").value = ""; renderMerge();
+  }
+  if (e.target.id === "mergePos") renderMerge();
+  if (e.target.id === "annFilter") renderAnnotations();
+  if (e.target.id === "signPressure") { sign.pressure = e.target.checked; drawPad(); }
+});
+$("#mergeGo").onclick = runMerge;
+$("#mergePwd").addEventListener("keydown", e => { if (e.key === "Enter") runMerge(); });
+$("#extractGo").onclick = () => { const n = renderExtract().length; $("#dlgExtract").close(); toast(t("toastExtract", { n })); };
+
+// Drag & Drop in der Seitenliste
+let dragFrom = null;
+const thumbs = $("#thumbs");
+thumbs.addEventListener("dragstart", e => {
+  const th = e.target.closest(".thumb"); dragFrom = +th.dataset.idx;
+  th.classList.add("dragging"); e.dataTransfer.effectAllowed = "move";
+});
+const isFileDrag = e => dragFrom === null && [...e.dataTransfer.types].includes("Files");
+thumbs.addEventListener("dragover", e => {
+  if (isFileDrag(e)) { thumbs.classList.add("file-over"); thumbs.title = t("dropHint"); }
+  const th = e.target.closest(".thumb"); if (!th) { if (isFileDrag(e)) e.preventDefault(); return; }
+  e.preventDefault();
+  thumbs.querySelectorAll(".drop-before,.drop-after").forEach(x => x.classList.remove("drop-before", "drop-after"));
+  const r = th.getBoundingClientRect();
+  th.classList.add(e.clientY < r.top + r.height / 2 ? "drop-before" : "drop-after");
+});
+thumbs.addEventListener("dragleave", e => { if (!thumbs.contains(e.relatedTarget)) thumbs.classList.remove("file-over"); });
+thumbs.addEventListener("drop", e => {
+  e.preventDefault();
+  if (isFileDrag(e)) {
+    // PDF aus dem Dateimanager: Dialog mit der Datei und der Ablageposition öffnen
+    thumbs.classList.remove("file-over");
+    const th = e.target.closest(".thumb");
+    const afterIndex = th ? +th.dataset.idx + (th.classList.contains("drop-after") ? 1 : 0) : state.pages.length;
+    thumbs.querySelectorAll(".drop-before,.drop-after").forEach(x => x.classList.remove("drop-before", "drop-after"));
+    const file = e.dataTransfer.files[0];
+    if (file && /\.pdf$/i.test(file.name)) openMerge({ file: file.name, afterIndex });
+    return;
+  }
+  const th = e.target.closest(".thumb"); if (!th || dragFrom === null) return;
+  let to = +th.dataset.idx + (th.classList.contains("drop-after") ? 1 : 0);
+  if (to > dragFrom) to--;
+  movePage(dragFrom, to); dragFrom = null;
+});
+thumbs.addEventListener("dragend", () => { dragFrom = null; renderThumbs(); });
+
+document.addEventListener("keydown", e => {
+  if (e.target.isContentEditable || e.target.matches("input")) return;
+  const k = e.key.toLowerCase();
+  if (e.ctrlKey && k === "z") { e.preventDefault(); undo(); }
+  else if (e.ctrlKey && k === "y") { e.preventDefault(); redo(); }
+  else if (e.ctrlKey && k === "e") { e.preventDefault(); ACTIONS.extract(); }
+  else if (e.ctrlKey && k === "i") { e.preventDefault(); ACTIONS.merge(); }
+  else if (e.ctrlKey && k === "f") { e.preventDefault(); ACTIONS.find(); }
+  else if (k === "delete") deletePage(state.current);
+  else if (k === "arrowdown" || k === "arrowup") { state.current = Math.max(0, Math.min(state.pages.length - 1, state.current + (k === "arrowdown" ? 1 : -1))); render(); }
+});
+
+bindSignPad();
+render();
+setAccent(accent.hex);   // gespeicherte Akzentfarbe anwenden
+</script>
+</body>
+</html>

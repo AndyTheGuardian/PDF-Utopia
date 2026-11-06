@@ -29,6 +29,16 @@ public sealed class RoundTripTests : IDisposable
         new RectangleAnnotation(Guid.NewGuid(), "#2F6FDF", 2, new PdfRect(100, 300, 300, 200)),
         new CommentAnnotation(Guid.NewGuid(), "#4F46E5", new PdfRect(50, 100, 400, 60), "Erster Hinweis"),
         new CommentAnnotation(Guid.NewGuid(), "#FFECB3", new PdfRect(50, 180, 400, 40), "Zweiter Hinweis – Größe"),
+        new TextAnnotation(Guid.NewGuid(), "#1F2328", new PdfPoint(80, 560), 220, 14, "Freier Text\nzweite Zeile – Größe"),
+        new TextAnnotation(Guid.NewGuid(), "#C93434", new PdfPoint(500, 700), 150, 10, "Gedreht", PageRotation.Clockwise90),
+        new LineAnnotation(Guid.NewGuid(), "#2F6FDF", 3, new PdfPoint(60, 760), new PdfPoint(260, 720), Arrow: ArrowStyle.Open),
+        new LineAnnotation(Guid.NewGuid(), "#1F9D55", 1, new PdfPoint(300, 760), new PdfPoint(500, 760), Arrow: ArrowStyle.None),
+        new LineAnnotation(Guid.NewGuid(), "#C93434", 2, new PdfPoint(300, 780), new PdfPoint(500, 800), Arrow: ArrowStyle.Closed, Ends: ArrowEnds.Both),
+        new EllipseAnnotation(Guid.NewGuid(), "#C93434", 2, new PdfRect(320, 600, 180, 90)),
+        new SignatureAnnotation(Guid.NewGuid(), "#1E3A8A", 1.5,
+            [[new(new PdfPoint(320, 700), 0.4f), new(new PdfPoint(380, 660), 0.8f), new(new PdfPoint(420, 700), 0.6f)],
+             [new(new PdfPoint(330, 715), 0.5f), new(new PdfPoint(460, 712), 0.5f)]], PressureSensitive: true),
+        new StampAnnotation(Guid.NewGuid(), "#B91C1C", new PdfRect(380, 40, 160, 40), 20, "Vertraulich", "06.11.2026 · A. Muster"),
     ];
 
     [Fact]
