@@ -85,6 +85,7 @@ internal static class AnnotationSerializer
                 new JsonDerivedType(typeof(SignatureAnnotation), "signature"),
                 new JsonDerivedType(typeof(StampAnnotation), "stamp"),
                 new JsonDerivedType(typeof(ImageAnnotation), "image"),
+                new JsonDerivedType(typeof(RedactionAnnotation), "redaction"),
             },
         };
     }

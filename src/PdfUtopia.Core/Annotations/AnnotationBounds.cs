@@ -24,6 +24,7 @@ public static class AnnotationBounds
         TextAnnotation text => text.Bounds,
         SignatureAnnotation signature => Inflate(signature.Bounds, signature.Width),
         BoxAnnotation box => box.Envelope,
+        RedactionAnnotation redaction => redaction.Bounds,
         _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
     };
 

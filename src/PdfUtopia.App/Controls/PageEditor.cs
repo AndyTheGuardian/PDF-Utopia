@@ -226,6 +226,7 @@ public sealed partial class PageEditor : Control
         DrawTextFrames(context);
         DrawSignatureGhost(context);
         DrawBoxOverlay(context);
+        DrawRedactionGesture(context);
         DrawFlash(context);
         DrawGesture(context);
         DrawEraserCursor(context);
@@ -350,6 +351,10 @@ public sealed partial class PageEditor : Control
         {
             BeginBox(display);
         }
+        else if (tool == Tool.Redact)
+        {
+            BeginRedaction(display);
+        }
         else if (tool == Tool.Freehand)
         {
             _recorder.Begin(sample with { Position = ToPage(display), IsEraser = false });
@@ -430,6 +435,9 @@ public sealed partial class PageEditor : Control
                 break;
             case Tool.Stamp:
                 FinishBox(document, options);
+                break;
+            case Tool.Redact:
+                FinishRedaction(document);
                 break;
         }
 
@@ -539,6 +547,9 @@ public sealed partial class PageEditor : Control
                 break;
             case BoxAnnotation box:
                 BoxRenderer.Draw(context, box);
+                break;
+            case RedactionAnnotation redaction:
+                DrawRedaction(context, redaction);
                 break;
         }
     }

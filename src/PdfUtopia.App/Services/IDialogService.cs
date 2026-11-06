@@ -131,6 +131,15 @@ public interface IDialogService
     /// <returns>Das Bild oder <c>null</c>, wenn die Zwischenablage keines enthält.</returns>
     Task<LoadedImage?> ReadClipboardImageAsync();
 
+    /// <summary>
+    /// Fragt vor dem Speichern, Extrahieren oder Drucken, ob die Schwärzungen angewendet werden (A52).
+    /// </summary>
+    /// <param name="pageNumbers">Betroffene Seiten (1-basiert, in der gespeicherten Datei).</param>
+    /// <param name="areaCount">Anzahl der Bereiche.</param>
+    /// <param name="confirmText">Text der bestätigenden Schaltfläche.</param>
+    /// <returns><c>true</c>, wenn geschwärzt werden soll.</returns>
+    Task<bool> ConfirmRedactionAsync(IReadOnlyList<int> pageNumbers, int areaCount, string confirmText);
+
     /// <summary>Zeigt die Einstellungen.</summary>
     /// <param name="current">Aktuelle Werte.</param>
     /// <returns>Die neuen Werte oder <c>null</c> bei Abbruch.</returns>

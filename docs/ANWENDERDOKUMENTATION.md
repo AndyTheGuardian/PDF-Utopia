@@ -225,6 +225,32 @@ Standard-Annotation „Stamp“ mit eigenem Erscheinungsbild (Text in Helvetica,
 Zeichensatzes erscheinen als „?“, E5) und sind in PDF Utopia wieder bearbeitbar. In der Anmerkungsübersicht stehen
 sie unter „Formen“.
 
+### 5.0b Schwärzen
+
+Mit dem Werkzeug **Schwärzen** markieren Sie Bereiche, deren Inhalt beim Speichern endgültig entfernt wird:
+
+- **Bereich aufziehen:** Die Markierung erscheint rot gestrichelt und schraffiert; der Inhalt darunter bleibt bis zum
+  Speichern erkennbar, damit Sie prüfen können, was verschwindet. Eine angeklickte Markierung hat einen
+  durchgezogenen Rahmen; **Entf** entfernt sie, **Esc** hebt die Auswahl auf. Auch Radierer und Rückgängig wirken.
+- **Suchen und schwärzen:** Begriff in die Optionsleiste eingeben; daneben steht die Trefferzahl („13 Fundstellen auf
+  13 Seiten“). **Alle markieren** (oder Enter) legt über jede Fundstelle im Dokument eine Markierung – ein
+  Rückgängig-Schritt. Groß-/Kleinschreibung spielt keine Rolle. Gesucht wird nur in der Textebene; gescannte Seiten
+  ohne Text haben keine Treffer.
+- Die Optionsleiste zeigt rot, wie viele Bereiche im Dokument markiert sind; in der Anmerkungsübersicht stehen sie als
+  „Schwärzung“ unter „Formen“.
+
+**Anwenden:** Beim **Speichern unter**, **Extrahieren** und **Drucken** fragt der Dialog „Schwärzungen anwenden“
+nach, wenn die zu schreibenden Seiten Markierungen enthalten. Jede betroffene Seite wird dann mit Anmerkungen und
+Formularfeldern in 300 dpi als Bild gerendert, die Bereiche werden schwarz in die Bildpunkte geschrieben, und die
+Seite wird durch dieses Bild ersetzt. Dadurch bleibt unter der Schwärzung nichts übrig – auch kein kopierbarer Text.
+
+Folgen für die geschwärzten Seiten: Text ist nicht mehr auswählbar oder durchsuchbar; Formularfelder, Links und
+Anmerkungen (auch eigene) sind nur noch Teil des Bildes; die Seite ist danach ungedreht in ihrer angezeigten Größe
+gespeichert. Die Strukturinformationen des Dokuments (Tagged PDF) werden entfernt, weil sie Text enthalten können.
+Nicht geschwärzt werden Dokumenteigenschaften (Titel, Autor), Lesezeichen-Texte und Dateianhänge. Die Datei wird
+größer (etwa 0,1–2 MB je Seite, je nach Inhalt), und das Speichern dauert einige Sekunden je Seite. Die Originaldatei
+bleibt unverändert.
+
 ### 5.1a Unterschrift
 
 Mit dem Werkzeug **Unterschrift** setzen Sie eine zuvor geschriebene Unterschrift auf die Seite. Ist noch keine
@@ -474,6 +500,8 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 | Strg+Y oder Strg+Umschalt+Z | Wiederholen |
 | Strg+Plus / Strg+Minus | Vergrößern / Verkleinern |
 | Strg+V | Bild aus der Zwischenablage einfügen |
+| Entf / Esc (Werkzeug „Schwärzen“) | angeklickte Markierung entfernen / Auswahl aufheben |
+| Enter (Suchfeld „Schwärzen“) | alle Fundstellen markieren |
 | Entf / Esc (Werkzeug „Stempel“) | angeklickten Stempel bzw. angeklicktes Bild löschen / Auswahl aufheben |
 | Umschalt beim Drehen | stufenlos drehen statt in 15°-Schritten |
 | Strg+F | Suchfeld |
@@ -532,6 +560,7 @@ Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
 | – | Annotationen anderer Programme werden angezeigt, sind aber nicht bearbeitbar. |
 | – | Beim Speichern einer geschützten Fremddatei geht ein abweichendes Besitzerpasswort verloren; es wird durch das eingegebene Passwort ersetzt. |
 | – | Die Absatzerkennung kann bei Spalten, Tabellen oder ungewöhnlichem Satz danebenliegen; dann einen Bereich aufziehen. |
+| – | Geschwärzte Seiten werden als Bild gespeichert: Text darauf ist nicht mehr auswählbar oder durchsuchbar, Links und Formularfelder dieser Seiten entfallen. Dokumenteigenschaften, Lesezeichen-Texte und Dateianhänge werden nicht geschwärzt. |
 | – | Eingefügte Bilder werden nur als PNG oder JPEG gelesen; Bilder über 2000 Pixel werden verkleinert. Stempel und Bilder zeigt die Seitenminiatur erst nach dem Speichern und erneuten Öffnen. |
 | – | Beim Einfügen von Seiten werden Lesezeichen und Verknüpfungen der eingefügten Datei nicht übernommen; ihre Formularfelder schon (gleichnamige werden umbenannt). Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 

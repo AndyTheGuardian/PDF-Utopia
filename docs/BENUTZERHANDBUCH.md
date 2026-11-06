@@ -187,6 +187,17 @@ Enthält eine Datei ein Formular, steht über der Seite ein Hinweis mit der Anza
 > **Tipp:** Der Schalter **Felder hervorheben** im Hinweis hinterlegt alle Felder farbig. Ein falscher Eintrag
 > lässt sich mit Strg+Z zurücknehmen. Graue Felder sind schreibgeschützt.
 
+### Schwärzen
+1. Werkzeug **Schwärzen** wählen.
+2. Bereiche aufziehen, die verschwinden sollen – oder oben einen Begriff (z. B. einen Namen) eingeben und
+   **Alle markieren** klicken.
+3. Die rot schraffierten Markierungen prüfen; eine falsche anklicken und **Entf** drücken.
+4. **Speichern unter** wählen und im Dialog **Schwärzen und speichern…** bestätigen.
+
+> **Wichtig:** Geschwärzte Seiten werden als Bild gespeichert. Was unter den Bereichen lag, ist in der neuen Datei
+> endgültig entfernt; Text dieser Seiten lässt sich dort nicht mehr markieren oder suchen. Titel, Autor und
+> Lesezeichen werden nicht geschwärzt – bei Bedarf vorher prüfen. Das Original bleibt unverändert.
+
 ### Stempeln und Bilder einfügen
 1. Werkzeug **Stempel** wählen.
 2. Im Klappfeld links in der Optionsleiste einen Stempel wählen, z. B. **Genehmigt** – oder mit **+ Eigener Text…**

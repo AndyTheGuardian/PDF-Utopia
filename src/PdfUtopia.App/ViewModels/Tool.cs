@@ -29,6 +29,9 @@ public enum Tool
     /// <summary>Stempel und Bilder (A51).</summary>
     Stamp,
 
+    /// <summary>Schwärzen (A52).</summary>
+    Redact,
+
     /// <summary>Radierer (Objekt-Radierer).</summary>
     Eraser,
 }

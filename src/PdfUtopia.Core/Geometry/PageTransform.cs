@@ -97,6 +97,7 @@ public static class PageTransform
             },
             LineAnnotation line => line with { Start = Rotate(line.Start, rotation, width, height), End = Rotate(line.End, rotation, width, height) },
             EllipseAnnotation ellipse => ellipse with { Bounds = Rotate(ellipse.Bounds, rotation, width, height) },
+            RedactionAnnotation redaction => redaction with { Bounds = Rotate(redaction.Bounds, rotation, width, height) },
             TextAnnotation text => text with
             {
                 Anchor = Rotate(text.Anchor, rotation, width, height),

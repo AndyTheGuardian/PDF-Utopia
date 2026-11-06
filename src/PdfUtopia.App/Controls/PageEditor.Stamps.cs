@@ -292,7 +292,7 @@ public sealed partial class PageEditor
     protected override void OnKeyDown(KeyEventArgs e)
     {
         base.OnKeyDown(e);
-        if (e.Handled || Document is not { } document || Options is not { Tool: Tool.Stamp } options)
+        if (e.Handled || Document is not { } document || Options is not { Tool: Tool.Stamp or Tool.Redact } options)
         {
             return;
         }

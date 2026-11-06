@@ -57,6 +57,9 @@ public enum AnnotationLabel
 
     /// <summary>Bild (A51).</summary>
     Image,
+
+    /// <summary>Schwärzung (A52).</summary>
+    Redaction,
 }
 
 /// <summary>
@@ -141,6 +144,7 @@ public static class AnnotationOverview
             TextAnnotation textAnnotation => (AnnotationCategory.Text, AnnotationLabel.Text, Shorten(textAnnotation.Text)),
             StampAnnotation stamp => (AnnotationCategory.Shape, AnnotationLabel.Stamp, Shorten(stamp.Label)),
             ImageAnnotation => (AnnotationCategory.Shape, AnnotationLabel.Image, string.Empty),
+            RedactionAnnotation => (AnnotationCategory.Shape, AnnotationLabel.Redaction, string.Empty),
             _ => throw new NotSupportedException($"Unbekannte Annotation {annotation.GetType().Name}."),
         };
         return new AnnotationEntry(index, page, annotation, category, label, null, text);

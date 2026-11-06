@@ -319,7 +319,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
             ? InsertPlacement.FormatSelection(document.TargetIndices(clickedIndex).Select(index => index + 1))
             : null;
         var positions = await _dialogs.AskPagesToExtractAsync(document.Document.Pages.Count, preset);
-        if (positions is null || await AskSaveOptionsAsync(document) is not { } options)
+        if (positions is null
+            || !await ConfirmRedactionsAsync(document, positions.Select(position => document.Document.Pages[position - 1]).ToList(), Loc.T("Redact.Save"))
+            || await AskSaveOptionsAsync(document) is not { } options)
         {
             return;
         }
@@ -395,6 +397,11 @@ public sealed partial class MainWindowViewModel : ObservableObject
         var document = ActiveDocument!;
         var path = Path.Combine(Path.GetTempPath(), $"PDF Utopia – {Path.GetFileNameWithoutExtension(document.FileName)}.pdf");
         var options = new ExportOptions { FootnoteHeading = Loc.T("Footnotes.Heading"), PasswordMode = PasswordMode.Remove };
+        if (!await ConfirmRedactionsAsync(document, document.Document.Pages.ToList(), Loc.T("Redact.Print")))
+        {
+            return;
+        }
+
         if (await RunExportAsync(() => PdfExporter.Save(document.Sources, document.Document, path, options), markSaved: false, document))
         {
             await _dialogs.ShowMessageAsync(Loc.T("Print.Title"), Loc.T("Print.Message"));
@@ -472,6 +479,88 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <param name="choice">Die Unterschrift.</param>
     [RelayCommand]
     private void SelectSignature(SignatureChoice choice) => ToolOptions.SelectSignature(choice.Index);
+
+    /// <summary>Suchbegriff für „Suchen und schwärzen“ (A52, F39).</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RedactHitsText))]
+    [NotifyCanExecuteChangedFor(nameof(MarkRedactionsCommand))]
+    public partial string RedactTerm { get; set; } = string.Empty;
+
+    /// <summary>Trefferzahl für „Suchen und schwärzen“, z. B. „13 Fundstellen auf 13 Seiten“.</summary>
+    public string RedactHitsText
+    {
+        get
+        {
+            if (ActiveDocument is not { } document || string.IsNullOrWhiteSpace(RedactTerm))
+            {
+                return string.Empty;
+            }
+
+            var hits = RedactionHits(document);
+            return hits.Count == 0 ? Loc.T("Redact.NoHits") : Loc.F("Redact.Hits", hits.Count, hits.Select(hit => hit.PageId).Distinct().Count());
+        }
+    }
+
+    /// <summary>Anzahl der markierten Bereiche im Dokument als Hinweis.</summary>
+    public string RedactPendingText => Loc.F("Redact.Pending", PendingRedactions(ActiveDocument).Count);
+
+    /// <summary>Ob im Dokument Bereiche zum Schwärzen markiert sind.</summary>
+    public bool HasPendingRedactions => PendingRedactions(ActiveDocument).Count > 0;
+
+    /// <summary>Ob „Alle markieren“ möglich ist.</summary>
+    private bool CanMarkRedactions => ActiveDocument is not null && !string.IsNullOrWhiteSpace(RedactTerm);
+
+    /// <summary>Markiert jede Fundstelle des Suchbegriffs im Dokument zum Schwärzen (ein Rückgängig-Schritt).</summary>
+    [RelayCommand(CanExecute = nameof(CanMarkRedactions))]
+    private void MarkRedactions()
+    {
+        if (ActiveDocument is not { } document)
+        {
+            return;
+        }
+
+        document.Document.AddAnnotations(RedactionHits(document)
+            .Select(hit => (hit.PageId, (Core.Annotations.Annotation)RedactionAnnotation.ForSearchHit(hit.Bounds))).ToList());
+    }
+
+    /// <summary>
+    /// Fundstellen des Suchbegriffs je Seite in der aktuellen Reihenfolge (Koordinaten der ungedrehten Seite).
+    /// </summary>
+    private List<(int PageId, PdfRect Bounds)> RedactionHits(DocumentViewModel document)
+    {
+        var term = RedactTerm.Trim();
+        return document.Document.Pages
+            .SelectMany(page => document.SourceOf(page).FindText(page.SourcePageNumber, term).Select(rect => (page.Id, rect)))
+            .ToList();
+    }
+
+    /// <summary>Markierte Bereiche je Seite (Seite und Annotation).</summary>
+    private static List<(PageEntry Page, RedactionAnnotation Redaction)> PendingRedactions(DocumentViewModel? document, IEnumerable<PageEntry>? pages = null) =>
+        document is null
+            ? []
+            : (pages ?? document.Document.Pages)
+                .SelectMany(page => document.Document.Annotations.For(page.Id).OfType<RedactionAnnotation>().Select(redaction => (page, redaction)))
+                .ToList();
+
+    /// <summary>
+    /// Fragt vor dem Schreiben nach, wenn Seiten Schwärzungen enthalten (A52).
+    /// </summary>
+    /// <param name="document">Das Dokument.</param>
+    /// <param name="pages">Die zu schreibenden Seiten in Zielreihenfolge.</param>
+    /// <param name="confirmText">Text der bestätigenden Schaltfläche.</param>
+    /// <returns><c>true</c>, wenn weitergemacht wird (auch ohne Schwärzungen).</returns>
+    private async Task<bool> ConfirmRedactionsAsync(DocumentViewModel document, IReadOnlyList<PageEntry> pages, string confirmText)
+    {
+        var pending = PendingRedactions(document, pages);
+        if (pending.Count == 0)
+        {
+            return true;
+        }
+
+        var numbers = pages.Select((page, index) => (page, index)).Where(item => pending.Any(entry => entry.Page.Id == item.page.Id))
+            .Select(item => item.index + 1).ToList();
+        return await _dialogs.ConfirmRedactionAsync(numbers, pending.Count, confirmText);
+    }
 
     /// <summary>Wählt einen Stempel in der Optionsleiste (A51).</summary>
     /// <param name="choice">Der Stempel.</param>
@@ -893,6 +982,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
             {
                 OnPropertyChanged(nameof(UndoStatus));
                 OnPropertyChanged(nameof(SearchHitsText));
+                OnPropertyChanged(nameof(RedactHitsText));
+                OnPropertyChanged(nameof(RedactPendingText));
+                OnPropertyChanged(nameof(HasPendingRedactions));
             }
             else if (e.PropertyName is nameof(DocumentViewModel.PageStatus))
             {
@@ -909,7 +1001,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <returns><c>true</c>, wenn gespeichert wurde.</returns>
     private async Task<bool> SaveAsync(DocumentViewModel document)
     {
-        if (await AskSaveOptionsAsync(document) is not { } options)
+        if (!await ConfirmRedactionsAsync(document, document.Document.Pages.ToList(), Loc.T("Redact.Save"))
+            || await AskSaveOptionsAsync(document) is not { } options)
         {
             return false;
         }
@@ -1122,6 +1215,9 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// </summary>
     partial void OnActiveDocumentChanged(DocumentViewModel? value)
     {
+        OnPropertyChanged(nameof(RedactHitsText));
+        OnPropertyChanged(nameof(RedactPendingText));
+        OnPropertyChanged(nameof(HasPendingRedactions));
         foreach (var document in Documents)
         {
             document.IsActive = document == value;

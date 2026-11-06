@@ -180,6 +180,41 @@ public sealed class DialogService(Window owner) : IDialogService
         await new SignatureDialog(this, signatures, startSlot, persist).ShowAsync();
 
     /// <inheritdoc />
+    public async Task<bool> ConfirmRedactionAsync(IReadOnlyList<int> pageNumbers, int areaCount, string confirmText)
+    {
+        const int ShownPages = 12;
+        var list = string.Join(", ", pageNumbers.Take(ShownPages)) + (pageNumbers.Count > ShownPages ? ", …" : string.Empty);
+        var icon = new Border
+        {
+            Width = 36, Height = 36, CornerRadius = new CornerRadius(18), Background = new SolidColorBrush(Color.Parse("#FEE2E2")),
+            VerticalAlignment = VerticalAlignment.Top,
+            Child = new TextBlock
+            {
+                Text = "!", FontWeight = FontWeight.Bold, FontSize = 18, Foreground = new SolidColorBrush(Color.Parse("#B91C1C")),
+                HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center,
+            },
+        };
+        var text = new StackPanel
+        {
+            Spacing = 10, MaxWidth = 440,
+            Children =
+            {
+                Message(Loc.F("Redact.Message", pageNumbers.Count, areaCount)),
+                new Border
+                {
+                    Background = Resource("Surface2Brush"), CornerRadius = new CornerRadius(8), Padding = new Thickness(10, 8),
+                    Child = new TextBlock { Text = Loc.F("Redact.Pages", list), TextWrapping = TextWrapping.Wrap, FontSize = 12.5 },
+                },
+                new TextBlock { Text = Loc.T("Redact.Note"), Classes = { "hint" }, TextWrapping = TextWrapping.Wrap, FontSize = 12 },
+            },
+        };
+        var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, Children = { icon, text } };
+        var dialog = CreateDialog(Loc.T("Redact.Title"), content);
+        AddButtons(dialog, (Loc.T("Dialog.Cancel"), false), (confirmText, true));
+        return await dialog.ShowDialog<bool>(Owner);
+    }
+
+    /// <inheritdoc />
     public async Task<string?> PickImageFileAsync()
     {
         var files = await Owner.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions

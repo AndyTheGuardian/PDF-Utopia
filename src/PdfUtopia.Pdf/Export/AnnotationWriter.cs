@@ -61,7 +61,8 @@ internal sealed class AnnotationWriter(PdfDocument document, ExportOptions optio
     public double Write(PdfPage page, PageGeometry geometry, IReadOnlyList<Annotation> annotations, PageRotation rotation)
     {
         var comments = annotations.OfType<CommentAnnotation>().ToList();
-        foreach (var annotation in annotations)
+        // Schwärzungen sind keine Annotationen der Datei; sie werden beim Speichern in das Seitenbild geschrieben (A52)
+        foreach (var annotation in annotations.Where(annotation => annotation is not RedactionAnnotation))
         {
             var dictionary = annotation switch
             {

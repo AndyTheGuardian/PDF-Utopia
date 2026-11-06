@@ -2,6 +2,8 @@ using PdfSharp.Drawing;
 using PdfSharp.Pdf;
 using PdfSharp.Pdf.IO;
 using PdfUtopia.Core;
+using PdfUtopia.Core.Annotations;
+using PdfUtopia.Core.Geometry;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Pdf.Rendering;
 
@@ -139,6 +141,7 @@ public static class PdfExporter
             var writer = new AnnotationWriter(output, options);
             var written = new List<PdfPage>();
             var origins = new List<(PdfPage Page, int SourceIndex)>();
+            var redactions = new List<PageRedaction>();
             foreach (var entry in entries)
             {
                 if (!inputs.TryGetValue(entry.SourceIndex, out var input))
@@ -156,6 +159,11 @@ public static class PdfExporter
                     Extend(page, geometry, extension);
                 }
 
+                if (Redactions(document.Annotations.For(entry.Id), GeometryOf(page), entry.Rotation, written.Count) is { } redaction)
+                {
+                    redactions.Add(redaction);
+                }
+
                 page.Rotate = (geometry.FileRotation + (int)entry.Rotation) % 360;
                 written.Add(page);
                 origins.Add((page, entry.SourceIndex));
@@ -165,8 +173,19 @@ public static class PdfExporter
             AddBookmarks(output.Outlines, BookmarkMap.Prune(BookmarkMap.Place(sources[PageEntry.OpenedFile].Bookmarks, entries)), written);
             // Formular-Registrierung neu aufbauen, sonst sind Formularfelder in anderen Programmen nicht mehr ausfüllbar (P7)
             FormRebuilder.Rebuild(output, origins, inputs, document.Form);
-            Protect(output, targetPassword);
-            SaveAtomically(output, targetPath);
+            if (redactions.Count == 0)
+            {
+                Protect(output, targetPassword);
+                SaveAtomically(output, targetPath);
+                return;
+            }
+
+            // Schwärzen (A52): erst vollständig schreiben, dann die betroffenen Seiten als Bild ersetzen
+            using var buffer = new MemoryStream();
+            output.Save(buffer, closeStream: false);
+            using var redacted = Redactor.Apply(buffer.ToArray(), redactions);
+            Protect(redacted, targetPassword);
+            SaveAtomically(redacted, targetPath);
         }
         finally
         {
@@ -175,6 +194,18 @@ public static class PdfExporter
                 input.Dispose();
             }
         }
+    }
+
+    /// <summary>
+    /// Schwärzungen einer Seite, umgerechnet auf die gespeicherte Anzeige (Bearbeitungsdrehung und Verlängerung).
+    /// </summary>
+    /// <returns>Die Schwärzungen oder <c>null</c>, wenn die Seite keine hat.</returns>
+    private static PageRedaction? Redactions(IReadOnlyList<Annotation> annotations, PageGeometry geometry, PageRotation rotation, int pageIndex)
+    {
+        var areas = annotations.OfType<RedactionAnnotation>()
+            .Select(redaction => PageTransform.Rotate(redaction.Bounds, rotation, geometry.DisplayWidth, geometry.DisplayHeight))
+            .ToList();
+        return areas.Count == 0 ? null : new PageRedaction(pageIndex, areas);
     }
 
     /// <summary>

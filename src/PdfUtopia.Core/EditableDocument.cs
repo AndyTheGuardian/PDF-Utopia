@@ -110,6 +110,34 @@ public sealed class EditableDocument
             () => Annotations.Remove(pageId, annotation.Id)));
 
     /// <summary>
+    /// Fügt Annotationen auf mehreren Seiten als einen Rückgängig-Schritt hinzu (z. B. „Suchen und schwärzen“, A52).
+    /// </summary>
+    /// <param name="annotations">Seitenkennung und Annotation; ohne Einträge entsteht kein Schritt.</param>
+    public void AddAnnotations(IReadOnlyList<(int PageId, Annotation Annotation)> annotations)
+    {
+        if (annotations.Count == 0)
+        {
+            return;
+        }
+
+        History.Execute(new DelegateCommand(
+            () =>
+            {
+                foreach (var (pageId, annotation) in annotations)
+                {
+                    Annotations.Add(pageId, annotation);
+                }
+            },
+            () =>
+            {
+                foreach (var (pageId, annotation) in annotations)
+                {
+                    Annotations.Remove(pageId, annotation.Id);
+                }
+            }));
+    }
+
+    /// <summary>
     /// Entfernt eine Annotation; Rückgängig stellt sie an derselben Position wieder her.
     /// </summary>
     /// <param name="pageId">Seitenkennung.</param>

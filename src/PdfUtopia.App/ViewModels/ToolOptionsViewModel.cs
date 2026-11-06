@@ -52,7 +52,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
 
     /// <summary>Gewähltes Werkzeug.</summary>
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(Title), nameof(Hint), nameof(ShowColorPicker), nameof(ShowMarkerColors), nameof(ShowShapeKinds), nameof(ShowArrowEnds), nameof(ShowSignatureOptions), nameof(ShowStampOptions), nameof(ShowWidth),
+    [NotifyPropertyChangedFor(nameof(Title), nameof(Hint), nameof(ShowColorPicker), nameof(ShowMarkerColors), nameof(ShowShapeKinds), nameof(ShowArrowEnds), nameof(ShowSignatureOptions), nameof(ShowStampOptions), nameof(ShowRedactOptions), nameof(ShowWidth),
         nameof(ShowFreehandOptions), nameof(ShowEraserOptions), nameof(CurrentColor), nameof(CurrentWidth), nameof(WidthMinimum),
         nameof(WidthMaximum), nameof(WidthLabel), nameof(WidthText), nameof(ShowPressureHint), nameof(ColorTarget))]
     public partial Tool Tool { get; set; } = Tool.Select;
@@ -190,6 +190,9 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
 
     /// <summary>Wählbare Stempelfarben.</summary>
     public IReadOnlyList<string> StampColors => StampAnnotation.Colors;
+
+    /// <summary>Ob die Optionsleiste „Suchen und schwärzen“ zeigt (A52).</summary>
+    public bool ShowRedactOptions => Tool == Tool.Redact;
 
     /// <summary>Ob die Optionsleiste die Stempel zeigt.</summary>
     public bool ShowStampOptions => Tool == Tool.Stamp;

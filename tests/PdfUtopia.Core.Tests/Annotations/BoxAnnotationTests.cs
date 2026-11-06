@@ -207,6 +207,14 @@ public sealed class BoxAnnotationTests
         Assert.Null(JpegInfo.Read([0x89, 0x50, 0x4E, 0x47]));
     }
 
+    [Theory]
+    [InlineData(100, 50, 60, 16, 102, 50, 56, 16)]
+    [InlineData(100, 50, 16, 60, 100, 52, 16, 56)]
+    public void RedactionForSearchHit_ShrinksAlongTheText(double x, double y, double w, double h, double ex, double ey, double ew, double eh)
+    {
+        Assert.Equal(new PdfRect(ex, ey, ew, eh), RedactionAnnotation.ForSearchHit(new PdfRect(x, y, w, h)).Bounds);
+    }
+
     [Fact]
     public void Settings_NormalizeCustomStamps()
     {

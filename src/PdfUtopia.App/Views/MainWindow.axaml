@@ -326,6 +326,9 @@
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Stamp}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconStamp}" /><TextBlock Text="{loc:T Tool.Stamp}" /></StackPanel>
             </RadioButton>
+            <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Redact}">
+              <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconRedact}" /><TextBlock Text="{loc:T Tool.Redact}" /></StackPanel>
+            </RadioButton>
             <RadioButton Classes="tb" GroupName="tools" IsChecked="{Binding ToolOptions.Tool, Converter={StaticResource EnumEquals}, ConverterParameter=Eraser}">
               <StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconEraser}" /><TextBlock Text="{loc:T Tool.Eraser}" /></StackPanel>
             </RadioButton>
@@ -435,6 +438,24 @@
                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).NewSignatureCommand}" />
             <Button Content="{loc:T Signature.Manage}" VerticalAlignment="Center"
                     Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ManageSignaturesCommand}" />
+          </StackPanel>
+          <!-- Schwärzen (A52, Mockup v8): Suchen und schwärzen, Anzahl der markierten Bereiche -->
+          <StackPanel Orientation="Horizontal" Spacing="8" IsVisible="{Binding ShowRedactOptions}" VerticalAlignment="Center">
+            <TextBox Width="190" PlaceholderText="{loc:T Redact.Search}" VerticalAlignment="Center"
+                     Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RedactTerm}">
+              <TextBox.KeyBindings>
+                <KeyBinding Gesture="Enter" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MarkRedactionsCommand}" />
+              </TextBox.KeyBindings>
+            </TextBox>
+            <Button Content="{loc:T Redact.MarkAll}" VerticalAlignment="Center"
+                    Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).MarkRedactionsCommand}" />
+            <TextBlock Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RedactHitsText}" Classes="hint" FontSize="12"
+                       MinWidth="120" VerticalAlignment="Center" />
+            <Border IsVisible="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).HasPendingRedactions}" Background="#FEE2E2"
+                    CornerRadius="6" Padding="9,3" VerticalAlignment="Center">
+              <TextBlock Text="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).RedactPendingText, StringFormat='■ {0}'}"
+                         Foreground="#991B1B" FontSize="12" />
+            </Border>
           </StackPanel>
           <!-- Stempel und Bild (A51, Mockup v7): Auswahl als Klappfeld, Datum/Name, Farbe, Bild -->
           <StackPanel Orientation="Horizontal" Spacing="12" IsVisible="{Binding ShowStampOptions}" VerticalAlignment="Center">

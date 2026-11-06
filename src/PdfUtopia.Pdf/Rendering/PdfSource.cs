@@ -146,6 +146,14 @@ public sealed class PdfSource : IDisposable
     }
 
     /// <summary>
+    /// Öffnet eine ungeschützte Datei aus dem Speicher, ohne eigene Annotationen einzulesen (z. B. zum Schwärzen).
+    /// </summary>
+    /// <param name="data">Inhalt der Datei.</param>
+    /// <returns>Die geöffnete Datei.</returns>
+    internal static PdfSource FromData(byte[] data) =>
+        new(string.Empty, null, Load(data, null, string.Empty), new Dictionary<int, IReadOnlyList<Annotation>>());
+
+    /// <summary>
     /// Erzeugt eine leere Seite als eigene, nur im Speicher vorhandene Datei (A48).
     /// </summary>
     /// <param name="width">Breite in Punkten.</param>
