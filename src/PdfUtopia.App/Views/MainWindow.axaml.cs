@@ -15,8 +15,9 @@ namespace PdfUtopia.App.Views;
 
 /// <summary>
 /// Hauptfenster. Der Code-Behind enthält nur Oberflächenlogik: Dateien per Drag &amp; Drop annehmen, Zoom als
-/// Layout-Transformation anwenden, mit Mausrad und Tasten blättern, Fußnotentexte übernehmen, vor dem Schließen nach
-/// ungespeicherten Änderungen fragen. Das Umsortieren der Seiten übernimmt <see cref="ThumbnailDragController"/>.
+/// Layout-Transformation anwenden, mit Mausrad und Tasten blättern, in den fortlaufenden Ansichten zur Seite scrollen
+/// und die aktuelle Seite mitführen (A55), Fußnotentexte übernehmen, vor dem Schließen nach ungespeicherten Änderungen
+/// fragen. Das Umsortieren der Seiten übernimmt <see cref="ThumbnailDragController"/>.
 /// </summary>
 public sealed partial class MainWindow : Window
 {
@@ -28,6 +29,7 @@ public sealed partial class MainWindow : Window
 
     private readonly PageNavigator _navigator = new();
     private bool _closeConfirmed;
+    private bool _scrollingToPage;
     private DocumentViewModel? _watchedDocument;
     private readonly ThumbnailDragController _thumbnailDrag;
 
@@ -41,6 +43,8 @@ public sealed partial class MainWindow : Window
         AddHandler(DragDrop.DropEvent, OnFileDrop);
         // Vor der Bildlaufleiste auswerten: am Rand blättern statt (wirkungslos) weiterscrollen
         PageScroller.AddHandler(PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
+        PageScroller.ScrollChanged += (_, _) => TrackCurrentPage();
+        StatusBarGrid.SizeChanged += (_, _) => FitViewLabels();
         AddHandler(KeyDownEvent, OnNavigationKeyDown, RoutingStrategies.Tunnel);
         // Strg-Zustand für „Drehen gegen den Uhrzeigersinn“ (auch wenn ein Textfeld die Taste verarbeitet)
         AddHandler(KeyDownEvent, (_, e) => TrackControlKey(e.Key, e.KeyModifiers, pressed: true), RoutingStrategies.Tunnel, handledEventsToo: true);
@@ -119,6 +123,8 @@ public sealed partial class MainWindow : Window
                     WatchDocument(viewModel.ActiveDocument);
                     Refit();
                     RevealCurrentThumbnail();
+                    ScrollToCurrentPage();
+                    FitViewLabels();
                     break;
             }
         };
@@ -133,28 +139,39 @@ public sealed partial class MainWindow : Window
         if (_watchedDocument is not null)
         {
             _watchedDocument.PropertyChanged -= OnWatchedDocumentPropertyChanged;
-            _watchedDocument.CurrentPageAnnotationsChanged -= OnWatchedDocumentPageChanged;
+            _watchedDocument.LayoutChanged -= OnWatchedDocumentLayoutChanged;
+            _watchedDocument.PageShown -= OnWatchedDocumentPageShown;
         }
 
         _watchedDocument = document;
         if (document is not null)
         {
             document.PropertyChanged += OnWatchedDocumentPropertyChanged;
-            document.CurrentPageAnnotationsChanged += OnWatchedDocumentPageChanged;
+            document.LayoutChanged += OnWatchedDocumentLayoutChanged;
+            document.PageShown += OnWatchedDocumentPageShown;
         }
     }
 
     /// <summary>
-    /// Neue Seite: neu anpassen und in der Seitenliste sichtbar machen.
+    /// Neue aktuelle Seite: in der Seitenliste sichtbar machen.
     /// </summary>
     private void OnWatchedDocumentPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(DocumentViewModel.CurrentIndex))
         {
-            Refit();
             RevealCurrentThumbnail();
         }
     }
+
+    /// <summary>
+    /// Andere Zeilen oder Seitengrößen (Seitenwechsel bei Einzel- und Doppelseite, Drehung, Ansicht): neu anpassen.
+    /// </summary>
+    private void OnWatchedDocumentLayoutChanged(object? sender, EventArgs e) => Refit();
+
+    /// <summary>
+    /// Seite gezielt angezeigt (Miniatur, Lesezeichen, Anmerkungsübersicht, Blättern): dorthin scrollen.
+    /// </summary>
+    private void OnWatchedDocumentPageShown(object? sender, EventArgs e) => ScrollToCurrentPage();
 
     /// <summary>
     /// Scrollt die Seitenliste so weit, dass die angezeigte Seite ganz sichtbar ist (A40). Ist sie schon sichtbar,
@@ -169,11 +186,6 @@ public sealed partial class MainWindow : Window
     }, DispatcherPriority.Loaded);
 
     /// <summary>
-    /// Seite gedreht oder neu angezeigt: neu anpassen.
-    /// </summary>
-    private void OnWatchedDocumentPageChanged(object? sender, EventArgs e) => Refit();
-
-    /// <summary>
     /// Berechnet den Zoom der gewählten Ansicht für den aktuellen Anzeigebereich.
     /// </summary>
     private void Refit()
@@ -183,7 +195,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var (pageWidth, pageHeight) = document.CurrentDisplaySize;
+        var (pageWidth, pageHeight) = ReferenceSize(document);
         var viewport = PageScroller.Bounds.Size;
         var zoom = ZoomFit.Calculate(viewModel.FitMode, viewport.Width - 2 * PageMargin - ScrollBarAllowance,
             viewport.Height - 2 * PageMargin, pageWidth, pageHeight);
@@ -191,6 +203,29 @@ public sealed partial class MainWindow : Window
         {
             viewModel.ApplyFitZoom(value);
         }
+    }
+
+    /// <summary>
+    /// Größe, an die der Zoom angepasst wird (A55): die Zeile der aktuellen Seite (eine Seite oder ein Seitenpaar);
+    /// in den fortlaufenden Ansichten die größte Zeile, damit der Zoom beim Scrollen und Drehen gleich bleibt.
+    /// </summary>
+    private static (double Width, double Height) ReferenceSize(DocumentViewModel document)
+    {
+        var mode = document.ViewMode;
+        var rows = document.Rows.Select(row => row.Row).ToList();
+        if (rows.Count == 0)
+        {
+            return document.CurrentView.DisplaySize;
+        }
+
+        (double Width, double Height) Size(PageRow row) => PageLayout.RowSize(row, index => document.ViewFor(document.Document.Pages[index].Id).DisplaySize);
+        if (!PageLayout.IsContinuous(mode))
+        {
+            return Size(rows[PageLayout.RowOf(rows, document.CurrentIndex)]);
+        }
+
+        var sizes = rows.Select(Size).ToList();
+        return (sizes.Max(size => size.Width), sizes.Max(size => size.Height));
     }
 
     /// <summary>
@@ -204,14 +239,15 @@ public sealed partial class MainWindow : Window
     /// </summary>
     private void OnPageWheel(object? sender, PointerWheelEventArgs e)
     {
-        if (ViewModel?.ActiveDocument is not { } document || e.KeyModifiers != KeyModifiers.None)
+        // In den fortlaufenden Ansichten scrollt das Mausrad einfach weiter
+        if (ViewModel?.ActiveDocument is not { } document || e.KeyModifiers != KeyModifiers.None || PageLayout.IsContinuous(document.ViewMode))
         {
             return;
         }
 
-        var step = _navigator.Wheel(e.Delta.Y, CurrentScrollPosition(), document.CurrentIndex, document.Document.Pages.Count,
-            TimeSpan.FromMilliseconds(e.Timestamp));
-        e.Handled = Navigate(document, step);
+        var (row, rows) = CurrentRow(document);
+        var step = _navigator.Wheel(e.Delta.Y, CurrentScrollPosition(), row, rows.Count, TimeSpan.FromMilliseconds(e.Timestamp));
+        e.Handled = Navigate(document, step, rows);
     }
 
     /// <summary>
@@ -226,7 +262,11 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        var step = PageNavigator.Key(key, CurrentScrollPosition(), document.CurrentIndex, document.Document.Pages.Count);
+        // Blättern geht zeilenweise: Seite bzw. Seitenpaar; in den fortlaufenden Ansichten scrollen die Pfeiltasten
+        // auf und ab immer, die übrigen Tasten springen zur Zeile
+        var (row, rows) = CurrentRow(document);
+        var position = PageLayout.IsContinuous(document.ViewMode) ? new ScrollPosition(false, false) : CurrentScrollPosition();
+        var step = PageNavigator.Key(key, position, row, rows.Count);
         if (step.Kind == NavigationKind.Scroll)
         {
             if (key == NavigationKey.Up)
@@ -239,8 +279,15 @@ public sealed partial class MainWindow : Window
             }
         }
 
-        Navigate(document, step);
+        Navigate(document, step, rows);
         e.Handled = true;
+    }
+
+    /// <summary>Zeile der aktuellen Seite und alle Zeilen der gewählten Ansicht.</summary>
+    private static (int Row, IReadOnlyList<PageRow> Rows) CurrentRow(DocumentViewModel document)
+    {
+        var rows = PageLayout.Rows(document.ViewMode, document.Document.Pages.Count, document.FirstPageAlone);
+        return (PageLayout.RowOf(rows, document.CurrentIndex), rows);
     }
 
     /// <summary>Taste zur Navigation oder <c>null</c>.</summary>
@@ -262,23 +309,123 @@ public sealed partial class MainWindow : Window
         ScrollPosition.From(PageScroller.Offset.Y, PageScroller.Extent.Height, PageScroller.Viewport.Height);
 
     /// <summary>
-    /// Führt einen Navigationsschritt aus. Die neue Seite wird nach dem Layout oben bzw. unten gezeigt.
+    /// Führt einen Navigationsschritt aus (Ziel ist eine Zeile). Bei Einzel- und Doppelseite wird die neue Zeile nach
+    /// dem Layout oben bzw. unten gezeigt; in den fortlaufenden Ansichten wird zu ihr gescrollt.
     /// </summary>
     /// <returns>Ob die Eingabe verbraucht ist (nicht an die Bildlaufleiste weitergeben).</returns>
-    private bool Navigate(DocumentViewModel document, NavigationStep step)
+    private bool Navigate(DocumentViewModel document, NavigationStep step, IReadOnlyList<PageRow> rows)
     {
         if (step.Kind != NavigationKind.GoTo)
         {
             return step.Kind == NavigationKind.Ignore;
         }
 
-        document.Show(step.TargetIndex);
-        Dispatcher.UIThread.Post(() =>
+        document.Show(rows[Math.Clamp(step.TargetIndex, 0, rows.Count - 1)].First);
+        if (!PageLayout.IsContinuous(document.ViewMode))
         {
-            var bottom = Math.Max(0, PageScroller.Extent.Height - PageScroller.Viewport.Height);
-            PageScroller.Offset = new Vector(PageScroller.Offset.X, step.LandAtBottom ? bottom : 0);
-        }, DispatcherPriority.Loaded);
+            Dispatcher.UIThread.Post(() =>
+            {
+                var bottom = Math.Max(0, PageScroller.Extent.Height - PageScroller.Viewport.Height);
+                PageScroller.Offset = new Vector(PageScroller.Offset.X, step.LandAtBottom ? bottom : 0);
+            }, DispatcherPriority.Loaded);
+        }
+
         return true;
+    }
+
+    /// <summary>
+    /// Zeigt die aktuelle Seite: in den fortlaufenden Ansichten wird ihre Zeile oben in die Ansicht gescrollt (zweimal,
+    /// weil die Höhen noch nicht aufgebauter Zeilen erst geschätzt sind), sonst beginnt die Ansicht oben.
+    /// </summary>
+    private void ScrollToCurrentPage()
+    {
+        if (_watchedDocument is not { } document)
+        {
+            return;
+        }
+
+        if (!PageLayout.IsContinuous(document.ViewMode))
+        {
+            Dispatcher.UIThread.Post(() => PageScroller.Offset = new Vector(PageScroller.Offset.X, 0), DispatcherPriority.Loaded);
+            return;
+        }
+
+        var row = document.Rows.ToList().FindIndex(item => item.Row.Contains(document.CurrentIndex));
+        if (row < 0)
+        {
+            return;
+        }
+
+        _scrollingToPage = true;
+        PageRows.ScrollIntoView(row);
+        void Align(int pass) => Dispatcher.UIThread.Post(() =>
+        {
+            if (PageRows.ContainerFromIndex(row) is { } container && container.TranslatePoint(default, PageScroller) is { } top)
+            {
+                PageScroller.Offset = new Vector(PageScroller.Offset.X, Math.Max(0, PageScroller.Offset.Y + top.Y - PageLayout.Gap));
+            }
+
+            if (pass < 2)
+            {
+                Align(pass + 1);
+            }
+            else
+            {
+                _scrollingToPage = false;
+            }
+        }, DispatcherPriority.Loaded);
+        Align(1);
+    }
+
+    /// <summary>
+    /// Fortlaufende Ansichten: beim Scrollen wird die Seite aktuell, deren Zeile den größten Teil der Ansicht einnimmt;
+    /// steht die bisherige aktuelle Seite in dieser Zeile, bleibt sie es (A55).
+    /// </summary>
+    private void TrackCurrentPage()
+    {
+        if (_scrollingToPage || _watchedDocument is not { } document || !PageLayout.IsContinuous(document.ViewMode))
+        {
+            return;
+        }
+
+        var viewport = new Rect(PageScroller.Bounds.Size);
+        PageRowViewModel? best = null;
+        var bestArea = 0.0;
+        foreach (var container in PageRows.GetRealizedContainers())
+        {
+            if (container.DataContext is not PageRowViewModel row || container.TransformToVisual(PageScroller) is not { } transform)
+            {
+                continue;
+            }
+
+            var visible = new Rect(container.Bounds.Size).TransformToAABB(transform).Intersect(viewport);
+            var area = visible.Width * visible.Height;
+            if (area > bestArea)
+            {
+                (best, bestArea) = (row, area);
+            }
+        }
+
+        if (best is not null && !best.Row.Contains(document.CurrentIndex))
+        {
+            document.Activate(best.Row.First);
+        }
+    }
+
+    /// <summary>
+    /// Beschriftung der Ansichtsknöpfe nur, wenn die Statusleiste genug Platz hat; sonst nur Symbole mit Tooltip (A55).
+    /// </summary>
+    private void FitViewLabels()
+    {
+        ViewModeButtons.Classes.Set("compact", false);
+        var needed = 0.0;
+        foreach (var child in StatusBarGrid.Children.Where(child => child != StatusNoticeText && child.IsVisible))
+        {
+            child.Measure(Size.Infinity);
+            needed += child.DesiredSize.Width;
+        }
+
+        ViewModeButtons.Classes.Set("compact", needed > StatusBarGrid.Bounds.Width);
     }
 
     /// <summary>
@@ -381,7 +528,13 @@ public sealed partial class MainWindow : Window
     private void OnFindClick(object? sender, RoutedEventArgs e) => FocusSearch();
 
     /// <summary>Farbwahl geschlossen: einem gerade bearbeiteten Text den Fokus zurückgeben (P10).</summary>
-    private void OnColorFlyoutClosed(object? sender, EventArgs e) => Editor.ResumeTextEditing();
+    private void OnColorFlyoutClosed(object? sender, EventArgs e)
+    {
+        foreach (var editor in PageRows.GetVisualDescendants().OfType<Controls.PageEditor>())
+        {
+            editor.ResumeTextEditing();
+        }
+    }
 
     /// <summary>Schließt die Stempelauswahl, sobald ein Stempel gewählt oder „+ Eigener Text…“ angeklickt ist.</summary>
     private void OnStampChosen(object? sender, RoutedEventArgs e) =>

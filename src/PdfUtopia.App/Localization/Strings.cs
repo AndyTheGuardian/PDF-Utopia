@@ -59,6 +59,11 @@ public static class Strings
         ["Status.FitHeight"] = ("Volle Höhe", "Full height"),
         ["Status.FitWidth"] = ("Volle Breite", "Full width"),
         ["Status.FitPage"] = ("Ganze Seite", "Whole page"),
+        ["View.Single"] = ("Einzelseite", "Single page"),
+        ["View.Continuous"] = ("Fortlaufend", "Continuous"),
+        ["View.Double"] = ("Doppelseite", "Two pages"),
+        ["View.DoubleContinuous"] = ("Doppelseite fortlaufend", "Two pages continuous"),
+        ["View.FirstPageAlone"] = ("Erste Seite einzeln", "Show first page alone"),
         ["Status.ZoomInput"] = ("Zoom in Prozent eingeben, Enter übernimmt", "Type a zoom in percent, Enter applies"),
 
         // Werkzeuge

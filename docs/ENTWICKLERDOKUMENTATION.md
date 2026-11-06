@@ -256,8 +256,15 @@ WinAnsi-Kodierung (`StandardFont`). Zeichen außerhalb davon werden zu „?“ (
 
 - `MainWindowViewModel` ist der Einstiegspunkt: offene Dokumente (Tabs), Befehle (Menü, Werkzeugleiste,
   Tastenkürzel), Einstellungen (`SettingsStore`), Unterschriften, Stempel, Schwärzen, Texterkennung.
-- `DocumentViewModel` je Tab: Quellen, `EditableDocument`, aktuelle Seite und Bitmap (`PageRenderer`), Miniaturen,
-  Anmerkungs- und Lesezeichenliste, Suche, `SelectedBox` (angeklickter Stempel/Bild/Schwärzung), Text-Zugriff.
+- `DocumentViewModel` je Tab: Quellen, `EditableDocument`, aktuelle Seite, die Zeilen der Seitenansicht (`Rows`),
+  `PageRenderer`, Miniaturen, Anmerkungs- und Lesezeichenliste, Suche, `SelectedBox` (angeklickter
+  Stempel/Bild/Schwärzung), Text-Zugriff. `Show(index)` zeigt eine Seite gezielt an (löst `PageShown` aus, die Ansicht
+  scrollt dorthin), `Activate(index)` macht sie nur zur aktuellen Seite (beim Scrollen und Arbeiten auf einer anderen
+  sichtbaren Seite).
+- `PageViewModel` je angezeigter Seite (A55): Bild, Annotationen, Fußnoten, Suchtreffer, Absätze, Hinzufügen und
+  Entfernen von Annotationen. Gefunden wird die Seite über ihre Kennung, nicht über die Position.
+  `PageRowViewModel` ist eine Zeile der Ansicht (eine Seite oder ein Seitenpaar, mit Lücke neben einer einzelnen
+  ersten bzw. letzten Seite). Die Aufteilung berechnet `PdfUtopia.Core.Pages.PageLayout` (`PageViewMode`, `PageRow`).
 - `ToolOptionsViewModel`: gewähltes Werkzeug (`Tool`) und alles, was die Optionsleiste zeigt; dauerhafte Werte meldet
   es über `Changed` zum Speichern.
 - Dialoge laufen über `IDialogService`; die ViewModels kennen keine Fenster.
@@ -268,7 +275,12 @@ Befehle mit `CanExecute = nameof(HasDocument)` müssen in der `NotifyCanExecuteC
 ### 7.2 PageEditor
 
 Ein eigenes `Control`, das die gerenderte Seite und alle Anmerkungen zeichnet (`Render`) und Zeigereingaben
-verarbeitet. Ablauf einer Eingabe: `OnPointerPressed` → `Begin(tool)` → `Continue` → `Finish`, je Werkzeug ein Zweig.
+verarbeitet. Jeder Editor gehört zu einer Seite (`Page`, ein `PageViewModel`); in den fortlaufenden Ansichten und bei
+Doppelseite gibt es mehrere. Ein Druck auf eine nicht aktuelle Seite ruft zuerst `DocumentViewModel.Activate` auf.
+Die Zeilen stehen in einem `ItemsControl` mit `VirtualizingStackPanel` innerhalb der Zoom-`LayoutTransformControl`:
+nur sichtbare Zeilen haben einen Editor. Container werden für andere Seiten wiederverwendet; beim Wechsel der Seite
+und beim Abhängen übernimmt der Editor einen offenen Text und gibt das Bild frei. Hervorhebungen aus der
+Anmerkungsübersicht merkt sich das `PageViewModel`, bis ein Editor für die Seite da ist. Ablauf einer Eingabe: `OnPointerPressed` → `Begin(tool)` → `Continue` → `Finish`, je Werkzeug ein Zweig.
 Eingaben gelten nur bei Kontakt und sind nicht an Zeiger-ID oder Gerätetyp gebunden (A12); das Radiererende des
 Stifts wirkt unabhängig vom Werkzeug (A27).
 
@@ -280,7 +292,8 @@ vor Speichern/Extrahieren/Drucken/Schließen über `DocumentViewModel.CommitEdit
 ### 7.3 Rendern
 
 `PageRenderer` rendert Seiten passend zum Zoom scharf und hält die letzten 24 Ergebnisse (Datei, Seite, Drehung,
-Maßstab) zwischengespeichert; `DocumentViewModel.RenderThumbnailsAsync` erzeugt die Miniaturen im Hintergrund. Formularfelder
+Maßstab) zwischengespeichert. Angezeigte Bitmaps hält ein `PageViewModel` mit `Pin`/`Unpin` fest: Fallen sie aus dem
+Zwischenspeicher, werden sie erst entsorgt, wenn keine Seite sie mehr zeigt; `DocumentViewModel.RenderThumbnailsAsync` erzeugt die Miniaturen im Hintergrund. Formularfelder
 zeichnet PDFium nur, wenn die Seite nicht ausfüllbar dargestellt wird (sonst liegen echte Eingabefelder darüber).
 
 ### 7.4 Lokalisierung und Theme

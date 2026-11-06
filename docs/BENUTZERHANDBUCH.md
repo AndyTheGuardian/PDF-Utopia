@@ -76,12 +76,18 @@ und Sie können es erneut versuchen. Geschützte Dateien erkennen Sie am **Schlo
 | Seite so hoch wie möglich | **Volle Höhe** |
 | Seite so breit wie möglich | **Volle Breite** |
 | Feiner zoomen | **−** / **+** in der Statusleiste, oder **Strg+Minus** / **Strg+Plus** |
+| Mehrere Seiten sehen | in der Statusleiste **Fortlaufend** (alle Seiten untereinander), **Doppelseite** (zwei Seiten nebeneinander) oder **Doppelseite fortlaufend** wählen; **Einzelseite** zeigt wieder eine Seite. Dasselbe im Menü **Ansicht** |
+| Deckblatt allein zeigen | Menü **Ansicht → Erste Seite einzeln** (bei Doppelseite, standardmäßig an) |
 | Zoom genau einstellen | in der Statusleiste in das Feld zwischen − und + klicken, z. B. `150` eintippen und **Enter** drücken |
 
 Die gewählte Ansicht passt sich automatisch an, wenn Sie das Fenster vergrößern, maximieren oder verkleinern.
 Sobald Sie mit −, + oder dem Eingabefeld zoomen, bleibt der Zoom fest, bis Sie wieder eine Ansicht wählen.
 
-Ist die Seite größer als die Ansicht (z. B. bei **Volle Breite**), scrollen Mausrad und **↑** / **↓** zuerst
+Sehen Sie mehrere Seiten, hat die aktuelle Seite einen farbigen Rahmen. Klicken oder zeichnen Sie auf einer
+anderen Seite, wird diese zur aktuellen Seite – Sie können also auf jeder sichtbaren Seite direkt weiterarbeiten.
+In den fortlaufenden Ansichten scrollen Sie einfach durch das Dokument; die aktuelle Seite folgt dabei.
+
+Bei **Einzelseite** und **Doppelseite**: Ist die Seite größer als die Ansicht (z. B. bei **Volle Breite**), scrollen Mausrad und **↑** / **↓** zuerst
 innerhalb der Seite. Am unteren Rand blättert die nächste Drehung weiter, am oberen Rand zurück – dann sehen Sie
 das Ende der vorigen Seite. Während Sie in ein Textfeld schreiben, blättern die Pfeiltasten nicht.
 

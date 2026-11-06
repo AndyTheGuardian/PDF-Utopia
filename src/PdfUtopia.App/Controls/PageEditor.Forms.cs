@@ -50,7 +50,7 @@ public sealed partial class PageEditor
     private void RebuildFormFields()
     {
         var document = Document;
-        var page = document?.CurrentPage;
+        var page = Page?.Page;
         var key = page is null ? ((DocumentViewModel?, int, PageRotation)?)null : (document, page.Id, page.Rotation);
         if (key == _formPage && (key is null || _formControls.Count > 0 || document?.IsFillable(page!) != true))
         {
@@ -314,8 +314,8 @@ public sealed partial class PageEditor
             return;
         }
 
-        var (pageWidth, pageHeight) = document.CurrentPageSize;
-        var rotation = document.CurrentPage.Rotation;
+        var (pageWidth, pageHeight) = PageSize;
+        var rotation = Rotation;
         foreach (var control in _formControls)
         {
             var bounds = control.Widget.Bounds;

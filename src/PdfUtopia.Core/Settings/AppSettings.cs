@@ -1,6 +1,7 @@
 using PdfUtopia.Core.Annotations;
 using PdfUtopia.Core.Drawing;
 using PdfUtopia.Core.History;
+using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Theming;
 
 namespace PdfUtopia.Core.Settings;
@@ -131,6 +132,12 @@ public sealed record AppSettings
     /// <summary>Breite der linken Leiste in Pixeln (F30).</summary>
     public double SidebarWidth { get; init; } = DefaultSidebarWidth;
 
+    /// <summary>Seitenansicht (A55), gemeinsam für alle Dokumente.</summary>
+    public PageViewMode ViewMode { get; init; } = PageViewMode.Single;
+
+    /// <summary>Bei Doppelseite: erste Seite allein rechts (A55).</summary>
+    public bool FirstPageAlone { get; init; } = true;
+
     /// <summary>Radius des Radierers in Punkten.</summary>
     public double EraserRadius { get; init; } = EraserHitTest.DefaultRadius;
 
@@ -143,6 +150,7 @@ public sealed record AppSettings
         Theme = Enum.IsDefined(Theme) ? Theme : ThemePreference.System,
         Shape = Enum.IsDefined(Shape) ? Shape : ShapeKind.Rectangle,
         ArrowEnds = Enum.IsDefined(ArrowEnds) ? ArrowEnds : ArrowEnds.End,
+        ViewMode = Enum.IsDefined(ViewMode) ? ViewMode : PageViewMode.Single,
         Language = Language is { } language && Enum.IsDefined(language) ? language : null,
         AccentColor = AccentPalette.IsValidHex(AccentColor) ? AccentPalette.Normalize(AccentColor!) : null,
         PastelSaturation = AccentPalette.ClampSaturation(PastelSaturation),

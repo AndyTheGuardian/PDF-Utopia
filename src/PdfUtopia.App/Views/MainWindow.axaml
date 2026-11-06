@@ -4,6 +4,7 @@
         xmlns:views="using:PdfUtopia.App.Views"
         xmlns:controls="using:PdfUtopia.App.Controls"
         xmlns:settings="using:PdfUtopia.Core.Settings"
+        xmlns:pages="using:PdfUtopia.Core.Pages"
         xmlns:loc="using:PdfUtopia.App.Localization"
         x:Class="PdfUtopia.App.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
@@ -285,6 +286,23 @@
             <Separator />
             <MenuItem Header="{loc:T Menu.ZoomIn}" Command="{Binding ZoomInCommand}" InputGesture="Ctrl+OemPlus" />
             <MenuItem Header="{loc:T Menu.ZoomOut}" Command="{Binding ZoomOutCommand}" InputGesture="Ctrl+OemMinus" />
+            <Separator />
+            <!-- Seitenansicht (A55) -->
+            <MenuItem Header="{loc:T View.Single}" ToggleType="Radio" GroupName="viewMode"
+                      IsChecked="{Binding ViewMode, Mode=OneWay, Converter={StaticResource EnumEquals}, ConverterParameter=Single}"
+                      Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static pages:PageViewMode.Single}" />
+            <MenuItem Header="{loc:T View.Continuous}" ToggleType="Radio" GroupName="viewMode"
+                      IsChecked="{Binding ViewMode, Mode=OneWay, Converter={StaticResource EnumEquals}, ConverterParameter=Continuous}"
+                      Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static pages:PageViewMode.Continuous}" />
+            <MenuItem Header="{loc:T View.Double}" ToggleType="Radio" GroupName="viewMode"
+                      IsChecked="{Binding ViewMode, Mode=OneWay, Converter={StaticResource EnumEquals}, ConverterParameter=Double}"
+                      Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static pages:PageViewMode.Double}" />
+            <MenuItem Header="{loc:T View.DoubleContinuous}" ToggleType="Radio" GroupName="viewMode"
+                      IsChecked="{Binding ViewMode, Mode=OneWay, Converter={StaticResource EnumEquals}, ConverterParameter=DoubleContinuous}"
+                      Command="{Binding SetViewModeCommand}" CommandParameter="{x:Static pages:PageViewMode.DoubleContinuous}" />
+            <Separator />
+            <MenuItem Header="{loc:T View.FirstPageAlone}" ToggleType="CheckBox" IsChecked="{Binding FirstPageAlone, Mode=OneWay}"
+                      IsEnabled="{Binding IsDoubleView}" Command="{Binding ToggleFirstPageAloneCommand}" />
           </MenuItem>
           <MenuItem Header="{loc:T Menu.Language}">
             <MenuItem Header="Deutsch" ToggleType="Radio" GroupName="language"
@@ -587,14 +605,17 @@
         <Style Selector="TextBlock">
           <Setter Property="VerticalAlignment" Value="Center" />
         </Style>
+        <Style Selector="StackPanel.compact TextBlock.viewLabel">
+          <Setter Property="IsVisible" Value="False" />
+        </Style>
       </Border.Styles>
-      <Grid ColumnDefinitions="Auto,Auto,Auto,*,Auto">
+      <Grid x:Name="StatusBarGrid" ColumnDefinitions="Auto,Auto,Auto,*,Auto">
         <StackPanel Orientation="Horizontal" Spacing="10">
           <TextBlock Classes="hint" Text="{Binding PageStatus}" />
           <TextBlock Classes="hint" Text="{Binding ActiveDocument.SelectionStatus, FallbackValue=''}" Foreground="{DynamicResource AccentTextBrush}" FontWeight="SemiBold" />
         </StackPanel>
         <TextBlock Grid.Column="1" Classes="hint" Margin="18,0,0,0" Text="{Binding UndoStatus}" />
-        <TextBlock Grid.Column="3" Classes="hint" Margin="18,0,0,0" Text="{Binding StatusNotice}" Foreground="{DynamicResource AccentTextBrush}"
+        <TextBlock x:Name="StatusNoticeText" Grid.Column="3" Classes="hint" Margin="18,0,0,0" Text="{Binding StatusNotice}" Foreground="{DynamicResource AccentTextBrush}"
                    TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="18,0,0,0" IsVisible="{Binding HasDocument}">
           <TextBlock Classes="hint" Text="{Binding ActiveDocument.FileName, FallbackValue=''}" />
@@ -602,6 +623,25 @@
           <TextBlock Classes="hint" Text="{Binding ActiveDocument.FileSizeText, FallbackValue=''}" />
         </StackPanel>
         <StackPanel Grid.Column="4" Orientation="Horizontal" Spacing="4">
+          <!-- Seitenansichten (A55): Beschriftung nur, wenn die Statusleiste genug Platz hat; sonst Symbole mit Tooltip -->
+          <StackPanel x:Name="ViewModeButtons" Orientation="Horizontal" Spacing="2" Margin="0,0,12,0" IsEnabled="{Binding HasDocument}">
+            <RadioButton Classes="fit" GroupName="view" ToolTip.Tip="{loc:T View.Single}"
+                         IsChecked="{Binding ViewMode, Converter={StaticResource EnumEquals}, ConverterParameter=Single}">
+              <StackPanel Orientation="Horizontal" Spacing="5"><Path Classes="icon small" Data="{StaticResource IconViewSingle}" /><TextBlock Classes="viewLabel" Text="{loc:T View.Single}" /></StackPanel>
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="view" ToolTip.Tip="{loc:T View.Continuous}"
+                         IsChecked="{Binding ViewMode, Converter={StaticResource EnumEquals}, ConverterParameter=Continuous}">
+              <StackPanel Orientation="Horizontal" Spacing="5"><Path Classes="icon small" Data="{StaticResource IconViewContinuous}" /><TextBlock Classes="viewLabel" Text="{loc:T View.Continuous}" /></StackPanel>
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="view" ToolTip.Tip="{loc:T View.Double}"
+                         IsChecked="{Binding ViewMode, Converter={StaticResource EnumEquals}, ConverterParameter=Double}">
+              <StackPanel Orientation="Horizontal" Spacing="5"><Path Classes="icon small" Data="{StaticResource IconViewDouble}" /><TextBlock Classes="viewLabel" Text="{loc:T View.Double}" /></StackPanel>
+            </RadioButton>
+            <RadioButton Classes="fit" GroupName="view" ToolTip.Tip="{loc:T View.DoubleContinuous}"
+                         IsChecked="{Binding ViewMode, Converter={StaticResource EnumEquals}, ConverterParameter=DoubleContinuous}">
+              <StackPanel Orientation="Horizontal" Spacing="5"><Path Classes="icon small" Data="{StaticResource IconViewDoubleContinuous}" /><TextBlock Classes="viewLabel" Text="{loc:T View.DoubleContinuous}" /></StackPanel>
+            </RadioButton>
+          </StackPanel>
           <!-- Ansichten: werden auch beim Maximieren und jeder Größenänderung neu angewandt (A33) -->
           <StackPanel Orientation="Horizontal" Spacing="2" Margin="0,0,12,0" IsEnabled="{Binding HasDocument}">
             <RadioButton Classes="fit" GroupName="fit" IsChecked="{Binding FitMode, Converter={StaticResource EnumEquals}, ConverterParameter=Height}">
@@ -908,49 +948,80 @@
           </Border>
         <ScrollViewer x:Name="PageScroller" Background="{DynamicResource CanvasBrush}" HorizontalScrollBarVisibility="Auto">
           <LayoutTransformControl x:Name="ZoomHost" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="32">
-            <Border BoxShadow="0 1 3 0 #30000000, 0 8 24 0 #20000000">
-              <StackPanel>
-                <controls:PageEditor x:Name="Editor" Document="{Binding ActiveDocument}" Options="{Binding ToolOptions}" Zoom="{Binding Zoom}" HighlightFields="{Binding HighlightFormFields}" />
-                <!-- Fußnoten auf der verlängerten Seite -->
-                <Border Background="#FCFCFD" BorderBrush="#C9CDD8" BorderThickness="0,2,0,0" Padding="40,12,40,18"
-                        IsVisible="{Binding ActiveDocument.HasFootnotes, FallbackValue=False}">
-                  <!-- Fußnoten stehen auf der (weißen) Seite: feste Papierfarben in jedem Theme und Zustand -->
-                  <Border.Resources>
-                    <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
-                    <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#F1F2F5" />
-                    <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#EEF0FF" />
-                    <SolidColorBrush x:Key="TextControlForeground" Color="#333333" />
-                    <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#333333" />
-                    <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#1D2330" />
-                    <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
-                    <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
-                    <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
-                    <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#C7CEEA" />
-                    <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#8A8F99" />
-                  </Border.Resources>
-                  <StackPanel Spacing="6">
-                    <TextBlock Text="{loc:T Footnotes.Heading}" FontSize="9" FontWeight="SemiBold" Foreground="#9AA0AB" LetterSpacing="0.6" />
-                    <ItemsControl ItemsSource="{Binding ActiveDocument.Footnotes, FallbackValue={x:Null}}">
-                      <ItemsControl.ItemTemplate>
-                        <DataTemplate x:DataType="vm:FootnoteViewModel">
-                          <Grid ColumnDefinitions="22,*" Margin="0,0,0,4">
-                            <Border Width="16" Height="16" CornerRadius="8" VerticalAlignment="Top" Margin="0,3,0,0"
-                                    Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}"
-                                    BorderBrush="{Binding BorderHex, Converter={StaticResource HexToBrush}}" BorderThickness="1">
-                              <TextBlock Text="{Binding Number}" FontSize="9" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"
-                                         Foreground="{Binding NumberForegroundHex, Converter={StaticResource HexToBrush}}" />
-                            </Border>
-                            <TextBox Grid.Column="1" Classes="paper" Text="{Binding Text}" TextWrapping="Wrap" AcceptsReturn="True" FontSize="12"
-                                     BorderThickness="0" Padding="2" MinHeight="0" CaretBrush="#1D2330"
-                                     LostFocus="OnFootnoteLostFocus" />
-                          </Grid>
-                        </DataTemplate>
-                      </ItemsControl.ItemTemplate>
-                    </ItemsControl>
+            <!-- Zeilen der Seitenansicht (A55): eine Seite oder ein Seitenpaar; nur sichtbare Zeilen werden aufgebaut -->
+            <ItemsControl x:Name="PageRows" ItemsSource="{Binding ActiveDocument.Rows, FallbackValue={x:Null}}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.DataTemplates>
+                <DataTemplate DataType="vm:PageViewModel">
+                  <Panel>
+                    <Border BoxShadow="0 1 3 0 #30000000, 0 8 24 0 #20000000">
+                      <StackPanel>
+                        <controls:PageEditor Page="{Binding}" Options="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ToolOptions}"
+                                             Zoom="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).Zoom}"
+                                             HighlightFields="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).HighlightFormFields}" />
+                        <!-- Fußnoten auf der verlängerten Seite -->
+                        <Border Background="#FCFCFD" BorderBrush="#C9CDD8" BorderThickness="0,2,0,0" Padding="40,12,40,18"
+                                IsVisible="{Binding HasFootnotes}">
+                          <!-- Fußnoten stehen auf der (weißen) Seite: feste Papierfarben in jedem Theme und Zustand -->
+                          <Border.Resources>
+                            <SolidColorBrush x:Key="TextControlBackground" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#F1F2F5" />
+                            <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#EEF0FF" />
+                            <SolidColorBrush x:Key="TextControlForeground" Color="#333333" />
+                            <SolidColorBrush x:Key="TextControlForegroundPointerOver" Color="#333333" />
+                            <SolidColorBrush x:Key="TextControlForegroundFocused" Color="#1D2330" />
+                            <SolidColorBrush x:Key="TextControlBorderBrush" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushPointerOver" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlBorderBrushFocused" Color="Transparent" />
+                            <SolidColorBrush x:Key="TextControlSelectionHighlightColor" Color="#C7CEEA" />
+                            <SolidColorBrush x:Key="TextControlPlaceholderForeground" Color="#8A8F99" />
+                          </Border.Resources>
+                          <StackPanel Spacing="6">
+                            <TextBlock Text="{loc:T Footnotes.Heading}" FontSize="9" FontWeight="SemiBold" Foreground="#9AA0AB" LetterSpacing="0.6" />
+                            <ItemsControl ItemsSource="{Binding Footnotes}">
+                              <ItemsControl.ItemTemplate>
+                                <DataTemplate x:DataType="vm:FootnoteViewModel">
+                                  <Grid ColumnDefinitions="22,*" Margin="0,0,0,4">
+                                    <Border Width="16" Height="16" CornerRadius="8" VerticalAlignment="Top" Margin="0,3,0,0"
+                                            Background="{Binding ColorHex, Converter={StaticResource HexToBrush}}"
+                                            BorderBrush="{Binding BorderHex, Converter={StaticResource HexToBrush}}" BorderThickness="1">
+                                      <TextBlock Text="{Binding Number}" FontSize="9" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                 Foreground="{Binding NumberForegroundHex, Converter={StaticResource HexToBrush}}" />
+                                    </Border>
+                                    <TextBox Grid.Column="1" Classes="paper" Text="{Binding Text}" TextWrapping="Wrap" AcceptsReturn="True" FontSize="12"
+                                             BorderThickness="0" Padding="2" MinHeight="0" CaretBrush="#1D2330"
+                                             LostFocus="OnFootnoteLostFocus" />
+                                  </Grid>
+                                </DataTemplate>
+                              </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                          </StackPanel>
+                        </Border>
+                      </StackPanel>
+                    </Border>
+                    <!-- Aktuelle Seite, wenn mehrere zu sehen sind -->
+                    <!-- Innerhalb der Seite: die Zoom-Fläche schneidet alles außerhalb ab -->
+                    <Border BorderThickness="3" BorderBrush="{DynamicResource AccentBorderBrush}"
+                            IsVisible="{Binding IsHighlighted}" IsHitTestVisible="False" />
+                  </Panel>
+                </DataTemplate>
+              </ItemsControl.DataTemplates>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="vm:PageRowViewModel">
+                  <!-- Lücken neben einer einzelnen ersten bzw. letzten Seite einer Doppelseite halten die Spalten -->
+                  <StackPanel Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center" Margin="0,0,0,16">
+                    <Border Width="{Binding Right.DisplayWidth, FallbackValue=0}" IsVisible="{Binding HasLeftGap}" />
+                    <ContentControl Content="{Binding Left}" VerticalAlignment="Top" IsVisible="{Binding Left, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <ContentControl Content="{Binding Right}" VerticalAlignment="Top" IsVisible="{Binding Right, Converter={x:Static ObjectConverters.IsNotNull}}" />
+                    <Border Width="{Binding Left.DisplayWidth, FallbackValue=0}" IsVisible="{Binding HasRightGap}" />
                   </StackPanel>
-                </Border>
-              </StackPanel>
-            </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
           </LayoutTransformControl>
         </ScrollViewer>
         </DockPanel>
