@@ -51,6 +51,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         Document.Pages.Changed += (_, _) => OnPagesChanged();
         Document.Annotations.Changed += (_, pageId) => OnAnnotationsChanged(pageId);
         Document.History.Changed += (_, _) => OnHistoryChanged();
+        Document.RecognizedTextChanged += (_, _) => OnRecognizedTextChanged();
         RebuildThumbnails();
         _ = RenderThumbnailsAsync();
     }
@@ -80,6 +81,17 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
 
     /// <summary>Ob der Hinweis gezeigt wird: bei Formularen, bis er für dieses Dokument geschlossen wird.</summary>
     public bool ShowFormNotice => FormFieldCount > 0 && !_formNoticeDismissed;
+
+    /// <summary>Ob der Hinweis auf Seiten ohne Text gezeigt wird (A53), bis er für dieses Dokument geschlossen wird.</summary>
+    public bool ShowOcrNotice => !_ocrNoticeDismissed && PagesWithoutText.Count > 0;
+
+    /// <summary>Hinweis auf Seiten ohne Text, z. B. „3 Seiten dieses Dokuments haben keinen Text …“.</summary>
+    public string OcrNotice => Loc.F("Ocr.Notice", PagesWithoutText.Count);
+
+    private bool _ocrNoticeDismissed;
+
+    /// <summary>Ob eine Seite der Datei keine Textebene hat (zwischengespeichert).</summary>
+    private readonly Dictionary<(int Source, int Page), bool> _emptyPages = [];
 
     /// <summary>Mehrfachauswahl in der Seitenliste (A48).</summary>
     public PageListSelection Selection { get; } = new();
@@ -291,6 +303,14 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
         _ = RenderThumbnailsAsync();
     }
 
+    /// <summary>Schließt den Hinweis auf Seiten ohne Text für dieses Dokument.</summary>
+    [CommunityToolkit.Mvvm.Input.RelayCommand]
+    private void DismissOcrNotice()
+    {
+        _ocrNoticeDismissed = true;
+        OnPropertyChanged(nameof(ShowOcrNotice));
+    }
+
     /// <summary>Schließt den Formular-Hinweis für dieses Dokument.</summary>
     [CommunityToolkit.Mvvm.Input.RelayCommand]
     private void DismissFormNotice()
@@ -414,7 +434,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
                 _textBlocks[page] = blocks;
             }
 
-            return blocks;
+            return Recognized(CurrentPage) is { } recognized ? [.. blocks, .. recognized.Paragraphs] : blocks;
         }
     }
 
@@ -456,7 +476,7 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
                 _searchHits[page] = hits;
             }
 
-            return hits;
+            return Recognized(CurrentPage) is { } recognized ? [.. hits, .. recognized.Find(_searchTerm, RecognizedHitPadding)] : hits;
         }
     }
 
@@ -491,8 +511,75 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
             _highlightedTexts[key] = text;
         }
 
-        return text;
+        return Recognized(page) is { } recognized ? $"{text} {recognized.TextIn(area)}".Trim() : text;
     }
+
+    /// <summary>Rand um Fundstellen im erkannten Text, wie bei der Textebene der Datei.</summary>
+    private const double RecognizedHitPadding = 3;
+
+    /// <summary>
+    /// Text einer Seite: Textebene der Datei und erkannter Text (A53).
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <returns>Der Text.</returns>
+    public string PageText(PageEntry page)
+    {
+        var text = SourceOf(page).PageText(page.SourcePageNumber);
+        return Recognized(page) is { } recognized ? $"{text}\n{recognized.Text}" : text;
+    }
+
+    /// <summary>
+    /// Fundstellen eines Begriffs auf einer Seite: in der Textebene der Datei und im erkannten Text (A53).
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <param name="term">Suchbegriff.</param>
+    /// <returns>Rechtecke in Koordinaten der ungedrehten Seite.</returns>
+    public IReadOnlyList<PdfRect> FindText(PageEntry page, string term)
+    {
+        var hits = SourceOf(page).FindText(page.SourcePageNumber, term);
+        return Recognized(page) is { } recognized ? [.. hits, .. recognized.Find(term, RecognizedHitPadding)] : hits;
+    }
+
+    /// <summary>
+    /// Ob eine Seite weder eine Textebene noch erkannten Text hat (z. B. ein Scan).
+    /// </summary>
+    /// <param name="page">Die Seite.</param>
+    /// <returns><c>true</c> ohne Text.</returns>
+    public bool HasNoText(PageEntry page)
+    {
+        if (Recognized(page) is not null)
+        {
+            return false;
+        }
+
+        var key = (page.SourceIndex, page.SourcePageNumber);
+        if (!_emptyPages.TryGetValue(key, out var empty))
+        {
+            empty = string.IsNullOrWhiteSpace(SourceOf(page).PageText(page.SourcePageNumber));
+            _emptyPages[key] = empty;
+        }
+
+        return empty;
+    }
+
+    /// <summary>Erkannter Text einer Seite oder <c>null</c>.</summary>
+    private Core.Text.RecognizedPage? Recognized(PageEntry page) => Document.RecognizedText.GetValueOrDefault(page.Id);
+
+    /// <summary>
+    /// Neuer erkannter Text: Hinterlegung, Absätze und Anmerkungsübersicht neu aufbauen.
+    /// </summary>
+    private void OnRecognizedTextChanged()
+    {
+        AnnotationList.RequestRefresh();
+        OnPropertyChanged(nameof(PagesWithoutText));
+        OnPropertyChanged(nameof(ShowOcrNotice));
+        OnPropertyChanged(nameof(OcrNotice));
+        CurrentPageAnnotationsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>Seiten ohne Text (Position in der Seitenliste, 0-basiert) für die Texterkennung (A53).</summary>
+    public IReadOnlyList<int> PagesWithoutText =>
+        Document.Pages.Select((page, index) => (page, index)).Where(item => HasNoText(item.page)).Select(item => item.index).ToList();
 
     /// <summary>
     /// Quelldatei zu einer Kennung aus <see cref="PageEntry.SourceIndex"/>.
@@ -564,6 +651,9 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     /// </summary>
     private void OnHistoryChanged()
     {
+        // Seiten eingefügt oder gelöscht: der Hinweis auf Seiten ohne Text kann sich ändern
+        OnPropertyChanged(nameof(ShowOcrNotice));
+        OnPropertyChanged(nameof(OcrNotice));
         OnPropertyChanged(nameof(UndoStatus));
         OnPropertyChanged(nameof(TabTitle));
     }

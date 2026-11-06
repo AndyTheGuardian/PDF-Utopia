@@ -107,7 +107,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasDocument), nameof(NoDocument))]
     [NotifyCanExecuteChangedFor(nameof(SaveAsCommand), nameof(ExtractCommand), nameof(InsertPagesCommand), nameof(PrintCommand), nameof(CloseDocumentCommand),
-        nameof(RotateCurrentPageCommand), nameof(RotateCurrentPageClockwiseCommand), nameof(RotateCurrentPageCounterclockwiseCommand), nameof(DeleteCurrentPageCommand), nameof(InsertBlankPageCommand), nameof(UndoCommand), nameof(RedoCommand))]
+        nameof(RotateCurrentPageCommand), nameof(RotateCurrentPageClockwiseCommand), nameof(RotateCurrentPageCounterclockwiseCommand), nameof(DeleteCurrentPageCommand), nameof(InsertBlankPageCommand), nameof(UndoCommand), nameof(RedoCommand),
+        nameof(RecognizeTextCommand), nameof(MarkRedactionsCommand))]
     public partial DocumentViewModel? ActiveDocument { get; set; }
 
     /// <summary>Zoom (1 = 100 %).</summary>
@@ -530,7 +531,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         var term = RedactTerm.Trim();
         return document.Document.Pages
-            .SelectMany(page => document.SourceOf(page).FindText(page.SourcePageNumber, term).Select(rect => (page.Id, rect)))
+            .SelectMany(page => document.FindText(page, term).Select(rect => (page.Id, rect)))
             .ToList();
     }
 
@@ -560,6 +561,88 @@ public sealed partial class MainWindowViewModel : ObservableObject
         var numbers = pages.Select((page, index) => (page, index)).Where(item => pending.Any(entry => entry.Page.Id == item.page.Id))
             .Select(item => item.index + 1).ToList();
         return await _dialogs.ConfirmRedactionAsync(numbers, pending.Count, confirmText);
+    }
+
+    /// <summary>
+    /// Texterkennung (A53): sucht Tesseract, zeigt den Dialog und übernimmt den erkannten Text als einen
+    /// Rückgängig-Schritt (auch die bis zu einem Abbruch erkannten Seiten).
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private async Task RecognizeTextAsync()
+    {
+        var document = ActiveDocument!;
+        var engine = await Task.Run(Pdf.Ocr.TesseractEngine.Find);
+        while (engine is null)
+        {
+            if (!await _dialogs.ShowTesseractMissingAsync())
+            {
+                return;
+            }
+
+            engine = await Task.Run(Pdf.Ocr.TesseractEngine.Find);
+        }
+
+        var results = new Dictionary<int, Core.Text.RecognizedPage>();
+        var request = new OcrRequest(
+            Loc.F("Ocr.Engine", engine.Version, string.Join(", ", engine.Languages.Select(LanguageName))),
+            document.Document.Pages.Count,
+            document.PagesWithoutText.Select(index => index + 1).ToList(),
+            OcrLanguages(engine.Languages),
+            (positions, language, progress, cancellation) => Task.Run(async () =>
+            {
+                var words = 0;
+                for (var i = 0; i < positions.Count; i++)
+                {
+                    cancellation.ThrowIfCancellationRequested();
+                    progress.Report(new OcrProgress(i, positions.Count, positions[i]));
+                    var page = document.Document.Pages[positions[i] - 1];
+                    var recognized = await engine.RecognizeAsync(document.SourceOf(page), page.SourcePageNumber, page.Rotation, language, cancellation);
+                    lock (results)
+                    {
+                        results[page.Id] = recognized;
+                    }
+
+                    words += recognized.Words.Count;
+                }
+
+                return words;
+            }, cancellation));
+
+        if (await _dialogs.RecognizeTextAsync(request) is not { } outcome)
+        {
+            return;
+        }
+
+        // Auch bei Abbruch oder Fehler bleiben die bis dahin erkannten Seiten erhalten
+        document.Document.SetRecognizedText(results);
+        if (outcome.Error is { } error)
+        {
+            await _dialogs.ShowMessageAsync(Loc.T("Ocr.Title"), Loc.F("Ocr.Failed", error));
+            return;
+        }
+
+        var wordCount = results.Values.Sum(page => page.Words.Count);
+        ShowStatusNotice(outcome.Cancelled ? Loc.F("Ocr.Cancelled", results.Count) : Loc.F("Ocr.Done", results.Count, wordCount));
+    }
+
+    /// <summary>Anzeigename eines Tesseract-Sprachkürzels.</summary>
+    private static string LanguageName(string code) => Loc.T($"Ocr.Lang.{code}") is var name && name != $"Ocr.Lang.{code}" ? name : code;
+
+    /// <summary>
+    /// Wählbare Sprachen: die Oberflächensprache zusammen mit Englisch zuerst, dann einzelne Sprachen.
+    /// </summary>
+    private static List<(string Code, string Name)> OcrLanguages(IReadOnlyList<string> installed)
+    {
+        var preferred = Loc.Language == UiLanguage.German ? "deu" : "eng";
+        var other = preferred == "deu" ? "eng" : "deu";
+        var codes = new List<string>();
+        if (installed.Contains(preferred) && installed.Contains(other))
+        {
+            codes.Add($"{preferred}+{other}");
+        }
+
+        codes.AddRange(installed.OrderBy(code => code == preferred ? 0 : code == other ? 1 : 2).ThenBy(code => code, StringComparer.Ordinal));
+        return codes.Select(code => (code, LanguageName(code))).ToList();
     }
 
     /// <summary>Wählt einen Stempel in der Optionsleiste (A51).</summary>
@@ -1092,7 +1175,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     {
         for (var i = 0; i < document.Document.Pages.Count; i++)
         {
-            yield return (i, PdfSource.CountOccurrences(document.SourceOf(document.Document.Pages[i]).PageText(document.Document.Pages[i].SourcePageNumber), SearchText));
+            yield return (i, PdfSource.CountOccurrences(document.PageText(document.Document.Pages[i]), SearchText));
         }
     }
 

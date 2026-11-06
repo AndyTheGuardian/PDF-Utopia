@@ -33,6 +33,55 @@ public sealed class EditableDocument
     /// <summary>Annotationen aller Seiten.</summary>
     public AnnotationStore Annotations { get; } = new();
 
+    /// <summary>Durch Texterkennung gewonnener Text je Seitenkennung (A53).</summary>
+    public IReadOnlyDictionary<int, Text.RecognizedPage> RecognizedText => _recognized;
+
+    /// <summary>Wird ausgelöst, wenn sich der erkannte Text ändert.</summary>
+    public event EventHandler? RecognizedTextChanged;
+
+    private readonly Dictionary<int, Text.RecognizedPage> _recognized = [];
+
+    /// <summary>
+    /// Übernimmt erkannten Text für mehrere Seiten als einen Rückgängig-Schritt; vorhandener Text dieser Seiten wird
+    /// ersetzt.
+    /// </summary>
+    /// <param name="pages">Seitenkennung und erkannter Text; ohne Einträge entsteht kein Schritt.</param>
+    public void SetRecognizedText(IReadOnlyDictionary<int, Text.RecognizedPage> pages)
+    {
+        if (pages.Count == 0)
+        {
+            return;
+        }
+
+        var previous = pages.Keys.ToDictionary(id => id, id => _recognized.GetValueOrDefault(id));
+        History.Execute(new DelegateCommand(
+            () =>
+            {
+                foreach (var (id, page) in pages)
+                {
+                    _recognized[id] = page;
+                }
+
+                RecognizedTextChanged?.Invoke(this, EventArgs.Empty);
+            },
+            () =>
+            {
+                foreach (var (id, page) in previous)
+                {
+                    if (page is null)
+                    {
+                        _recognized.Remove(id);
+                    }
+                    else
+                    {
+                        _recognized[id] = page;
+                    }
+                }
+
+                RecognizedTextChanged?.Invoke(this, EventArgs.Empty);
+            }));
+    }
+
     /// <summary>Verlauf für Rückgängig/Wiederholen.</summary>
     public UndoHistory History { get; }
 

@@ -225,6 +225,34 @@ Standard-Annotation „Stamp“ mit eigenem Erscheinungsbild (Text in Helvetica,
 Zeichensatzes erscheinen als „?“, E5) und sind in PDF Utopia wieder bearbeitbar. In der Anmerkungsübersicht stehen
 sie unter „Formen“.
 
+### 5.0c Texterkennung
+
+Gescannte Seiten haben oft keine Textebene: Sie lassen sich nicht durchsuchen, markierter Text ist leer, und
+„Suchen und schwärzen“ findet nichts. Die **Texterkennung** (Bearbeiten → Texterkennung…) liest den Text solcher
+Seiten mit dem freien Programm **Tesseract**.
+
+- **Voraussetzung:** Tesseract ist installiert (Linux: `sudo apt install tesseract-ocr tesseract-ocr-deu`; Windows:
+  Installer der UB Mannheim mit Sprache „German“; macOS: `brew install tesseract tesseract-lang`). PDF Utopia sucht es
+  im Suchpfad und an den üblichen Orten. Fehlt es, erklärt ein Dialog die Installation; „Erneut suchen“ findet es
+  ohne Neustart.
+- **Hinweis:** Hat ein Dokument Seiten ohne Text, steht über der Seite „N Seiten dieses Dokuments haben keinen Text …“
+  mit der Schaltfläche **Texterkennung…**; × blendet den Hinweis für dieses Dokument aus.
+- **Dialog:** Seiten wählen (**Seiten ohne Text** – Standard –, **Alle Seiten** oder eine **Auswahl** wie `2,4-8`) und
+  die **Sprache** (Oberflächensprache mit Englisch, einzelne installierte Sprachen). Haben gewählte Seiten schon
+  Text, weist der Dialog darauf hin, dass er danach doppelt vorhanden wäre. **Erkennen** zeigt den Fortschritt je
+  Seite; **Abbrechen** behält die bis dahin erkannten Seiten.
+- Jede Seite wird so erkannt, wie sie angezeigt wird (mit Ihrer Drehung) – quer oder kopfüber gescannte Seiten
+  erkennt Tesseract selbst und liest sie aufrecht, wenn die Sprachdatei „osd“ installiert ist (unter Linux im
+  Paket enthalten). Wörter mit sehr geringer Sicherheit werden verworfen. Eine Seite dauert einige Sekunden.
+- **Ergebnis:** Der Text ist sofort nutzbar – Suche mit Hinterlegung, „Suchen und schwärzen“, Absatzerkennung beim
+  Kommentieren und markierter Text in der Anmerkungsübersicht. Die Erkennung ist ein Rückgängig-Schritt; die
+  Statusleiste meldet Seiten und Wörter.
+- **Speichern:** Der erkannte Text wird als unsichtbare Textebene unter das Seitenbild geschrieben (Helvetica, je Wort
+  auf die Wortbreite gestreckt), damit Markieren, Kopieren und Suchen in jedem PDF-Betrachter funktionieren. Wörter,
+  die eine Schwärzung berühren, werden nicht geschrieben. Nach dem Wiederöffnen ist er normale Textebene der Datei.
+- **Grenzen:** Zeichen außerhalb des westeuropäischen Zeichensatzes erscheinen in der Textebene als „?“ (E5);
+  Handschrift, sehr kleine oder schlecht gescannte Schrift werden unzuverlässig erkannt.
+
 ### 5.0b Schwärzen
 
 Mit dem Werkzeug **Schwärzen** markieren Sie Bereiche, deren Inhalt beim Speichern endgültig entfernt wird:
@@ -560,6 +588,7 @@ Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
 | – | Annotationen anderer Programme werden angezeigt, sind aber nicht bearbeitbar. |
 | – | Beim Speichern einer geschützten Fremddatei geht ein abweichendes Besitzerpasswort verloren; es wird durch das eingegebene Passwort ersetzt. |
 | – | Die Absatzerkennung kann bei Spalten, Tabellen oder ungewöhnlichem Satz danebenliegen; dann einen Bereich aufziehen. |
+| – | Texterkennung braucht das separat installierte Programm Tesseract; erkannter Text steht in der Textebene in Helvetica (Zeichen außerhalb WinAnsi als „?“). |
 | – | Geschwärzte Seiten werden als Bild gespeichert: Text darauf ist nicht mehr auswählbar oder durchsuchbar, Links und Formularfelder dieser Seiten entfallen. Dokumenteigenschaften, Lesezeichen-Texte und Dateianhänge werden nicht geschwärzt. |
 | – | Eingefügte Bilder werden nur als PNG oder JPEG gelesen; Bilder über 2000 Pixel werden verkleinert. Stempel und Bilder zeigt die Seitenminiatur erst nach dem Speichern und erneuten Öffnen. |
 | – | Beim Einfügen von Seiten werden Lesezeichen und Verknüpfungen der eingefügten Datei nicht übernommen; ihre Formularfelder schon (gleichnamige werden umbenannt). Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |

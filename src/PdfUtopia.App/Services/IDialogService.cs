@@ -140,6 +140,19 @@ public interface IDialogService
     /// <returns><c>true</c>, wenn geschwärzt werden soll.</returns>
     Task<bool> ConfirmRedactionAsync(IReadOnlyList<int> pageNumbers, int areaCount, string confirmText);
 
+    /// <summary>
+    /// Zeigt den Dialog „Texterkennung“ (A53) und führt die Erkennung mit Fortschritt aus.
+    /// </summary>
+    /// <param name="request">Angaben und Erkennung.</param>
+    /// <returns>Das Ergebnis oder <c>null</c>, wenn nicht gestartet wurde.</returns>
+    Task<OcrOutcome?> RecognizeTextAsync(OcrRequest request);
+
+    /// <summary>
+    /// Erklärt, wie Tesseract installiert wird (A53, F41).
+    /// </summary>
+    /// <returns><c>true</c> für „Erneut suchen“.</returns>
+    Task<bool> ShowTesseractMissingAsync();
+
     /// <summary>Zeigt die Einstellungen.</summary>
     /// <param name="current">Aktuelle Werte.</param>
     /// <returns>Die neuen Werte oder <c>null</c> bei Abbruch.</returns>

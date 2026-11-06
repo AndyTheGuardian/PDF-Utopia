@@ -187,6 +187,13 @@ Enthält eine Datei ein Formular, steht über der Seite ein Hinweis mit der Anza
 > **Tipp:** Der Schalter **Felder hervorheben** im Hinweis hinterlegt alle Felder farbig. Ein falscher Eintrag
 > lässt sich mit Strg+Z zurücknehmen. Graue Felder sind schreibgeschützt.
 
+### Text in Scans erkennen
+1. Einmalig Tesseract installieren (siehe Anwenderdokumentation, Abschnitt Texterkennung).
+2. Im Hinweis über der Seite **Texterkennung…** klicken – oder **Bearbeiten → Texterkennung…**.
+3. **Seiten ohne Text** und die Sprache lassen, **Erkennen** klicken und warten.
+4. Danach lässt sich der Text suchen, markieren und schwärzen; beim Speichern kommt er als unsichtbare Textebene in
+   die Datei.
+
 ### Schwärzen
 1. Werkzeug **Schwärzen** wählen.
 2. Bereiche aufziehen, die verschwinden sollen – oder oben einen Begriff (z. B. einen Namen) eingeben und

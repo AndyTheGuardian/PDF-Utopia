@@ -142,6 +142,7 @@ public static class PdfExporter
             var written = new List<PdfPage>();
             var origins = new List<(PdfPage Page, int SourceIndex)>();
             var redactions = new List<PageRedaction>();
+            var recognized = new List<PageRecognizedText>();
             foreach (var entry in entries)
             {
                 if (!inputs.TryGetValue(entry.SourceIndex, out var input))
@@ -164,6 +165,14 @@ public static class PdfExporter
                     redactions.Add(redaction);
                 }
 
+                if (document.RecognizedText.TryGetValue(entry.Id, out var text))
+                {
+                    // Geschwärzte Wörter nie als Text schreiben (A52)
+                    var areas = document.Annotations.For(entry.Id).OfType<RedactionAnnotation>().Select(area => area.Bounds).ToList();
+                    var extended = GeometryOf(page);
+                    recognized.Add(new PageRecognizedText(written.Count, text.Without(areas), entry.Rotation, extended.DisplayWidth, extended.DisplayHeight));
+                }
+
                 page.Rotate = (geometry.FileRotation + (int)entry.Rotation) % 360;
                 written.Add(page);
                 origins.Add((page, entry.SourceIndex));
@@ -175,6 +184,7 @@ public static class PdfExporter
             FormRebuilder.Rebuild(output, origins, inputs, document.Form);
             if (redactions.Count == 0)
             {
+                WriteRecognizedText(output, recognized);
                 Protect(output, targetPassword);
                 SaveAtomically(output, targetPath);
                 return;
@@ -184,6 +194,7 @@ public static class PdfExporter
             using var buffer = new MemoryStream();
             output.Save(buffer, closeStream: false);
             using var redacted = Redactor.Apply(buffer.ToArray(), redactions);
+            WriteRecognizedText(redacted, recognized);
             Protect(redacted, targetPassword);
             SaveAtomically(redacted, targetPath);
         }
@@ -193,6 +204,18 @@ public static class PdfExporter
             {
                 input.Dispose();
             }
+        }
+    }
+
+    /// <summary>
+    /// Schreibt erkannten Text als unsichtbare Textebene in die fertigen Seiten (A53).
+    /// </summary>
+    private static void WriteRecognizedText(PdfDocument target, IReadOnlyList<PageRecognizedText> recognized)
+    {
+        foreach (var text in recognized)
+        {
+            var page = target.Pages[text.PageIndex];
+            RecognizedTextWriter.Write(page, GeometryOf(page), text);
         }
     }
 

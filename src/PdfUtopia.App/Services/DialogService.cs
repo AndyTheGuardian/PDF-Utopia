@@ -180,6 +180,33 @@ public sealed class DialogService(Window owner) : IDialogService
         await new SignatureDialog(this, signatures, startSlot, persist).ShowAsync();
 
     /// <inheritdoc />
+    public async Task<OcrOutcome?> RecognizeTextAsync(OcrRequest request) => await new OcrDialog(this, request).ShowAsync();
+
+    /// <inheritdoc />
+    public async Task<bool> ShowTesseractMissingAsync()
+    {
+        static TextBox Command(string text) => new()
+        {
+            Text = text, IsReadOnly = true, FontFamily = new FontFamily("monospace"), FontSize = 12, Margin = new Thickness(0, 2, 0, 8),
+        };
+        var content = new StackPanel
+        {
+            Spacing = 4, MaxWidth = 480,
+            Children =
+            {
+                Message(Loc.T("Ocr.MissingText")),
+                new TextBlock { Text = Loc.T("Ocr.Linux"), Margin = new Thickness(0, 8, 0, 0) }, Command("sudo apt install tesseract-ocr tesseract-ocr-deu"),
+                new TextBlock { Text = Loc.T("Ocr.Windows"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) },
+                new TextBlock { Text = Loc.T("Ocr.Mac") }, Command("brew install tesseract tesseract-lang"),
+                new TextBlock { Text = Loc.T("Ocr.After"), Classes = { "hint" }, TextWrapping = TextWrapping.Wrap },
+            },
+        };
+        var dialog = CreateDialog(Loc.T("Ocr.MissingTitle"), content);
+        AddButtons(dialog, (Loc.T("Ocr.Close"), false), (Loc.T("Ocr.Retry"), true));
+        return await dialog.ShowDialog<bool>(Owner);
+    }
+
+    /// <inheritdoc />
     public async Task<bool> ConfirmRedactionAsync(IReadOnlyList<int> pageNumbers, int areaCount, string confirmText)
     {
         const int ShownPages = 12;
