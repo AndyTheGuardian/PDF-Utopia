@@ -110,7 +110,7 @@ und bearbeitbar ist (außer bei Schwärzen – dort ist das Ergebnis endgültig)
 
 | Nr. | Schritte | Erwartet | ✓ |
 |---|---|---|---|
-| 10.1 | Gescannte PDF öffnen | Hinweis „N Seiten … haben keinen Text“ | ☐ |
+| 10.1 | Gescannte PDF öffnen | Hinweis „Seiten ohne Text (z. B. Scans): N …“ | ☐ |
 | 10.2 | **Texterkennung…**, Standardwerte, **Erkennen** | Fortschritt je Seite; Meldung mit Seiten und Wörtern | ☐ |
 | 10.3 | Suche und „Suchen und schwärzen“ auf den erkannten Seiten | Treffer an der richtigen Stelle | ☐ |
 | 10.4 | Während der Erkennung **Abbrechen** | Bereits erkannte Seiten bleiben | ☐ |

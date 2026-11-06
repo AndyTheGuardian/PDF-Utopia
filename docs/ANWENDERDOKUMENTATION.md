@@ -123,7 +123,7 @@ dafür wäre ein eigenes Bundle nötig.
 | Werkzeugleiste | häufige Befehle, die Werkzeuge, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
-| Linke Leiste | Reiter **Seiten**, **Anmerkungen** (mit Anzahl, sobald das Dokument Anmerkungen hat) und **Lesezeichen** (wenn die Datei welche hat); ohne beides nur die Seitenliste. Die Leiste lässt sich am rechten Rand von 180 bis 420 Pixel breit ziehen (Standard 220, wird gespeichert); die Seitenminiaturen wachsen und schrumpfen mit und werden kurz nach dem Ziehen scharf neu gezeichnet; passen die drei Reiter nicht nebeneinander, steht der dritte darunter. **Seiten:** Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
+| Linke Leiste | Reiter **Seiten**, **Anmerkungen** (mit Anzahl, sobald das Dokument Anmerkungen hat) und **Lesezeichen** (wenn die Datei welche hat); ohne beides nur die Seitenliste. Die Leiste lässt sich am rechten Rand von 180 bis 420 Pixel breit ziehen (Standard 220, wird gespeichert); die Seitenminiaturen wachsen und schrumpfen mit und werden kurz nach dem Ziehen scharf neu gezeichnet; passen die drei Reiter nicht nebeneinander, steht der dritte darunter. **Seiten:** Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text, Unterschrift, Stempel/Bild, Schwärzung); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
 | Seitenansicht | die angezeigte Seite mit Annotationen; darunter die Fußnoten der Kommentare |
 | Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom (− / Eingabefeld / +) |
 
@@ -258,7 +258,7 @@ Seiten mit dem freien Programm **Tesseract**.
   Installer der UB Mannheim mit Sprache „German“; macOS: `brew install tesseract tesseract-lang`). PDF Utopia sucht es
   im Suchpfad und an den üblichen Orten. Fehlt es, erklärt ein Dialog die Installation; „Erneut suchen“ findet es
   ohne Neustart.
-- **Hinweis:** Hat ein Dokument Seiten ohne Text, steht über der Seite „N Seiten dieses Dokuments haben keinen Text …“
+- **Hinweis:** Hat ein Dokument Seiten ohne Text, steht über der Seite „Seiten ohne Text (z. B. Scans): N …“
   mit der Schaltfläche **Texterkennung…**; × blendet den Hinweis für dieses Dokument aus.
 - **Dialog:** Seiten wählen (**Seiten ohne Text** – Standard –, **Alle Seiten** oder eine **Auswahl** wie `2,4-8`) und
   die **Sprache** (Oberflächensprache mit Englisch, einzelne installierte Sprachen). Haben gewählte Seiten schon
@@ -461,13 +461,16 @@ in der Reihenfolge, in der sie gezeichnet wurden.
 | Kommentar | Fußnotenzahl und Kommentartext |
 | Markierung | „Markierung:“ und der markierte Text der Seite; bei Seiten ohne Textebene (Scans) nur „Markierung“ |
 | Text | der Text |
-| Freihand, Rechteck, Ellipse, Linie, Pfeil | die Art (gedämpft) |
+| Stempel | „Stempel:“ und der Stempeltext |
+| Freihand, Rechteck, Ellipse, Linie, Pfeil, Unterschrift, Bild, Schwärzung | die Art (gedämpft) |
 
 Jeder Eintrag zeigt das Symbol der Art in der Akzentfarbe und einen Punkt in der Farbe der Anmerkung. Lange Texte
 werden nach zwei Zeilen gekürzt. Oben lässt sich nach Art filtern (Alle Arten, Kommentare, Markierungen,
 Freihand, Formen, Text). Ein Klick zeigt die Seite, holt die Anmerkung in den sichtbaren Bereich und hebt sie
 1,6 Sekunden lang mit einem gestrichelten Rahmen in der Akzentfarbe hervor; der Eintrag bleibt markiert. Die
-Übersicht folgt jeder Änderung, auch Rückgängig, Umsortieren und eingefügten Seiten. Anmerkungen anderer
+Übersicht folgt jeder Änderung, auch Rückgängig, Umsortieren und eingefügten Seiten. Ein **Rechtsklick** auf einen
+Eintrag bietet **Anzeigen** und **Löschen**; Löschen entfernt die Anmerkung (bei Kommentaren samt Fußnote) als
+Rückgängig-Schritt. Anmerkungen anderer
 Programme erscheinen nicht, weil sie nicht bearbeitbar sind.
 
 ### 5.18 Lesezeichen

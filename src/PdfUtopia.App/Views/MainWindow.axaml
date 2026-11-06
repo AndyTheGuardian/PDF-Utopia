@@ -743,6 +743,12 @@
                           <TextBlock Text="{Binding HeaderText}" IsVisible="{Binding IsHeader}" Classes="hint" FontSize="11" FontWeight="SemiBold" Margin="8,10,8,4" />
                           <Button Classes="annItem" Classes.selected="{Binding IsSelected}" IsVisible="{Binding IsEntry}"
                                   Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ShowAnnotationCommand}" CommandParameter="{Binding}">
+                            <Button.ContextMenu>
+                              <ContextMenu>
+                                <MenuItem Header="{loc:T Annotations.Show}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).ShowAnnotationCommand}" CommandParameter="{Binding}" />
+                                <MenuItem Header="{loc:T Annotations.Delete}" Command="{Binding $parent[Window].((vm:MainWindowViewModel)DataContext).DeleteAnnotationCommand}" CommandParameter="{Binding}" />
+                              </ContextMenu>
+                            </Button.ContextMenu>
                             <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8">
                               <Border Classes="thumbBadge" Width="22" Height="22" VerticalAlignment="Top">
                                 <Panel>
@@ -751,6 +757,9 @@
                                   <Path Classes="icon small" Data="{StaticResource IconPen}" IsVisible="{Binding IsFreehand}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                   <Path Classes="icon small" Data="{StaticResource IconShapes}" IsVisible="{Binding IsShape}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                   <Path Classes="icon small" Data="{StaticResource IconText}" IsVisible="{Binding IsText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconSignature}" IsVisible="{Binding IsSignature}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconStamp}" IsVisible="{Binding IsStamp}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                  <Path Classes="icon small" Data="{StaticResource IconRedact}" IsVisible="{Binding IsRedaction}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Panel>
                               </Border>
                               <Ellipse Grid.Column="1" Width="9" Height="9" Margin="0,7,0,0" VerticalAlignment="Top"
@@ -821,6 +830,15 @@
                             </Border>
                             <Border Classes="thumbBadge" IsVisible="{Binding HasText}" ToolTip.Tip="{loc:T Pages.HasText}">
                               <Path Classes="icon small" Data="{StaticResource IconText}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasSignatures}" ToolTip.Tip="{loc:T Pages.HasSignatures}">
+                              <Path Classes="icon small" Data="{StaticResource IconSignature}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasStamps}" ToolTip.Tip="{loc:T Pages.HasStamps}">
+                              <Path Classes="icon small" Data="{StaticResource IconStamp}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            </Border>
+                            <Border Classes="thumbBadge" IsVisible="{Binding HasRedactions}" ToolTip.Tip="{loc:T Pages.HasRedactions}">
+                              <Path Classes="icon small" Data="{StaticResource IconRedact}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                             </Border>
                           </StackPanel>
                           <StackPanel Classes="thumbActions" Spacing="4" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,4,4,0">

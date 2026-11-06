@@ -192,11 +192,20 @@ public sealed partial class AnnotationListItem : ObservableObject
     /// <summary>Symbol: Markierung.</summary>
     public bool IsHighlight => Entry?.Category == AnnotationCategory.Highlight;
 
-    /// <summary>Symbol: Freihand.</summary>
-    public bool IsFreehand => Entry?.Category == AnnotationCategory.Freehand;
+    /// <summary>Symbol: Freihand (ohne Unterschriften).</summary>
+    public bool IsFreehand => Entry?.Category == AnnotationCategory.Freehand && !IsSignature;
 
-    /// <summary>Symbol: Form.</summary>
-    public bool IsShape => Entry?.Category == AnnotationCategory.Shape;
+    /// <summary>Symbol: Form (ohne Stempel, Bilder und Schwärzungen).</summary>
+    public bool IsShape => Entry?.Category == AnnotationCategory.Shape && !IsStamp && !IsRedaction;
+
+    /// <summary>Symbol: Unterschrift (wie in der Werkzeugleiste und an der Miniatur).</summary>
+    public bool IsSignature => Entry?.Label == AnnotationLabel.Signature;
+
+    /// <summary>Symbol: Stempel oder Bild.</summary>
+    public bool IsStamp => Entry?.Label is AnnotationLabel.Stamp or AnnotationLabel.Image;
+
+    /// <summary>Symbol: Schwärzung.</summary>
+    public bool IsRedaction => Entry?.Label == AnnotationLabel.Redaction;
 
     /// <summary>Symbol: Text.</summary>
     public bool IsText => Entry?.Category == AnnotationCategory.Text;

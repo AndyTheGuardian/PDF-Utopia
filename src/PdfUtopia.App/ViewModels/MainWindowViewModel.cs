@@ -500,12 +500,21 @@ public sealed partial class MainWindowViewModel : ObservableObject
             }
 
             var hits = RedactionHits(document);
-            return hits.Count == 0 ? Loc.T("Redact.NoHits") : Loc.F("Redact.Hits", hits.Count, hits.Select(hit => hit.PageId).Distinct().Count());
+            var pages = hits.Select(hit => hit.PageId).Distinct().Count();
+            return hits.Count switch
+            {
+                0 => Loc.T("Redact.NoHits"),
+                1 => Loc.T("Redact.HitsOne"),
+                _ when pages == 1 => Loc.F("Redact.HitsOnePage", hits.Count),
+                _ => Loc.F("Redact.Hits", hits.Count, pages),
+            };
         }
     }
 
     /// <summary>Anzahl der markierten Bereiche im Dokument als Hinweis.</summary>
-    public string RedactPendingText => Loc.F("Redact.Pending", PendingRedactions(ActiveDocument).Count);
+    public string RedactPendingText => PendingRedactions(ActiveDocument).Count is var count && count == 1
+        ? Loc.T("Redact.PendingOne")
+        : Loc.F("Redact.Pending", count);
 
     /// <summary>Ob im Dokument Bereiche zum Schwärzen markiert sind.</summary>
     public bool HasPendingRedactions => PendingRedactions(ActiveDocument).Count > 0;
@@ -877,6 +886,17 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (item.Entry is { } entry)
         {
             ActiveDocument?.ShowAnnotation(entry);
+        }
+    }
+
+    /// <summary>Löscht eine Anmerkung aus der Übersicht (Kontextmenü); rückgängig machbar.</summary>
+    /// <param name="item">Die Zeile.</param>
+    [RelayCommand]
+    private void DeleteAnnotation(AnnotationListItem item)
+    {
+        if (item.Entry is { } entry)
+        {
+            ActiveDocument?.Document.RemoveAnnotation(entry.Page.Id, entry.Annotation.Id);
         }
     }
 

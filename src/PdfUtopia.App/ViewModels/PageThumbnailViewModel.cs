@@ -70,6 +70,18 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     [ObservableProperty]
     public partial bool HasText { get; set; }
 
+    /// <summary>Ob die Seite eine Unterschrift enthält (A49).</summary>
+    [ObservableProperty]
+    public partial bool HasSignatures { get; set; }
+
+    /// <summary>Ob die Seite Stempel oder Bilder enthält (A51).</summary>
+    [ObservableProperty]
+    public partial bool HasStamps { get; set; }
+
+    /// <summary>Ob auf der Seite Bereiche zum Schwärzen markiert sind (A52).</summary>
+    [ObservableProperty]
+    public partial bool HasRedactions { get; set; }
+
     /// <summary>
     /// Übernimmt, welche Arten von Annotationen die Seite enthält.
     /// </summary>
@@ -78,9 +90,12 @@ public sealed partial class PageThumbnailViewModel(PageEntry entry, int position
     {
         HasComments = annotations.OfType<CommentAnnotation>().Any();
         HasHighlights = annotations.OfType<HighlightAnnotation>().Any();
-        HasInk = annotations.Any(annotation => annotation is InkAnnotation or SignatureAnnotation);
+        HasInk = annotations.OfType<InkAnnotation>().Any();
         HasShapes = annotations.Any(annotation => annotation is RectangleAnnotation or EllipseAnnotation or LineAnnotation);
         HasText = annotations.OfType<TextAnnotation>().Any();
+        HasSignatures = annotations.OfType<SignatureAnnotation>().Any();
+        HasStamps = annotations.OfType<BoxAnnotation>().Any();
+        HasRedactions = annotations.OfType<RedactionAnnotation>().Any();
     }
 }
 

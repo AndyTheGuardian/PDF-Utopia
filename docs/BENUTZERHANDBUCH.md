@@ -92,6 +92,7 @@ das Ende der vorigen Seite. Während Sie in ein Textfeld schreiben, blättern di
    dem markierten Text, Texte mit ihrem Inhalt, Zeichnungen und Formen mit ihrer Art.
 3. Über das Auswahlfeld darüber zeigen Sie nur eine Art an, z. B. nur **Kommentare**.
 4. Ein **Klick** auf einen Eintrag springt zur Seite; die Anmerkung wird kurz farbig umrahmt.
+5. **Rechtsklick → Löschen** entfernt die Anmerkung; mit Strg+Z holen Sie sie zurück.
 
 Mit **Seiten** kehren Sie zur Seitenliste zurück.
 
