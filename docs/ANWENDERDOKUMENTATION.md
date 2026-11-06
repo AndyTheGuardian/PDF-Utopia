@@ -84,6 +84,21 @@ stecken mit in der Datei. Beim ersten Start entpackt .NET sie in einen Zwischens
 Windows und macOS sind nicht getestet. Unter macOS ist eine einzelne Datei kein gewohntes Programmpaket (`.app`);
 dafür wäre ein eigenes Bundle nötig.
 
+**Unter macOS starten:** Die macOS-Dateien werden nur mit einer Ad-hoc-Signatur erstellt, nicht mit einer
+Apple-Entwickler-ID, und sind nicht notarisiert. Wurde die Datei aus dem Internet, per Mail oder Messenger geladen,
+verweigert macOS den Start („kann nicht überprüft werden“). Dann im Terminal im Ordner der Datei:
+
+```bash
+xattr -d com.apple.quarantine PdfUtopia
+```
+
+```bash
+chmod +x PdfUtopia
+```
+
+Danach startet `./PdfUtopia` im Terminal oder ein Doppelklick im Finder (es öffnet sich zusätzlich ein
+Terminalfenster). Die macOS-Dateien wurden unter Linux erstellt und sind auf einem Mac nicht getestet (E9).
+
 ### 3.3 Weitere Wege, Dateien zu öffnen
 
 - über **Datei → Öffnen…** (Strg+O) oder die Schaltfläche **Öffnen**,
