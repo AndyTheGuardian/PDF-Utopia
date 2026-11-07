@@ -10,7 +10,7 @@ Legende IDs: **F** = offene Frage, **P** = Problem/Widerspruch, **A** = Annahme,
 
 | ID | Status | Beschreibung |
 |----|--------|--------------|
-| – | – | keine |
+| P20 | behoben, Test unter macOS offen | Mauszeiger unter macOS im Fenster verschwunden (Meldung des Anwenders vom 2026-11-07, nach Umschalten von Seitenansicht und Volle Breite/Höhe; außerhalb des Fensters war er da). **Ursache (sehr wahrscheinlich):** Mit dem Radierer blendet die Seitenansicht den Systemzeiger aus, damit nur der Radierkreis zu sehen ist (A27). Das geschah mit `StandardCursorType.None` und bei jeder Mausbewegung mit einem neuen Zeiger-Objekt. macOS blendet dafür mit einem Zähler aus (`[NSCursor hide]`); wurde öfter aus- als eingeblendet, etwa wenn die Seite beim Umschalten der Ansicht unter dem Zeiger ausgetauscht wird, blieb er verschwunden. Unter Linux tritt das nicht auf. **Behoben:** Unsichtbarer Zeiger ist jetzt ein durchsichtiges Bild (kein Ausblenden des Systemzeigers), alle Zeiger werden nur einmal angelegt, und beim Wechsel oder Entfernen einer Seite wird der Zeiger zurückgesetzt. Unter Linux im Testbildschirm geprüft: Radierer über der Seite unsichtbar (16×16, keine sichtbaren Pixel), außerhalb normal, auch nach allen Ansichts- und Zoomwechseln; mit anderen Werkzeugen sofort wieder sichtbar. **Rückmeldung des Anwenders:** Der Radierer war wahrscheinlich gewählt – passt zur Ursache. **Offen:** Bestätigung unter macOS mit der neuen Datei. |
 
 ### Offene Fragen
 

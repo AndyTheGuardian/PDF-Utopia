@@ -47,6 +47,11 @@ public sealed partial class PageEditor : Control
     private static readonly TimeSpan FlashDuration = TimeSpan.FromSeconds(1.6);
     private static readonly TimeSpan FlashFadeStart = TimeSpan.FromSeconds(1.1);
 
+    /// <summary>Mauszeiger je Art, nur einmal angelegt (sonst entstünde bei jeder Mausbewegung ein neuer Systemzeiger).</summary>
+    private static readonly Dictionary<StandardCursorType, Cursor> Cursors = [];
+
+    private static Cursor? _invisibleCursor;
+
     /// <summary>Schrift mit denselben Zeichenbreiten wie Helvetica, damit Anzeige und PDF gleich umbrechen.</summary>
     private static readonly FontFamily TextFont = new("Liberation Sans, Arial, Helvetica, sans-serif");
 
@@ -166,6 +171,7 @@ public sealed partial class PageEditor : Control
             // Container der Ansicht werden für andere Seiten wiederverwendet: Eingaben der bisherigen Seite abschließen
             CommitText();
             _gesture = null;
+            Cursor = Cursor.Default;
             (change.OldValue as PageViewModel)?.ReleaseBitmap();
             Subscribe(Page);
             RequestRender();
@@ -208,8 +214,9 @@ public sealed partial class PageEditor : Control
             application.ResourcesChanged -= OnApplicationResourcesChanged;
         }
 
-        // Seite nicht mehr zu sehen: Eingaben übernehmen, Bild freigeben
+        // Seite nicht mehr zu sehen: Eingaben übernehmen, Zeiger zurücksetzen, Bild freigeben
         CommitText();
+        Cursor = Cursor.Default;
         Page?.ReleaseBitmap();
     }
 
@@ -531,13 +538,13 @@ public sealed partial class PageEditor : Control
         }
 
         var erasing = eraserEnd || Options?.Tool == Tool.Eraser;
-        Cursor = _hoveredBadge is not null ? new Cursor(StandardCursorType.Hand)
-            : erasing ? new Cursor(StandardCursorType.None)
+        Cursor = _hoveredBadge is not null ? CursorOf(StandardCursorType.Hand)
+            : erasing ? InvisibleCursor
             : Options?.Tool == Tool.Stamp ? UpdateBoxHover(display)
-            : _hoveredText is not null || _overSignature ? new Cursor(StandardCursorType.SizeAll)
-            : Options?.Tool == Tool.Text ? new Cursor(StandardCursorType.Ibeam)
+            : _hoveredText is not null || _overSignature ? CursorOf(StandardCursorType.SizeAll)
+            : Options?.Tool == Tool.Text ? CursorOf(StandardCursorType.Ibeam)
             : Options?.Tool is Tool.Select or null ? Cursor.Default
-            : new Cursor(StandardCursorType.Cross);
+            : CursorOf(StandardCursorType.Cross);
         // Radierkreis folgt dem Zeiger; verschwindet er (Werkzeug oder Stiftende gewechselt), einmal neu zeichnen
         if (previous != _hoveredBadge || erasing || _eraserCursorShown)
         {
@@ -545,6 +552,43 @@ public sealed partial class PageEditor : Control
         }
 
         _eraserCursorShown = erasing;
+    }
+
+    /// <summary>Mauszeiger einer Art (zwischengespeichert).</summary>
+    private static Cursor CursorOf(StandardCursorType type)
+    {
+        if (!Cursors.TryGetValue(type, out var cursor))
+        {
+            cursor = new Cursor(type);
+            Cursors[type] = cursor;
+        }
+
+        return cursor;
+    }
+
+    /// <summary>
+    /// Unsichtbarer Zeiger für den Radierer (nur der Radierkreis ist zu sehen): ein durchsichtiges Bild statt
+    /// <see cref="StandardCursorType.None"/>. Unter macOS blendet „None“ den Systemzeiger mit einem Zähler aus; wurde
+    /// er öfter aus- als eingeblendet, blieb er im Fenster verschwunden (P20).
+    /// </summary>
+    private static Cursor InvisibleCursor => _invisibleCursor ??= CreateInvisibleCursor();
+
+    /// <summary>Legt einen vollständig durchsichtigen Zeiger an.</summary>
+    private static Cursor CreateInvisibleCursor()
+    {
+        const int size = 16;
+        var bitmap = new Avalonia.Media.Imaging.WriteableBitmap(new PixelSize(size, size), new Vector(96, 96),
+            Avalonia.Platform.PixelFormat.Bgra8888, Avalonia.Platform.AlphaFormat.Premul);
+        using (var buffer = bitmap.Lock())
+        {
+            var transparent = new byte[buffer.RowBytes];
+            for (var row = 0; row < size; row++)
+            {
+                System.Runtime.InteropServices.Marshal.Copy(transparent, 0, buffer.Address + row * buffer.RowBytes, transparent.Length);
+            }
+        }
+
+        return new Cursor(bitmap, new PixelPoint(size / 2, size / 2));
     }
 
     /// <summary>

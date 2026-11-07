@@ -211,10 +211,10 @@ public sealed partial class PageEditor
         InvalidateVisual();
         return hit switch
         {
-            BoxHit.RotateHandle => new Cursor(StandardCursorType.Hand),
-            BoxHit.Corner => new Cursor(CornerCursor(corner, SelectedBoxDisplay?.Angle ?? 0)),
-            BoxHit.Box => new Cursor(StandardCursorType.SizeAll),
-            _ => new Cursor(StandardCursorType.Cross),
+            BoxHit.RotateHandle => CursorOf(StandardCursorType.Hand),
+            BoxHit.Corner => CursorOf(CornerCursor(corner, SelectedBoxDisplay?.Angle ?? 0)),
+            BoxHit.Box => CursorOf(StandardCursorType.SizeAll),
+            _ => CursorOf(StandardCursorType.Cross),
         };
     }
 
