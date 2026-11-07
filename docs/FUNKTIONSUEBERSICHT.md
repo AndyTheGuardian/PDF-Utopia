@@ -1,6 +1,6 @@
 # PDF Utopia – Funktionsübersicht
 
-Verdichteter Chatverlauf mit Fokus auf den eingebauten Funktionen. Stand: 2026-11-06.
+Verdichteter Chatverlauf mit Fokus auf den eingebauten Funktionen. Stand: 2026-11-07.
 
 **Grundlage:** C# / .NET 10 mit Avalonia 12. PDFium zeigt die Seiten an, PDFsharp 6.2.4 schreibt die Datei. Alle
 Änderungen werden als normale PDF-Annotationen gespeichert, mit Erscheinungsbild, damit jeder PDF-Betrachter sie
@@ -68,7 +68,10 @@ Entwickelt im Branch `feature/seitenansichten` (A55, Mockup v10).
 
 11. **Seitenansichten:** Einzelseite, Fortlaufend, Doppelseite und Doppelseite fortlaufend, umschaltbar in der
     Statusleiste und im Menü „Ansicht“; „Erste Seite einzeln“ für Doppelseiten. Bearbeiten auf jeder sichtbaren
-    Seite, Fußnoten unter jeder Seite, nur sichtbare Seiten werden aufgebaut.
+    Seite, Fußnoten unter jeder Seite, nur sichtbare Seiten werden aufgebaut. Abgenommen am 2026-11-06.
+
+Danach: Die Optionsleiste ist bei jedem Werkzeug gleich hoch (P19). Einzeldateien für Linux und macOS (Intel,
+Apple Silicon) lassen sich bauen (E9).
 
 ## Noch offen
 

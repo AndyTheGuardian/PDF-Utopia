@@ -1,6 +1,6 @@
-# PDF Utopia – Abnahme-Checkliste Funktionen 1–10
+# PDF Utopia – Abnahme-Checkliste Funktionen 1–11
 
-Stand: 2026-11-06 · Branch `feature/weitere-funktionen` · Testversion: `publish/single-linux-x64/PdfUtopia`
+Stand: 2026-11-07 · Funktionen 1–10 aus `feature/weitere-funktionen`, Funktion 11 aus `feature/seitenansichten` (beide in `main`) · Testversion: `publish/single-linux-x64/PdfUtopia`
 
 Jede Zeile: Schritte ausführen, Ergebnis vergleichen, abhaken. Abweichungen bitte mit Nummer melden (z. B. „4.3:
 Lesezeichen springt auf falsche Seite“).

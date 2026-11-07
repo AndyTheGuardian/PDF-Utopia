@@ -1,6 +1,6 @@
 # PDF Utopia – Benutzerhandbuch
 
-Stand: 2026-11-06
+Stand: 2026-11-07
 
 Dieses Handbuch führt Schritt für Schritt durch alle Aufgaben in PDF Utopia. Hintergründe, Regeln im Detail,
 Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokumentation](ANWENDERDOKUMENTATION.md).
@@ -33,7 +33,8 @@ Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokum
 
 1. Starten Sie PDF Utopia. Ohne geöffnetes Dokument zeigt das Fenster „Keine PDF geöffnet“.
 2. Klicken Sie auf **Öffnen** und wählen Sie eine PDF-Datei – oder ziehen Sie sie in das Fenster.
-3. Links erscheinen die Seiten als Miniaturen, rechts die erste Seite.
+3. Links erscheinen die Seiten als Miniaturen, rechts die erste Seite. Unten in der Statusleiste wählen Sie, ob Sie
+   eine Seite, alle Seiten untereinander oder zwei Seiten nebeneinander sehen möchten.
 4. Wählen Sie oben ein **Werkzeug** (z. B. **Kommentar**). Die Leiste darunter zeigt seine Einstellungen und
    rechts einen kurzen Hinweis zur Bedienung.
 5. Speichern Sie das Ergebnis mit **Speichern unter**.
@@ -490,6 +491,18 @@ Zeichen außerhalb des westeuropäischen Zeichensatzes (z. B. Emojis) werden im 
 
 **Die Werkzeugleiste hat zwei Zeilen.**
 Das Fenster ist zu schmal für eine Zeile. Vergrößern oder maximieren Sie es.
+
+**Die Knöpfe für die Seitenansicht zeigen keine Namen mehr.**
+Die Statusleiste hat zu wenig Platz; dann stehen dort nur die Symbole. Fahren Sie mit der Maus darüber, erscheint
+der Name. Bei einem breiteren Fenster kehren die Namen zurück.
+
+**Bei Doppelseite steht die erste Seite allein.**
+So sieht ein aufgeschlagenes Buch aus: Seite 1 ist das Deckblatt, danach folgen die Paare 2|3, 4|5 … Wenn Sie die
+Paare mit 1|2 beginnen lassen möchten, schalten Sie **Ansicht → Erste Seite einzeln** aus.
+
+**Ich kann auf einer Seite nicht zeichnen, obwohl sie zu sehen ist.**
+Doch: Ein Klick oder Strich auf einer sichtbaren Seite macht sie zur aktuellen Seite, und das Werkzeug wirkt dort.
+Der farbige Rahmen zeigt danach, welche Seite aktuell ist.
 
 **Ich möchte alle Einstellungen zurücksetzen.**
 Schließen Sie PDF Utopia und löschen Sie die Datei `settings.json` – den Ort finden Sie in der

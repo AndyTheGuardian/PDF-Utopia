@@ -24,6 +24,7 @@ weiterbearbeiten.
 - **Extrahieren:** Seitenauswahl wie `2`, `4-8` oder `2,4,8,13-15`, mit Vorschau.
 - **Einfügen:** Seiten aus einer anderen PDF-Datei übernehmen, per Dialog oder Drag & Drop auf die Seitenliste; Anmerkungen kommen mit.
 - **Rückgängig/Wiederholen:** mit einstellbarer Anzahl von Schritten (Standard 50).
+- **Seitenansichten:** Einzelseite, Fortlaufend, Doppelseite und Doppelseite fortlaufend, auf Wunsch mit der ersten Seite allein; bearbeiten auf jeder sichtbaren Seite.
 - **Zoom und Ansichten:** Volle Höhe, Volle Breite, Ganze Seite; die Ansicht passt sich der Fenstergröße an.
 - **Suche:** im Text aller Seiten, die Treffer werden hinterlegt.
 - **Tabs:** für mehrere Dokumente gleichzeitig.
@@ -77,11 +78,16 @@ Für andere Plattformen `-r win-x64`, `-r osx-arm64` oder `-r osx-x64` angeben. 
 (unter Windows `PdfUtopia.exe`) im Ausgabeordner. Das Linux-Paket ist getestet (rund 112 MB), die Pakete für
 Windows und macOS noch nicht.
 
-Als **einzelne Datei** (rund 103 MB, native Bibliotheken werden beim ersten Start entpackt):
+Als **einzelne Datei** (Linux rund 108 MB, macOS Intel rund 113 MB, Apple Silicon rund 120 MB; native Bibliotheken
+werden beim ersten Start entpackt):
 
 ```bash
 dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o publish/single-linux-x64
 ```
+
+Für macOS `-r osx-x64` (Intel) bzw. `-r osx-arm64` (Apple Silicon). Die Dateien sind nur ad-hoc signiert und auf
+einem Mac nicht getestet; nach dem Herunterladen hebt `xattr -d com.apple.quarantine PdfUtopia` die Sperre von
+Gatekeeper auf (siehe Anwenderdokumentation 3.2).
 
 ## Projektstruktur
 

@@ -1,6 +1,6 @@
 # PDF Utopia – Entwicklerdokumentation
 
-Stand: 2026-11-06
+Stand: 2026-11-07
 
 Diese Dokumentation richtet sich an Entwicklerinnen und Entwickler, die PDF Utopia bauen, verstehen oder erweitern
 wollen. Bedienung und Regeln aus Anwendersicht stehen in der [Anwenderdokumentation](ANWENDERDOKUMENTATION.md) und im
@@ -313,7 +313,8 @@ beschädigte Datei den Start nicht verhindert.
 
 ## 8. Tests
 
-- **Core-Tests** prüfen Geometrie, Anmerkungen, Rückgängig, Seitenliste, Parser, Einstellungen, erkannten Text.
+- **Core-Tests** prüfen Geometrie, Anmerkungen, Rückgängig, Seitenliste, Seitenansichten (`PageLayoutTests`),
+  Parser, Einstellungen, erkannten Text.
 - **Pdf-Tests** erzeugen ihre Eingaben mit `TestPdfFactory` (14 Seiten, Überschrift „Seite N“, Seite 3 in der Datei
   gedreht; Varianten mit Lesezeichen, Formular, Passwort) in einem `TempDirectory`. Geprüft wird das Ergebnis über
   - die Struktur (PDFsharp: Subtype, Einträge, Objekte),
@@ -358,8 +359,11 @@ Checkliste (Beispiel: `StampAnnotation`, A51):
 - **OFFENE-PUNKTE.md** ist das Projekttagebuch: Probleme (P), offene Fragen (F), Annahmen/Funktionen (A),
   Einschränkungen (E), Mockup-Abnahmen (M), Dokumentation (D). Jeder Punkt wird im selben Arbeitsschritt eingetragen
   bzw. mit Datum nach „Erledigt“ verschoben; das Stand-Datum wird angepasst.
-- **Git:** Funktionen auf einem eigenen Branch (zuletzt `feature/weitere-funktionen`), ein Commit je abgeschlossener
-  Funktion.
+- **Git:** Funktionen auf einem eigenen Branch (zuletzt `feature/seitenansichten`), ein Commit je abgeschlossener
+  Funktion; nach der Abnahme in `main` mergen.
+- **Oberfläche testen, ohne den Anwender zu stören:** eine eigene Instanz in einem verschachtelten X-Server starten
+  (`Xephyr :99`, `DISPLAY=:99`, eigenes `XDG_CONFIG_HOME`). Eingaben und Bildschirmfotos gehen dann nur an diesen
+  Bildschirm.
 
 ---
 
@@ -378,6 +382,11 @@ Checkliste (Beispiel: `StampAnnotation`, A51):
 | Schaltflächen in Klappfeldern | Schließen vor dem Befehl trennt die Bindung | Schließen per `Dispatcher.UIThread.Post` nach dem Befehl (A51) |
 | Einzeldatei überschreiben | laufendes Programm liest sich selbst | erst beenden, dann veröffentlichen |
 | Tastenkürzel unter Linux Mint | Strg+Umschalt+N ist vom System belegt | Funktion bleibt über Menü erreichbar (E8) |
+| Mehrere Seiteneditoren | Ein Editor, der „die aktuelle Seite“ liest, zeigt in fortlaufenden Ansichten überall dieselbe Seite | jeder Editor nutzt sein `PageViewModel`; aktuelle Seite nur über `Show`/`Activate` ändern (A55) |
+| Angezeigte Bitmaps | Der Zwischenspeicher entsorgt Bitmaps, die andere Seiten noch zeigen | `PageRenderer.Pin`/`Unpin` (A55) |
+| Rahmen außerhalb der Seite | Die Zoom-`LayoutTransformControl` schneidet alles außerhalb ihres Inhalts ab | Hervorhebungen innerhalb der Seite zeichnen (A55) |
+| Einstellungen laden | Setzen der ersten Eigenschaft speichert die zweite, noch ungeladene mit | erst nach dem Laden speichern (`_layoutLoaded`, A55) |
+| Schieberegler (Fluent) | höher als Knöpfe und Farbpunkte; die Optionsleiste wuchs je Werkzeug | feste Höhe der Leiste, Schieberegler mit Rand −8 px (P19) |
 
 Hinweis: Die Projektdatei von PdfUtopia.App enthält `InternalsVisibleTo` für ein nicht vorhandenes Projekt
 `PdfUtopia.App.Tests`; der Eintrag ist ohne Wirkung und für künftige Oberflächentests vorgesehen.

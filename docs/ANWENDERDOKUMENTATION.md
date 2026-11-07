@@ -1,6 +1,6 @@
 # PDF Utopia – Anwenderdokumentation
 
-Stand: 2026-11-06
+Stand: 2026-11-07
 
 Diese Dokumentation ist das Nachschlagewerk zu PDF Utopia: Voraussetzungen, Installation, Funktionsumfang,
 die Regeln hinter den Funktionen, gespeicherte Daten und bekannte Einschränkungen. Wie man die einzelnen
@@ -16,8 +16,11 @@ PDF Utopia ist ein Editor zum Bearbeiten und Kommentieren von PDF-Dateien. Mit i
   nach unten verlängerten Seite),
 - mit Maus oder Stift **markieren, zeichnen, Formen (Rechteck, Ellipse, Linie, Pfeile) und Text einfügen**, auf Wunsch druckempfindlich,
 - Markierungen mit dem **Radierer** wieder entfernen,
-- Seiten **umsortieren, drehen und löschen**,
+- **unterschreiben**, **Stempel und Bilder** setzen und **Formulare ausfüllen**,
+- Inhalte **schwärzen** und Text in Scans **erkennen** (Texterkennung),
+- Seiten **umsortieren, drehen, löschen** und aus anderen PDF-Dateien **einfügen**,
 - einzelne Seiten oder Seitenbereiche **extrahieren**,
+- das Dokument als **Einzelseite, fortlaufend oder als Doppelseite** lesen und bearbeiten,
 - im Dokument **suchen**,
 - das Ergebnis als **PDF speichern** – auch passwortgeschützt – und **drucken**.
 
@@ -76,7 +79,8 @@ Datei, zum Beispiel für Linux:
 dotnet publish src/PdfUtopia.App -c Release -r linux-x64 --self-contained -p:PublishSingleFile=true -o publish/single-linux-x64
 ```
 
-Für die anderen Systeme wird `-r` wie in der Tabelle oben angepasst. Die Datei ist rund 103 MB groß und kann an
+Für die anderen Systeme wird `-r` wie in der Tabelle oben angepasst. Die Datei ist rund 108 MB groß (macOS Intel
+rund 113 MB, Apple Silicon rund 120 MB) und kann an
 einen beliebigen Ort kopiert werden. Die drei nativen Bibliotheken (PDFium, Skia, HarfBuzz, zusammen rund 21 MB)
 stecken mit in der Datei. Beim ersten Start entpackt .NET sie in einen Zwischenspeicher, unter Linux nach
 `~/.cache/dotnet_bundle_extract/PdfUtopia`. Ein anderer Ort lässt sich über die Umgebungsvariable
@@ -128,19 +132,19 @@ Terminalfenster). Die macOS-Dateien wurden unter Linux erstellt und sind auf ein
 │  │ 2 │        │                │  Fußnoten     │                        │
 │  └───┘        │                └───────────────┘                        │
 ├───────────────┴─────────────────────────────────────────────────────────┤
-│ Seite 1 von 14 · Rückgängig 2/50 · datei.pdf   Volle Höhe/Breite/Ganze Seite − [100 %] + │
+│ Seite 1 von 14 · Rückgängig 2/50 · datei.pdf  Seitenansicht · Volle Höhe/Breite/Ganze Seite − [100 %] + │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
 | Bereich | Inhalt |
 |---|---|
-| Menüleiste | Datei, Bearbeiten, Ansicht (Design, Akzentfarbe, Zoom), Sprache |
+| Menüleiste | Datei, Bearbeiten, Ansicht (Design, Akzentfarbe, Zoom, Seitenansicht, „Erste Seite einzeln“), Sprache |
 | Werkzeugleiste | häufige Befehle, die Werkzeuge, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
-| Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung |
+| Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung; sie ist bei jedem Werkzeug gleich hoch |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
 | Linke Leiste | Reiter **Seiten**, **Anmerkungen** (mit Anzahl, sobald das Dokument Anmerkungen hat) und **Lesezeichen** (wenn die Datei welche hat); ohne beides nur die Seitenliste. Die Leiste lässt sich am rechten Rand von 180 bis 420 Pixel breit ziehen (Standard 220, wird gespeichert); die Seitenminiaturen wachsen und schrumpfen mit und werden kurz nach dem Ziehen scharf neu gezeichnet; passen die drei Reiter nicht nebeneinander, steht der dritte darunter. **Seiten:** Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text, Unterschrift, Stempel/Bild, Schwärzung); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
-| Seitenansicht | die angezeigte Seite mit Annotationen; darunter die Fußnoten der Kommentare |
-| Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Ansichten und Zoom (− / Eingabefeld / +) |
+| Seitenansicht | je nach Seitenansicht eine Seite, ein Seitenpaar oder alle Seiten bzw. Paare untereinander (siehe 5.16), mit Annotationen; unter jeder Seite die Fußnoten ihrer Kommentare. Sind mehrere Seiten zu sehen, hat die aktuelle Seite einen Rahmen in der Akzentfarbe |
+| Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Seitenansicht (Einzelseite, Fortlaufend, Doppelseite, Doppelseite fortlaufend; bei wenig Platz nur Symbole), Zoom-Ansichten und Zoom (− / Eingabefeld / +) |
 
 ---
 
@@ -339,7 +343,9 @@ Signaturfelder; eigene Schriften des Formulars werden für neue Feldinhalte durc
   (Werkzeugleiste oder Miniatur) dreht es gegen den Uhrzeigersinn; solange Strg gedrückt ist, zeigen diese Knöpfe
   ein gespiegeltes Symbol. Im Menü **Bearbeiten** und im Kontextmenü der Seitenliste gibt es dafür einen eigenen
   Eintrag „gegen den Uhrzeigersinn“.
-- **Blättern** in der Seitenansicht mit Mausrad oder Tasten (siehe 6). Ist die Seite größer als die Ansicht, scrollt
+- **Blättern** in der Seitenansicht mit Mausrad oder Tasten (siehe 6). In den fortlaufenden Ansichten scrollt das
+  Mausrad einfach durch das Dokument; das Folgende gilt für **Einzelseite** und **Doppelseite**, wo die Seite bzw.
+  das Seitenpaar beim Blättern ersetzt wird. Ist die Seite größer als die Ansicht, scrollt
   das Mausrad zuerst innerhalb der Seite; erst die nächste Drehung am oberen bzw. unteren Rand wechselt die Seite.
   Rückwärts landet man am unteren Rand der vorigen Seite. Nach einem Seitenwechsel per Mausrad werden
   Radbewegungen 0,3 Sekunden lang nicht ausgewertet, damit ein Schwung auf dem Touchpad nicht mehrere Seiten
@@ -636,6 +642,7 @@ Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
 | – | Texterkennung braucht das separat installierte Programm Tesseract; erkannter Text steht in der Textebene in Helvetica (Zeichen außerhalb WinAnsi als „?“). |
 | – | Geschwärzte Seiten werden als Bild gespeichert: Text darauf ist nicht mehr auswählbar oder durchsuchbar, Links und Formularfelder dieser Seiten entfallen. Dokumenteigenschaften, Lesezeichen-Texte und Dateianhänge werden nicht geschwärzt. |
 | – | Eingefügte Bilder werden nur als PNG oder JPEG gelesen; Bilder über 2000 Pixel werden verkleinert. Stempel und Bilder zeigt die Seitenminiatur erst nach dem Speichern und erneuten Öffnen. |
+| – | Doppelseite: Liegt eine Seite eines Paars quer oder ist sie anders groß, wird diese Zeile breiter; die Spalten stehen dann nicht genau untereinander (E10). |
 | – | Beim Einfügen von Seiten werden Lesezeichen und Verknüpfungen der eingefügten Datei nicht übernommen; ihre Formularfelder schon (gleichnamige werden umbenannt). Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 
 ---
