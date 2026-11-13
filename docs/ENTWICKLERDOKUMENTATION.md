@@ -396,6 +396,7 @@ Checkliste (Beispiel: `StampAnnotation`, A51):
 | Rahmen außerhalb der Seite | Die Zoom-`LayoutTransformControl` schneidet alles außerhalb ihres Inhalts ab | Hervorhebungen innerhalb der Seite zeichnen (A55) |
 | Einstellungen laden | Setzen der ersten Eigenschaft speichert die zweite, noch ungeladene mit | erst nach dem Laden speichern (`_layoutLoaded`, A55) |
 | Schieberegler (Fluent) | höher als Knöpfe und Farbpunkte; die Optionsleiste wuchs je Werkzeug | feste Höhe der Leiste, Schieberegler mit Rand −8 px (P19) |
+| Akzentknöpfe (Fluent-Klasse `accent`) | Die Vorlage setzt im Inneren immer weiße Schrift, auch auf hellen Akzentfarben | `Button.accent /template/ ContentPresenter` mit `AccentForegroundBrush` überschreiben (P21) |
 
 Hinweis: Die Projektdatei von PdfUtopia.App enthält `InternalsVisibleTo` für ein nicht vorhandenes Projekt
 `PdfUtopia.App.Tests`; der Eintrag ist ohne Wirkung und für künftige Oberflächentests vorgesehen.

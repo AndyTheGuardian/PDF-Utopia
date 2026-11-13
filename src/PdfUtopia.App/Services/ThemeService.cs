@@ -32,6 +32,9 @@ public sealed class ThemeService : IThemeService
 {
     private const double SoftAccentAmount = 0.18;
 
+    /// <summary>Mindestkontrast für Schrift in Akzentfarbe (WCAG AA für normalen Text).</summary>
+    private const double TextContrastRatio = 4.5;
+
     private readonly Application _application;
     private ThemeColorSettings _light = new();
     private ThemeColorSettings _dark = new();
@@ -75,7 +78,8 @@ public sealed class ThemeService : IThemeService
 
     /// <summary>
     /// Schreibt Flächen-, Text- und Akzentfarben des geltenden Designs. Ist der Kontrast der Akzentfarbe zur Fläche zu
-    /// gering, bekommen akzentfarbige Elemente einen satteren Rahmen und Akzent-Text die normale Textfarbe.
+    /// gering, bekommen akzentfarbige Elemente einen satteren Rahmen; Akzent-Text ist nur bei ausreichendem Kontrast
+    /// akzentfarbig, sonst in der normalen Textfarbe.
     /// </summary>
     private void UpdateResources()
     {
@@ -110,7 +114,8 @@ public sealed class ThemeService : IThemeService
         Set("AccentSoftBrush", AccentPalette.Mix(colors.Surface, accentHex, SoftAccentAmount));
         Set("AccentForegroundBrush", AccentPalette.ForegroundFor(accentHex));
         Set("AccentBorderBrush", border);
-        Set("AccentTextBrush", lowContrast ? colors.Text : accentHex);
+        // Schrift in Akzentfarbe nur, wenn sie lesbar ist (4,5 : 1); sonst die normale Textfarbe (P21)
+        Set("AccentTextBrush", AccentPalette.ContrastRatio(accentHex, colors.Surface) >= TextContrastRatio ? accentHex : colors.Text);
 
         // Fluent-Steuerelemente (Checkboxen, Schieberegler, Auswahl) übernehmen die Akzentfarbe
         resources["SystemAccentColor"] = accent;

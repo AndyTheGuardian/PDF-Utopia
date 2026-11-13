@@ -408,7 +408,7 @@ Eingefügte Seiten haben in der Seitenliste einen Rahmen in der Akzentfarbe und 
 **Ansicht → System / Hell / Dunkel**. „System“ folgt der Einstellung Ihres Betriebssystems.
 
 ### Akzentfarbe und Hintergrund
-Klicken Sie auf den **Farbpunkt** oben rechts (oder **Ansicht → Akzentfarbe…**). Es öffnen sich die
+Klicken Sie auf das **Zahnrad** („Einstellungen“) oben rechts (oder **Ansicht → Akzentfarbe…**). Es öffnen sich die
 **Einstellungen**. Hell und Dunkel haben eigene Farben; bearbeitet werden die des gerade geltenden Designs.
 
 1. **Farbprofil wählen:** Die Liste enthält „Standard“, „Neutral“ und weitere abgestimmte Profile wie „Salbei“.

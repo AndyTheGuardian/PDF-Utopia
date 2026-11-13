@@ -55,6 +55,8 @@ public static partial class AccentPalette
     [
         new("#A7C7E7", "Color.PastelBlue"), new("#B5EAD7", "Color.Mint"), new("#FFE599", "Color.PastelYellow"),
         new("#FFDAC1", "Color.Peach"), new("#E2B6CF", "Color.Rose"), new("#C7CEEA", "Color.Lavender"),
+        // Pastell zu Violett, damit es zu jeder kräftigen Farbe eine Pastellfarbe gibt (P21, wie im AI Asset Manager)
+        new("#C4A4EB", "Color.Lilac"),
     ];
 
     /// <summary>
@@ -176,11 +178,12 @@ public static partial class AccentPalette
     public static string Normalize(string hex) => hex.Trim().ToUpperInvariant();
 
     /// <summary>
-    /// Wählt dunkle oder helle Schrift, damit Text auf der Farbe lesbar bleibt.
+    /// Wählt dunkle oder helle Schrift, je nachdem, welche auf der Farbe den höheren Kontrast hat (P21). Eine feste
+    /// Helligkeitsschwelle ließ auf mittelhellen Farben wie „Salbei“ weiße, kaum lesbare Schrift stehen.
     /// </summary>
     /// <param name="hex">Die Hintergrundfarbe der Schrift.</param>
     /// <returns>Die Schriftfarbe.</returns>
-    public static string ForegroundFor(string hex) => RelativeLuminance(hex) > 0.45 ? DarkText : LightText;
+    public static string ForegroundFor(string hex) => ContrastRatio(hex, DarkText) >= ContrastRatio(hex, LightText) ? DarkText : LightText;
 
     /// <summary>
     /// Prüft, ob sich eine Farbe zu wenig vom Hintergrund abhebt und einen Rahmen braucht.

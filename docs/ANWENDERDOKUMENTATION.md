@@ -139,7 +139,7 @@ Terminalfenster). Die macOS-Dateien wurden unter Linux erstellt und sind auf ein
 | Bereich | Inhalt |
 |---|---|
 | Menüleiste | Datei, Bearbeiten, Ansicht (Design, Akzentfarbe, Zoom, Seitenansicht, „Erste Seite einzeln“), Sprache |
-| Werkzeugleiste | häufige Befehle, die Werkzeuge, Suchfeld, Farbpunkt der Akzentfarbe. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
+| Werkzeugleiste | häufige Befehle, die Werkzeuge, Suchfeld, Zahnrad **Einstellungen**. Bei schmalen Fenstern bricht sie in eine zweite Zeile um. |
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung; sie ist bei jedem Werkzeug gleich hoch |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
 | Linke Leiste | Reiter **Seiten**, **Anmerkungen** (mit Anzahl, sobald das Dokument Anmerkungen hat) und **Lesezeichen** (wenn die Datei welche hat); ohne beides nur die Seitenliste. Die Leiste lässt sich am rechten Rand von 180 bis 420 Pixel breit ziehen (Standard 220, wird gespeichert); die Seitenminiaturen wachsen und schrumpfen mit und werden kurz nach dem Ziehen scharf neu gezeichnet; passen die drei Reiter nicht nebeneinander, steht der dritte darunter. **Seiten:** Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text, Unterschrift, Stempel/Bild, Schwärzung); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
@@ -547,7 +547,7 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 - **Sprache:** Deutsch, Englisch oder System (Menü **Sprache** oder Einstellungen). Ohne eigene Wahl richtet sie
   sich nach dem Betriebssystem – Deutsch bei deutscher Systemsprache, sonst Englisch.
 - **Farben je Design (A56):** Hell und Dunkel haben je eigene Akzentfarbe, Pastell-Sättigung und einen eigenen
-  **Hintergrund** (Farbstich und Helligkeit). Eingestellt wird im Dialog **Einstellungen** (Farbpunkt oben rechts,
+  **Hintergrund** (Farbstich und Helligkeit). Eingestellt wird im Dialog **Einstellungen** (Zahnrad oben rechts,
   **Ansicht → Akzentfarbe …** oder **Bearbeiten → Einstellungen …**); er bearbeitet die Farben des gerade
   geltenden Designs. Bei „System“ gelten die Farben des Designs, das das Betriebssystem gerade zeigt.
 
@@ -574,7 +574,7 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 
   | Gruppe | Inhalt |
   |---|---|
-  | Pastell | Pastellblau, Mint, Pastellgelb, Pfirsich, Rosé, Lavendel; Sättigung 10–90 % (Standard 30 %) |
+  | Pastell | Pastellblau, Mint, Pastellgelb, Pfirsich, Rosé, Lavendel, Flieder; Sättigung 10–90 % (Standard 30 %) |
   | Kräftig | Indigo, Blau, Grün, Gelb, Orange, Rot, Violett |
   | Neutral | 95 % Schwarz, 95 % Weiß |
   | Benutzerdefiniert | eigene Farben per Hex-Code (`#RRGGBB`), höchstens 10, die älteste fällt bei mehr weg |
@@ -582,8 +582,11 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
   Die Sättigung gilt für alle Werkzeuge gemeinsam, die eigenen Farben zusätzlich auch für die Akzentfarbe.
   **Standard** setzt das jeweilige Werkzeug auf seine Standardfarbe zurück (Kommentar Indigo, Freihand Rot, Formen
   Blau, Text fast Schwarz). Schrift auf der Akzentfarbe
-  wird automatisch hell oder dunkel gesetzt; hebt sich eine Akzentfarbe zu wenig vom Hintergrund ab, bekommen
-  Akzentflächen einen Rahmen in einer satteren Variante der Farbe (bei neutralen Farben in Textfarbe).
+  wird automatisch hell oder dunkel gesetzt, je nachdem, was den höheren Kontrast hat; Schrift in Akzentfarbe (etwa
+  beim gewählten Werkzeug) erscheint nur bei ausreichendem Kontrast in der Akzentfarbe, sonst in der normalen
+  Textfarbe. Hebt sich eine Akzentfarbe zu wenig vom Hintergrund ab, bekommen Akzentflächen einen Rahmen in einer
+  satteren Variante der Farbe (bei neutralen Farben in Textfarbe). Auswahlfelder haben wie Textfelder einen
+  neutralen Rahmen; die Akzentfarbe zeigt dort nur den Fokus bzw. die geöffnete Liste.
 
 ---
 
@@ -669,7 +672,6 @@ Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
 | – | Geschwärzte Seiten werden als Bild gespeichert: Text darauf ist nicht mehr auswählbar oder durchsuchbar, Links und Formularfelder dieser Seiten entfallen. Dokumenteigenschaften, Lesezeichen-Texte und Dateianhänge werden nicht geschwärzt. |
 | – | Eingefügte Bilder werden nur als PNG oder JPEG gelesen; Bilder über 2000 Pixel werden verkleinert. Stempel und Bilder zeigt die Seitenminiatur erst nach dem Speichern und erneuten Öffnen. |
 | – | Doppelseite: Liegt eine Seite eines Paars quer oder ist sie anders groß, wird diese Zeile breiter; die Spalten stehen dann nicht genau untereinander (E10). |
-| – | Sehr helle Akzentfarben (z. B. Pastell oder „Salbei“) sind als Schrift, etwa beim gewählten Werkzeug, nur schwach lesbar. Eine automatisch lesbare Akzentschrift wie im AI Asset Manager wurde bewusst nicht übernommen (E11). |
 | – | Beim Einfügen von Seiten werden Lesezeichen und Verknüpfungen der eingefügten Datei nicht übernommen; ihre Formularfelder schon (gleichnamige werden umbenannt). Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 
 ---

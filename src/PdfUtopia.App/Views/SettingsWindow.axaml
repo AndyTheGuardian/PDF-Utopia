@@ -10,6 +10,12 @@
         Background="{DynamicResource SurfaceBrush}">
 
   <Window.Styles>
+    <!-- Knöpfe so hoch wie Text- und Auswahlfelder (P21); Farbflächen und ✕ behalten ihre Größe -->
+    <Style Selector="Button:not(.swatch):not(.remove)">
+      <Setter Property="MinHeight" Value="{DynamicResource TextControlThemeMinHeight}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
     <Style Selector="TextBlock.section">
       <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
       <Setter Property="FontSize" Value="11" />
@@ -70,7 +76,7 @@
         <Button Classes="swatch" Classes.selected="{Binding IsSelected}" ToolTip.Tip="{Binding ToolTip}"
                 Background="{Binding Hex, Converter={StaticResource HexToBrush}}"
                 Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).ChooseSwatchCommand}" CommandParameter="{Binding}" />
-        <Button Content="✕" IsVisible="{Binding IsCustom}" ToolTip.Tip="{loc:T Settings.AccentRemove}" FontSize="9" Padding="0"
+        <Button Classes="remove" Content="✕" IsVisible="{Binding IsCustom}" ToolTip.Tip="{loc:T Settings.AccentRemove}" FontSize="9" Padding="0"
                 Width="16" Height="16" CornerRadius="8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,2,0"
                 HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                 Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveCustomCommand}" CommandParameter="{Binding}" />
@@ -206,8 +212,9 @@
     <TextBlock Classes="section" Margin="0,12,0,2" Text="{loc:T Settings.General}" />
     <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
       <TextBlock Text="{loc:T Settings.UndoSteps}" VerticalAlignment="Center" TextWrapping="Wrap" />
+      <!-- Mit Pfeilknöpfen, aber so hoch wie die Textfelder (P21); nicht von der zweizeiligen Beschriftung gestreckt -->
       <NumericUpDown Grid.Column="1" Width="120" HorizontalAlignment="Left" Minimum="{Binding UndoMinimum}" Maximum="{Binding UndoMaximum}"
-                     Increment="1" FormatString="0" Value="{Binding UndoLimit}" />
+                     Increment="1" FormatString="0" Value="{Binding UndoLimit}" VerticalAlignment="Center" />
       <TextBlock Grid.Row="1" Grid.Column="1" Classes="hint" Text="{loc:T Settings.UndoHelp}" TextWrapping="Wrap" />
       <TextBlock Grid.Row="2" Text="{loc:T Settings.UserName}" VerticalAlignment="Center" Margin="0,6,0,0" />
       <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding UserName}" MaxLength="60" Margin="0,6,0,0" />

@@ -138,7 +138,7 @@ und bearbeitbar ist (außer bei Schwärzen – dort ist das Ergebnis endgültig)
 | Nr. | Schritte | Erwartet | ✓ |
 |---|---|---|---|
 | 12.1 | Bisherige Version mit eigener Akzentfarbe benutzt, neue Version starten | Akzentfarbe bleibt, in Hell und Dunkel; sonst sieht alles aus wie vorher | ☐ |
-| 12.2 | Farbpunkt oben rechts anklicken | Dialog „Einstellungen“ mit Darstellung, Akzentfarbe, Farbe anpassen, Allgemein; Hinweis, welches Design bearbeitet wird | ☐ |
+| 12.2 | Zahnrad „Einstellungen“ oben rechts anklicken | Dialog „Einstellungen“ mit Darstellung, Akzentfarbe, Farbe anpassen, Allgemein; Hinweis, welches Design bearbeitet wird | ☐ |
 | 12.3 | Farbprofil „Salbei“ (Hell) bzw. „Petrol & Kupfer“ (Dunkel) wählen | Akzent und Hintergrund des Hauptfensters ändern sich sofort; die PDF-Seite bleibt weiß | ☐ |
 | 12.4 | **Hintergrund** wählen, Farbton und Stärke ziehen, Zahl eintippen | Flächen färben sich, Profil zeigt „Eigene Einstellung (nicht gespeichert)“ | ☐ |
 | 12.5 | **Abbrechen** | Vorherige Farben sind zurück | ☐ |

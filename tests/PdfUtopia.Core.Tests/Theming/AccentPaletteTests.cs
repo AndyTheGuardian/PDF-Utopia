@@ -57,7 +57,9 @@ public sealed class AccentPaletteTests
     [InlineData("#FACC15", "#1D2330")]
     [InlineData("#A2C4E7", "#1D2330")]
     [InlineData("#4F46E5", "#F4F7FC")]
-    [InlineData("#1F9D55", "#F4F7FC")]
+    [InlineData("#C93434", "#F4F7FC")]
+    [InlineData("#1F9D55", "#1D2330")]
+    [InlineData("#779E88", "#1D2330")]
     public void ForegroundFor_PicksReadableText(string accent, string expected) =>
         Assert.Equal(expected, AccentPalette.ForegroundFor(accent));
 
