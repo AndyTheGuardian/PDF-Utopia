@@ -16,6 +16,52 @@
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
+    <!-- Design und Sprache als Umschalter: eine Auswahl mit einem Klick (P22) -->
+    <Style Selector="ListBox.segments">
+      <Setter Property="Background" Value="{DynamicResource Surface2Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AppBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <!-- Rundung wie Text- und Auswahlfelder (P22) -->
+      <Setter Property="CornerRadius" Value="{DynamicResource ControlCornerRadius}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="ClipToBounds" Value="True" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+      <!-- So breit wie die Auswahlliste darunter, alle Felder gleich breit (P22) -->
+      <Setter Property="ItemsPanel">
+        <ItemsPanelTemplate>
+          <UniformGrid Rows="1" />
+        </ItemsPanelTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="ListBox.segments ListBoxItem">
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="MinHeight" Value="30" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Background" Value="Transparent" />
+      <!-- Nur die äußeren Ecken rund (innen 2 px bei 3 px Rahmen), alle Felder gleich (P22) -->
+      <Setter Property="CornerRadius" Value="0" />
+    </Style>
+    <Style Selector="ListBox.segments ListBoxItem:nth-child(1)">
+      <Setter Property="CornerRadius" Value="2,0,0,2" />
+    </Style>
+    <Style Selector="ListBox.segments ListBoxItem:nth-last-child(1)">
+      <Setter Property="CornerRadius" Value="0,2,2,0" />
+    </Style>
+    <Style Selector="ListBox.segments ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <Style Selector="ListBox.segments ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter, ListBox.segments ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+    </Style>
+    <Style Selector="ListBox.segments ListBoxItem:selected">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="ListBox.segments ListBoxItem:selected Path.icon">
+      <Setter Property="Stroke" Value="{DynamicResource AccentForegroundBrush}" />
+    </Style>
     <Style Selector="TextBlock.section">
       <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
       <Setter Property="FontSize" Value="11" />
@@ -40,10 +86,10 @@
       </Setter>
     </Style>
     <Style Selector="RadioButton.segment.first">
-      <Setter Property="CornerRadius" Value="6,0,0,6" />
+      <Setter Property="CornerRadius" Value="3,0,0,3" />
     </Style>
     <Style Selector="RadioButton.segment.last">
-      <Setter Property="CornerRadius" Value="0,6,6,0" />
+      <Setter Property="CornerRadius" Value="0,3,3,0" />
     </Style>
     <Style Selector="RadioButton.segment:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
@@ -96,9 +142,28 @@
     <TextBlock Classes="section" Margin="0,0,0,2" Text="{loc:T Settings.Appearance}" />
     <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
       <TextBlock Text="{loc:T Settings.Theme}" VerticalAlignment="Center" />
-      <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" HorizontalAlignment="Stretch" />
+      <ListBox Grid.Column="1" Classes="segments" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ThemeOption">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Panel VerticalAlignment="Center">
+                <Path Classes="icon small" Data="{StaticResource IconThemeSystem}" IsVisible="{Binding Theme, Converter={StaticResource EnumEquals}, ConverterParameter=System}" />
+                <Path Classes="icon small" Data="{StaticResource IconThemeLight}" IsVisible="{Binding Theme, Converter={StaticResource EnumEquals}, ConverterParameter=Light}" />
+                <Path Classes="icon small" Data="{StaticResource IconThemeDark}" IsVisible="{Binding Theme, Converter={StaticResource EnumEquals}, ConverterParameter=Dark}" />
+              </Panel>
+              <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+            </StackPanel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
       <TextBlock Grid.Row="1" Text="{loc:T Settings.Language}" VerticalAlignment="Center" />
-      <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}" HorizontalAlignment="Stretch" />
+      <ListBox Grid.Row="1" Grid.Column="1" Classes="segments" ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:LanguageOption">
+            <TextBlock Text="{Binding Label}" VerticalAlignment="Center" />
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
       <!-- Farbprofile des bearbeiteten Designs (A56) -->
       <TextBlock Grid.Row="2" Text="{loc:T Settings.Profile}" VerticalAlignment="Center" />
       <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"

@@ -276,8 +276,47 @@ public sealed class DialogService(Window owner) : IDialogService
     }
 
     /// <inheritdoc />
-    public Task<bool> ShowSettingsAsync(SettingsViewModel viewModel) =>
-        new Views.SettingsWindow { DataContext = viewModel }.ShowDialog<bool>(Parent);
+    /// <remarks>
+    /// Wechselt der Anwender die Sprache, schließt sich der Dialog ohne Ergebnis; nach dem Neuaufbau des Hauptfensters
+    /// öffnet er sich mit demselben ViewModel in der neuen Sprache über dem neuen Fenster (P22).
+    /// </remarks>
+    public async Task<bool> ShowSettingsAsync(SettingsViewModel viewModel)
+    {
+        Views.SettingsWindow? previous = null;
+        while (true)
+        {
+            var window = new Views.SettingsWindow { DataContext = viewModel };
+            if (previous is not null)
+            {
+                // Wieder geöffnet nach dem Sprachwechsel: Lage und Größe wie zuvor (P22). Nur aktivieren: Das kurze
+                // „immer im Vordergrund“ ließ den Dialog unter Cinnamon kurz nach links oben springen; er gehört zum
+                // Hauptfenster, das bereits vorn steht.
+                window.SizeToContent = SizeToContent.Manual;
+                window.Width = previous.ClosedSize.Width;
+                window.Height = previous.ClosedSize.Height;
+                // Ohne bekannte Lage (z. B. ohne Fenstermanager) wie beim ersten Öffnen über dem Hauptfenster zentrieren
+                if (previous.ClosedPosition != default)
+                {
+                    window.WindowStartupLocation = WindowStartupLocation.Manual;
+                    window.Position = previous.ClosedPosition;
+                }
+
+                window.Opened += (_, _) => window.Activate();
+            }
+
+            var result = await window.ShowDialog<bool?>(Parent);
+            if (!window.ReopenRequested)
+            {
+                // „Übernehmen“, „Abbrechen“ oder ✕ (ohne Ergebnis = Abbrechen)
+                return result == true;
+            }
+
+            previous = window;
+
+            // Erst den (eingereihten) Neuaufbau des Hauptfensters abwarten, dann über dem neuen Fenster öffnen
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
+        }
+    }
 
     /// <inheritdoc />
     public async Task<bool> ConfirmAsync(string title, string message, string confirmText)

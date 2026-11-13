@@ -15,6 +15,7 @@ public sealed partial class SettingsWindow : Window
     public SettingsWindow()
     {
         InitializeComponent();
+        Services.WindowFocus.Track(this);
 
         // Ein geleertes Zahlenfeld bleibt beim Tippen leer; verlässt man es, zeigt es wieder den gültigen Wert (A56).
         AddHandler(InputElement.LostFocusEvent, OnFieldLostFocus, RoutingStrategies.Bubble);
@@ -43,4 +44,38 @@ public sealed partial class SettingsWindow : Window
     private void OnSave(object? sender, RoutedEventArgs e) => Close(true);
 
     private void OnCancel(object? sender, RoutedEventArgs e) => Close(false);
+
+    /// <summary>
+    /// Ob der Dialog nur wegen einer neuen Sprache geschlossen wurde und in ihr wieder geöffnet werden soll (P22).
+    /// Schließen mit ✕ zählt dagegen wie „Abbrechen“.
+    /// </summary>
+    public bool ReopenRequested { get; private set; }
+
+    /// <summary>Größe beim Schließen.</summary>
+    public Avalonia.Size ClosedSize { get; private set; }
+
+    /// <summary>Lage beim Schließen (wie abgefragt, also samt Rahmen); nach dem Schließen meldet das Fenster sie nicht mehr.</summary>
+    public Avalonia.PixelPoint ClosedPosition { get; private set; }
+
+    /// <inheritdoc />
+    protected override void OnClosing(WindowClosingEventArgs e)
+    {
+        base.OnClosing(e);
+        ClosedSize = ClientSize;
+        ClosedPosition = Services.WindowFocus.FramePosition(this);
+    }
+
+    /// <inheritdoc />
+    protected override void OnDataContextChanged(EventArgs e)
+    {
+        base.OnDataContextChanged(e);
+        if (DataContext is ViewModels.SettingsViewModel viewModel)
+        {
+            viewModel.LanguageApplied += (_, _) =>
+            {
+                ReopenRequested = true;
+                Avalonia.Threading.Dispatcher.UIThread.Post(() => Close(null));
+            };
+        }
+    }
 }

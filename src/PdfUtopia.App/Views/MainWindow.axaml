@@ -351,7 +351,8 @@
             <Button Classes="tb" Command="{Binding RotateCurrentPageCommand}" ToolTip.Tip="{loc:T Toolbar.RotateTip}"><StackPanel Spacing="2"><Path Classes="icon" Classes.mirrored="{Binding ReverseRotation}" Data="{StaticResource IconRotate}" /><TextBlock Text="{loc:T Toolbar.Rotate}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding DeleteCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconTrash}" /><TextBlock Text="{loc:T Toolbar.Delete}" /></StackPanel></Button>
         </WrapPanel>
-        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top" Margin="8,6,0,0">
+        <!-- Ohne Abstand oben, damit das Zahnrad auf einer Höhe mit den Werkzeugsymbolen steht (P22) -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="10" VerticalAlignment="Top" Margin="8,0,0,0">
           <TextBox x:Name="SearchBox" Width="200" Text="{Binding SearchText}" PlaceholderText="{loc:T Toolbar.SearchPlaceholder}" VerticalAlignment="Center">
             <TextBox.KeyBindings>
               <KeyBinding Gesture="Enter" Command="{Binding NextSearchHitCommand}" />

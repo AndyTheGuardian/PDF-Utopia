@@ -544,7 +544,10 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 - **Design:** System, Hell oder Dunkel (Menü **Ansicht** oder Einstellungen). Das helle Design verzichtet auf
   reines Weiß, das dunkle ist neutral grau; die PDF-Seite selbst, das Papier der Fußnoten und die Seitenansicht
   bleiben immer weiß.
-- **Sprache:** Deutsch, Englisch oder System (Menü **Sprache** oder Einstellungen). Ohne eigene Wahl richtet sie
+- **Sprache:** Deutsch, Englisch oder System (Menü **Sprache** oder Einstellungen; dort wie das Design als
+  Umschalter, Design mit Symbolen Monitor, Sonne und Mond). Im Einstellungsdialog wirkt die Sprache wie das Design
+  sofort: Hauptfenster und Dialog werden in der neuen Sprache neu aufgebaut, alle Eingaben im Dialog bleiben
+  erhalten; **Abbrechen** stellt die vorherige Sprache wieder her. Ohne eigene Wahl richtet sie
   sich nach dem Betriebssystem – Deutsch bei deutscher Systemsprache, sonst Englisch.
 - **Farben je Design (A56):** Hell und Dunkel haben je eigene Akzentfarbe, Pastell-Sättigung und einen eigenen
   **Hintergrund** (Farbstich und Helligkeit). Eingestellt wird im Dialog **Einstellungen** (Zahnrad oben rechts,

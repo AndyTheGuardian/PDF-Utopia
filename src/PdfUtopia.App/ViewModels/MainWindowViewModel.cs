@@ -1066,10 +1066,16 @@ public sealed partial class MainWindowViewModel : ObservableObject
     [RelayCommand]
     private async Task OpenSettingsAsync()
     {
-        var settings = new SettingsViewModel(_settings, _theme, _dialogs);
+        var originalLanguage = Loc.Language;
+        var settings = new SettingsViewModel(_settings, _theme, _dialogs)
+        {
+            // Sprache wirkt sofort wie das Design (P22): Hauptfenster in der neuen Sprache neu aufbauen
+            PreviewLanguage = language => ApplyLanguage(ResolveLanguage(language)),
+        };
         if (!await _dialogs.ShowSettingsAsync(settings))
         {
             settings.Revert();
+            ApplyLanguage(originalLanguage);
             return;
         }
 
@@ -1085,8 +1091,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
         OnPropertyChanged(nameof(Theme));
         // „System“ bleibt gespeichert; angezeigt wird die Sprache des Betriebssystems
-        ApplyLanguage(_settings.ResolveLanguage(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName));
+        ApplyLanguage(ResolveLanguage(_settings.Language));
     }
+
+    /// <summary>Angezeigte Sprache zu einer Wahl; <c>null</c> = Sprache des Betriebssystems.</summary>
+    private UiLanguage ResolveLanguage(UiLanguage? language) =>
+        (_settings with { Language = language }).ResolveLanguage(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName);
 
     /// <summary>Bereitet die Farbwahl für ein Ziel vor (wird vor dem Öffnen des Flyouts aufgerufen).</summary>
     /// <param name="target">Das Ziel.</param>

@@ -451,8 +451,8 @@ ist. Ihre Auswahl wird gespeichert.
 
 | Einstellung | Bedeutung |
 |---|---|
-| Design | System, Hell oder Dunkel |
-| Sprache | System, Deutsch oder English |
+| Design | Umschalter System (Monitor), Hell (Sonne) oder Dunkel (Mond) – ein Klick genügt |
+| Sprache | Umschalter System, Deutsch oder English – wirkt sofort, **Abbrechen** stellt die vorherige Sprache wieder her |
 | Farbprofil, Akzentfarbe, Farbe anpassen | Farben des geltenden Designs, siehe [Farben, Design und Sprache](#16-farben-design-und-sprache) |
 | Anzahl Rückgängig-Schritte | 1 bis 500 (Standard 50); ältere Schritte werden verworfen |
 | Name für Stempel | erscheint auf Stempeln, wenn „Name“ angehakt ist |

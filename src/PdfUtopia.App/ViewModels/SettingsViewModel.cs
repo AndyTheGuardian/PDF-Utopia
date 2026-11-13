@@ -644,6 +644,30 @@ public sealed partial class SettingsViewModel : ObservableObject
     public void Revert() => _theme.Apply(_original);
 
     /// <summary>
+    /// Wendet eine gewählte Sprache sofort an, wie das Design (P22); setzt der Aufrufer, der das Hauptfenster neu
+    /// aufbaut. <c>null</c> = System.
+    /// </summary>
+    public Action<UiLanguage?>? PreviewLanguage { get; set; }
+
+    /// <summary>
+    /// Wird ausgelöst, nachdem eine andere Sprache angewandt wurde: Der Dialog muss in der neuen Sprache neu
+    /// aufgebaut werden; alle Eingaben bleiben in diesem ViewModel erhalten.
+    /// </summary>
+    public event EventHandler? LanguageApplied;
+
+    /// <summary>Andere Sprache gewählt: sofort anwenden (P22).</summary>
+    partial void OnSelectedLanguageChanged(LanguageOption value)
+    {
+        if (!_initialized || PreviewLanguage is null)
+        {
+            return;
+        }
+
+        PreviewLanguage(value.Language);
+        LanguageApplied?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>
     /// Anderes Design gewählt: Die bisher bearbeiteten Farben bleiben für ihr Design erhalten, Regler und Farbreihen
     /// zeigen die Farben des neuen Designs (A56). Beim Standard-Akzent folgt außerdem der Farbkreis.
     /// </summary>
