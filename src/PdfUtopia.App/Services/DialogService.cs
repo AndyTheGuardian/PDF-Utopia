@@ -4,6 +4,7 @@ using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
 using PdfUtopia.App.Localization;
+using PdfUtopia.App.ViewModels;
 using PdfUtopia.Core.History;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
@@ -275,35 +276,143 @@ public sealed class DialogService(Window owner) : IDialogService
     }
 
     /// <inheritdoc />
-    public async Task<SettingsChoice?> EditSettingsAsync(SettingsChoice current)
+    /// <remarks>
+    /// Wechselt der Anwender die Sprache, schließt sich der Dialog ohne Ergebnis; nach dem Neuaufbau des Hauptfensters
+    /// öffnet er sich mit demselben ViewModel in der neuen Sprache über dem neuen Fenster (P22).
+    /// </remarks>
+    public async Task<bool> ShowSettingsAsync(SettingsViewModel viewModel)
     {
-        var theme = new ComboBox
+        Views.SettingsWindow? previous = null;
+        while (true)
         {
-            ItemsSource = new[] { Loc.T("Menu.ThemeSystem"), Loc.T("Menu.ThemeLight"), Loc.T("Menu.ThemeDark") }.Select(Clean).ToList(),
-            SelectedIndex = (int)current.Theme, MinWidth = 160,
-        };
-        var language = new ComboBox { ItemsSource = new[] { "Deutsch", "English" }, SelectedIndex = (int)current.Language, MinWidth = 160 };
-        var undo = new NumericUpDown
-        {
-            Minimum = UndoHistory.MinLimit, Maximum = UndoHistory.MaxLimit, Value = current.UndoLimit, Increment = 1, FormatString = "0", MinWidth = 160,
-        };
-        var userName = new TextBox { Text = current.UserName, MinWidth = 160, MaxLength = 60 };
-        var content = new StackPanel
-        {
-            Spacing = 8,
-            Children =
+            var window = new Views.SettingsWindow { DataContext = viewModel };
+            if (previous is not null)
             {
-                Labeled(Loc.T("Settings.Theme"), theme), Labeled(Loc.T("Settings.Language"), language),
-                Labeled(Loc.T("Settings.UndoSteps"), undo), new TextBlock { Text = Loc.T("Settings.UndoHelp"), Classes = { "hint" } },
-                Labeled(Loc.T("Settings.UserName"), userName), new TextBlock { Text = Loc.T("Settings.UserNameHelp"), Classes = { "hint" } },
-            },
+                // Wieder geöffnet nach dem Sprachwechsel: Lage und Größe wie zuvor (P22). Nur aktivieren: Das kurze
+                // „immer im Vordergrund“ ließ den Dialog unter Cinnamon kurz nach links oben springen; er gehört zum
+                // Hauptfenster, das bereits vorn steht.
+                window.SizeToContent = SizeToContent.Manual;
+                window.Width = previous.ClosedSize.Width;
+                window.Height = previous.ClosedSize.Height;
+                // Ohne bekannte Lage (z. B. ohne Fenstermanager) wie beim ersten Öffnen über dem Hauptfenster zentrieren
+                if (previous.ClosedPosition != default)
+                {
+                    window.WindowStartupLocation = WindowStartupLocation.Manual;
+                    window.Position = previous.ClosedPosition;
+                }
+
+                window.Opened += (_, _) => window.Activate();
+            }
+
+            var result = await window.ShowDialog<bool?>(Parent);
+            if (!window.ReopenRequested)
+            {
+                // „Übernehmen“, „Abbrechen“ oder ✕ (ohne Ergebnis = Abbrechen)
+                return result == true;
+            }
+
+            previous = window;
+
+            // Erst den (eingereihten) Neuaufbau des Hauptfensters abwarten, dann über dem neuen Fenster öffnen
+            await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => { }, Avalonia.Threading.DispatcherPriority.Background);
+        }
+    }
+
+    /// <inheritdoc />
+    public async Task<bool> ConfirmAsync(string title, string message, string confirmText)
+    {
+        var dialog = CreateDialog(title, Message(message));
+        AddButtons(dialog, (Loc.T("Dialog.Cancel"), false), (confirmText, true));
+        return await dialog.ShowDialog<bool>(Parent);
+    }
+
+    /// <inheritdoc />
+    public async Task<int?> ChooseAsync(string title, string message, IReadOnlyList<string> choices)
+    {
+        ArgumentNullException.ThrowIfNull(choices);
+        var dialog = CreateDialog(title, Message(message));
+        int? result = null;
+        var panel = ButtonRow();
+        var cancel = new Button { Content = Loc.T("Dialog.Cancel"), MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center, IsCancel = true };
+        cancel.Click += (_, _) => dialog.Close();
+        panel.Children.Add(cancel);
+        // Die erste Antwort steht rechts und ist hervorgehoben
+        for (var index = choices.Count - 1; index >= 0; index--)
+        {
+            var choice = index;
+            var button = new Button { Content = choices[index], MinWidth = 90, HorizontalContentAlignment = HorizontalAlignment.Center };
+            button.Click += (_, _) =>
+            {
+                result = choice;
+                dialog.Close();
+            };
+            panel.Children.Add(button);
+            if (index == 0)
+            {
+                MarkPrimary(button);
+            }
+        }
+
+        ((StackPanel)dialog.Content!).Children.Add(panel);
+        await dialog.ShowDialog(Parent);
+        return result;
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> PromptTextAsync(string title, string label, string initial, string confirmText)
+    {
+        var input = new TextBox { Text = initial, MinWidth = 300, MaxLength = Core.Theming.ColorProfile.MaxNameLength };
+        var dialog = CreateDialog(title, Labeled(label, input));
+        AddButtons(dialog, (Loc.T("Dialog.Cancel"), false), (confirmText, true));
+        dialog.Opened += (_, _) =>
+        {
+            input.Focus();
+            input.SelectAll();
         };
-        var dialog = CreateDialog(Loc.T("Settings.Title"), content);
-        AddButtons(dialog, (Loc.T("Dialog.Cancel"), false), (Loc.T("Dialog.Ok"), true));
-        return await dialog.ShowDialog<bool>(Owner)
-            ? new SettingsChoice((ThemePreference)theme.SelectedIndex, (UiLanguage)language.SelectedIndex, UndoHistory.ClampLimit((int)(undo.Value ?? current.UndoLimit)),
-                (userName.Text ?? string.Empty).Trim())
-            : null;
+        return await dialog.ShowDialog<bool>(Parent) && !string.IsNullOrWhiteSpace(input.Text) ? input.Text.Trim() : null;
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> PickOpenFileAsync(string title, string fileTypeName, string pattern)
+    {
+        var files = await Parent.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        {
+            Title = title,
+            AllowMultiple = false,
+            FileTypeFilter = [new FilePickerFileType(fileTypeName) { Patterns = [pattern] }, FilePickerFileTypes.All],
+        });
+        return files.Count == 0 ? null : files[0].TryGetLocalPath();
+    }
+
+    /// <inheritdoc />
+    public async Task<string?> PickSaveFileAsync(string title, string suggestedName, string fileTypeName, string pattern)
+    {
+        var file = await Parent.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = title,
+            SuggestedFileName = suggestedName,
+            FileTypeChoices = [new FilePickerFileType(fileTypeName) { Patterns = [pattern] }],
+            ShowOverwritePrompt = true,
+        });
+        return file?.TryGetLocalPath();
+    }
+
+    /// <summary>
+    /// Oberstes sichtbares Fenster: Dialoge aus dem Einstellungsdialog (Profilname, Export, Import) erscheinen über
+    /// diesem, nicht über dem Hauptfenster.
+    /// </summary>
+    private Window Parent
+    {
+        get
+        {
+            var window = Owner;
+            while (window.OwnedWindows.LastOrDefault(child => child.IsVisible) is { } child)
+            {
+                window = child;
+            }
+
+            return window;
+        }
     }
 
     /// <inheritdoc />

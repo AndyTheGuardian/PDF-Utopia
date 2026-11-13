@@ -37,6 +37,7 @@ public sealed class App : Application
             Loc.Language = store.Load().ResolveLanguage(CultureInfo.CurrentUICulture.TwoLetterISOLanguageName);
 
             var window = new MainWindow();
+            WindowFocus.Track(window);
             _desktop = desktop;
             _dialogs = new DialogService(window);
             var viewModel = new MainWindowViewModel(store, _dialogs, new ThemeService(this));
@@ -70,15 +71,21 @@ public sealed class App : Application
         var newWindow = new MainWindow
         {
             DataContext = viewModel,
-            Width = oldWindow.Width,
-            Height = oldWindow.Height,
-            Position = oldWindow.Position,
+            // Tatsächliche Größe übernehmen: Width/Height behalten den Startwert, auch wenn das Fenster gezogen wurde (P22)
+            Width = oldWindow.ClientSize.Width,
+            Height = oldWindow.ClientSize.Height,
+            // Lage und Größe wie zuvor, auch wenn das Fenster gezogen wurde (P22)
+            Position = WindowFocus.FramePosition(oldWindow),
             WindowStartupLocation = WindowStartupLocation.Manual,
             WindowState = oldWindow.WindowState,
         };
+        WindowFocus.Track(newWindow);
         _dialogs.Owner = newWindow;
         _desktop.MainWindow = newWindow;
+
         newWindow.Show();
+        // Ein ohne Klick geöffnetes Fenster stellt der Fenstermanager sonst hinter andere Anwendungen (P22)
+        WindowFocus.BringToFront(newWindow);
         oldWindow.DataContext = null;
         oldWindow.Close();
     }

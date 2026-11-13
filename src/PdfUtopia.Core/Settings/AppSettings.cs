@@ -45,11 +45,37 @@ public sealed record AppSettings
     /// <summary>Sprache; <c>null</c> = nach der Sprache des Betriebssystems.</summary>
     public UiLanguage? Language { get; init; }
 
-    /// <summary>Akzentfarbe; <c>null</c> = Standard des Themes.</summary>
+    /// <summary>
+    /// Akzentfarbe aus der Zeit vor den Farben je Design; wird beim Laden einmalig in beide Designs übernommen (A56).
+    /// </summary>
     public string? AccentColor { get; init; }
 
-    /// <summary>Sättigung der Pastellfarben in Prozent.</summary>
+    /// <summary>Sättigung der Pastellfarben der Werkzeug-Farbwahl in Prozent (vor A56 auch die der Akzentfarbe).</summary>
     public int PastelSaturation { get; init; } = AccentPalette.DefaultSaturation;
+
+    /// <summary>Farben des hellen Designs (A56); <c>null</c> nur in Dateien aus der Zeit davor.</summary>
+    public ThemeColorSettings? LightColors { get; init; }
+
+    /// <summary>Farben des dunklen Designs (A56); <c>null</c> nur in Dateien aus der Zeit davor.</summary>
+    public ThemeColorSettings? DarkColors { get; init; }
+
+    /// <summary>Eigene Farbprofile beider Designs (A56); die mitgelieferten stehen in <see cref="BuiltInColorProfiles"/>.</summary>
+    public IReadOnlyList<ColorProfile> ColorProfiles { get; init; } = [];
+
+    /// <summary>Farben eines Designs.</summary>
+    /// <param name="dark">Ob das dunkle Design gemeint ist.</param>
+    /// <returns>Die Farben.</returns>
+    public ThemeColorSettings ColorsFor(bool dark) => (dark ? DarkColors : LightColors) ?? LegacyColors();
+
+    /// <summary>Ersetzt die Farben eines Designs.</summary>
+    /// <param name="dark">Ob das dunkle Design gemeint ist.</param>
+    /// <param name="colors">Die neuen Farben.</param>
+    /// <returns>Die geänderten Einstellungen.</returns>
+    public AppSettings WithColors(bool dark, ThemeColorSettings colors) =>
+        dark ? this with { DarkColors = colors } : this with { LightColors = colors };
+
+    /// <summary>Farben aus der Zeit vor A56: die gespeicherte Akzentfarbe und Sättigung, ohne Farbstich.</summary>
+    private ThemeColorSettings LegacyColors() => new() { AccentColor = AccentColor, PastelSaturation = PastelSaturation };
 
     /// <summary>Benutzerdefinierte Farben (höchstens 10).</summary>
     public IReadOnlyList<string> CustomColors { get; init; } = [];
@@ -152,7 +178,11 @@ public sealed record AppSettings
         ArrowEnds = Enum.IsDefined(ArrowEnds) ? ArrowEnds : ArrowEnds.End,
         ViewMode = Enum.IsDefined(ViewMode) ? ViewMode : PageViewMode.Single,
         Language = Language is { } language && Enum.IsDefined(language) ? language : null,
-        AccentColor = AccentPalette.IsValidHex(AccentColor) ? AccentPalette.Normalize(AccentColor!) : null,
+        // Alte Akzentfarbe einmalig in beide Designs übernehmen (A56), danach nicht mehr gespeichert
+        LightColors = ColorsFor(dark: false).Normalized(),
+        DarkColors = ColorsFor(dark: true).Normalized(),
+        AccentColor = null,
+        ColorProfiles = ColorProfile.NormalizeCustom(ColorProfiles),
         PastelSaturation = AccentPalette.ClampSaturation(PastelSaturation),
         CustomColors = (CustomColors ?? []).Where(AccentPalette.IsValidHex).Select(AccentPalette.Normalize).Distinct()
             .TakeLast(AccentPalette.MaxCustomColors).ToList(),

@@ -57,7 +57,9 @@ public sealed class AccentPaletteTests
     [InlineData("#FACC15", "#1D2330")]
     [InlineData("#A2C4E7", "#1D2330")]
     [InlineData("#4F46E5", "#F4F7FC")]
-    [InlineData("#1F9D55", "#F4F7FC")]
+    [InlineData("#C93434", "#F4F7FC")]
+    [InlineData("#1F9D55", "#1D2330")]
+    [InlineData("#779E88", "#1D2330")]
     public void ForegroundFor_PicksReadableText(string accent, string expected) =>
         Assert.Equal(expected, AccentPalette.ForegroundFor(accent));
 
@@ -175,4 +177,30 @@ public sealed class SearchHighlightTests
 
     [Fact]
     public void Highlight_Indigo_NoOutline() => Assert.Null(DrawingColors.SearchHighlight(AccentPalette.DefaultAccent).OutlineHex);
+
+    [Theory]
+    [InlineData("#4F46E5")]
+    [InlineData("#A4EAD1")]
+    [InlineData("#0D0D0D")]
+    [InlineData("#F2F2F2")]
+    [InlineData("#FF0000")]
+    public void Hsv_RoundTrip_KeepsColor(string hex)
+    {
+        var (h, s, v) = AccentPalette.ToHsv(hex);
+
+        Assert.Equal(hex, AccentPalette.FromHsv(h, s, v));
+    }
+
+    [Fact]
+    public void ToHsv_PureColors()
+    {
+        Assert.Equal((120, 1, 1), AccentPalette.ToHsv("#00FF00"));
+        Assert.Equal((0, 0, 0), AccentPalette.ToHsv("#000000"));
+    }
+
+    [Fact]
+    public void FromHsv_ClampsValues()
+    {
+        Assert.Equal("#FFFFFF", AccentPalette.FromHsv(400, -1, 2));
+    }
 }

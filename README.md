@@ -31,7 +31,7 @@ weiterbearbeiten.
 - **Passwortgeschützte Dateien:** öffnen; beim Speichern das Passwort behalten, ändern oder entfernen.
 - **Speichern:** immer über „Speichern unter“, die Originaldatei bleibt erhalten.
 - **Drucken:** über den PDF-Betrachter des Systems.
-- **Oberfläche:** Theme System/Hell/Dunkel, wählbare Akzentfarbe, Deutsch und Englisch.
+- **Oberfläche:** Theme System/Hell/Dunkel mit eigenen Farben je Design (Akzentfarbe, Farbstich und Helligkeit des Hintergrunds), Farbprofile mit Export/Import (austauschbar mit dem AI Asset Manager), Deutsch und Englisch.
 
 Bestehender Text im PDF lässt sich nicht bearbeiten. Weitere bekannte Einschränkungen stehen in der
 [Anwenderdokumentation](docs/ANWENDERDOKUMENTATION.md).
@@ -96,6 +96,7 @@ Gatekeeper auf (siehe Anwenderdokumentation 3.2).
 | `src/PdfUtopia.Core` | Fachlogik ohne Oberfläche und ohne PDF-Bibliothek: Geometrie, Seitenliste, Annotationen, Rückgängig-Verlauf, Strichaufzeichnung, Radierer, Farben, Einstellungen |
 | `src/PdfUtopia.Pdf` | PDF-Anbindung: Rendern, Text und Suche (PDFium), Speichern, Extrahieren und Annotationen schreiben (PDFsharp), gespeicherte Annotationen wieder einlesen |
 | `src/PdfUtopia.App` | Avalonia-Oberfläche (MVVM mit CommunityToolkit.Mvvm): Fenster, Dialoge, Seiteneditor, Lokalisierung, Themes |
+| `tests/PdfUtopia.App.Tests` | Tests der ViewModels (Einstellungen, Farbprofile) |
 | `tests/PdfUtopia.Core.Tests` | Unit-Tests der Fachlogik |
 | `tests/PdfUtopia.Pdf.Tests` | Tests der PDF-Anbindung mit den Testdateien |
 | `testdata/` | Erzeugte Test-PDFs, darunter eine passwortgeschützte, eine mit Lesezeichen und eine mit Formular |

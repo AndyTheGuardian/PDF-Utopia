@@ -41,9 +41,6 @@ public enum Tool
 /// </summary>
 public enum ColorTarget
 {
-    /// <summary>Akzentfarbe der Oberfläche.</summary>
-    Accent,
-
     /// <summary>Freihand.</summary>
     Freehand,
 

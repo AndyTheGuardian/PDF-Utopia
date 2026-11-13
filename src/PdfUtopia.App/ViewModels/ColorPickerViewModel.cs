@@ -47,11 +47,23 @@ public sealed partial class ColorPickerViewModel : ObservableObject
     {
         _currentColor = currentColor;
         Saturation = AccentPalette.ClampSaturation(saturation);
+        SetCustomColors(customColors);
+    }
+
+    /// <summary>
+    /// Übernimmt die eigenen Farben, z. B. nachdem sie im Einstellungsdialog geändert wurden; sie gelten für
+    /// Akzentfarbe und Werkzeuge gemeinsam (A56).
+    /// </summary>
+    /// <param name="customColors">Die eigenen Farben.</param>
+    public void SetCustomColors(IEnumerable<string> customColors)
+    {
+        Custom.Clear();
         foreach (var hex in customColors)
         {
             Custom.Add(new SwatchViewModel(hex, $"{Loc.T("Accent.CustomName")} {hex}", isCustom: true));
         }
 
+        OnPropertyChanged(nameof(HasCustomColors));
         Rebuild();
     }
 
@@ -99,9 +111,7 @@ public sealed partial class ColorPickerViewModel : ObservableObject
     public bool HasHexError => HexError is not null;
 
     /// <summary>Titel der Farbwahl, z. B. „Farbe – Kommentar“.</summary>
-    public string Title => Target == ColorTarget.Accent
-        ? Loc.T("Accent.Title")
-        : Loc.F("Accent.TitleFor", Loc.T($"Tool.{(Target == ColorTarget.Freehand ? "Freehand" : Target.ToString())}"));
+    public string Title => Loc.F("Accent.TitleFor", Loc.T($"Tool.{(Target == ColorTarget.Freehand ? "Freehand" : Target.ToString())}"));
 
     /// <summary>Sättigung auf der Skala 0–255.</summary>
     public string SaturationByteText => $"≙ {(int)Math.Round(Saturation * 255 / 100.0, MidpointRounding.AwayFromZero)}";

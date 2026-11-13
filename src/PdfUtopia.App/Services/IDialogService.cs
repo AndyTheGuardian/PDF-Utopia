@@ -50,15 +50,6 @@ public sealed record InsertRequest(IReadOnlyList<InsertSourceOption> Sources, in
 public sealed record InsertChoice(PdfSource Source, IReadOnlyList<int> Pages, int Index);
 
 /// <summary>
-/// Ergebnis des Einstellungsdialogs.
-/// </summary>
-/// <param name="Theme">Erscheinungsbild.</param>
-/// <param name="Language">Sprache.</param>
-/// <param name="UndoLimit">Höchstzahl der Rückgängig-Schritte.</param>
-/// <param name="UserName">Name für Stempel (F35).</param>
-public sealed record SettingsChoice(ThemePreference Theme, UiLanguage Language, int UndoLimit, string UserName);
-
-/// <summary>
 /// Dialoge und Dateiauswahl, entkoppelt vom ViewModel (testbar, austauschbar).
 /// </summary>
 public interface IDialogService
@@ -153,11 +144,6 @@ public interface IDialogService
     /// <returns><c>true</c> für „Erneut suchen“.</returns>
     Task<bool> ShowTesseractMissingAsync();
 
-    /// <summary>Zeigt die Einstellungen.</summary>
-    /// <param name="current">Aktuelle Werte.</param>
-    /// <returns>Die neuen Werte oder <c>null</c> bei Abbruch.</returns>
-    Task<SettingsChoice?> EditSettingsAsync(SettingsChoice current);
-
     /// <summary>Fragt nach dem Umgang mit ungespeicherten Änderungen.</summary>
     /// <param name="fileName">Dateiname.</param>
     /// <returns>Die Wahl.</returns>
@@ -168,4 +154,46 @@ public interface IDialogService
     /// <param name="message">Text.</param>
     /// <returns>Ein Task, der nach dem Schließen endet.</returns>
     Task ShowMessageAsync(string title, string message);
+
+    /// <summary>Zeigt die Einstellungen; Änderungen wirken sofort als Vorschau (A56).</summary>
+    /// <param name="viewModel">Die Einstellungen.</param>
+    /// <returns><c>true</c> bei „Übernehmen“, <c>false</c> bei „Abbrechen“.</returns>
+    Task<bool> ShowSettingsAsync(ViewModels.SettingsViewModel viewModel);
+
+    /// <summary>Fragt nach einer Bestätigung.</summary>
+    /// <param name="title">Titel.</param>
+    /// <param name="message">Frage.</param>
+    /// <param name="confirmText">Beschriftung der bestätigenden Schaltfläche.</param>
+    /// <returns><c>true</c> bei Bestätigung.</returns>
+    Task<bool> ConfirmAsync(string title, string message, string confirmText);
+
+    /// <summary>Lässt zwischen mehreren Antworten wählen (neben „Abbrechen“).</summary>
+    /// <param name="title">Titel.</param>
+    /// <param name="message">Frage.</param>
+    /// <param name="choices">Antworten; die erste ist hervorgehoben.</param>
+    /// <returns>Position der gewählten Antwort oder <c>null</c> bei Abbruch.</returns>
+    Task<int?> ChooseAsync(string title, string message, IReadOnlyList<string> choices);
+
+    /// <summary>Fragt nach einem Text, z. B. dem Namen eines Farbprofils.</summary>
+    /// <param name="title">Titel.</param>
+    /// <param name="label">Beschriftung des Felds.</param>
+    /// <param name="initial">Vorbelegung.</param>
+    /// <param name="confirmText">Beschriftung des Bestätigungsknopfs.</param>
+    /// <returns>Der Text oder <c>null</c> bei Abbruch.</returns>
+    Task<string?> PromptTextAsync(string title, string label, string initial, string confirmText);
+
+    /// <summary>Wählt eine Datei zum Öffnen.</summary>
+    /// <param name="title">Titel der Auswahl.</param>
+    /// <param name="fileTypeName">Name des Dateityps im Filter.</param>
+    /// <param name="pattern">Muster des Dateityps, z. B. <c>*.colorprofiles.json</c>.</param>
+    /// <returns>Der Pfad oder <c>null</c> bei Abbruch.</returns>
+    Task<string?> PickOpenFileAsync(string title, string fileTypeName, string pattern);
+
+    /// <summary>Wählt Ort und Namen einer neuen Datei; das System fragt vor dem Überschreiben.</summary>
+    /// <param name="title">Titel der Auswahl.</param>
+    /// <param name="suggestedName">Vorgeschlagener Dateiname.</param>
+    /// <param name="fileTypeName">Name des Dateityps.</param>
+    /// <param name="pattern">Muster des Dateityps.</param>
+    /// <returns>Der Pfad oder <c>null</c> bei Abbruch.</returns>
+    Task<string?> PickSaveFileAsync(string title, string suggestedName, string fileTypeName, string pattern);
 }

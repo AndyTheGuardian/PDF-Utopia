@@ -434,7 +434,7 @@ public sealed partial class ToolOptionsViewModel : ObservableObject
     /// <summary>
     /// Farbe eines Farbziels.
     /// </summary>
-    /// <param name="target">Das Ziel (nicht <see cref="ColorTarget.Accent"/>).</param>
+    /// <param name="target">Das Ziel.</param>
     /// <returns>Die Farbe.</returns>
     public string ColorOf(ColorTarget target) => target switch
     {

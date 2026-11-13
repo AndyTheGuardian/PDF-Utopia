@@ -1,6 +1,6 @@
 # PDF Utopia – Entwicklerdokumentation
 
-Stand: 2026-11-07
+Stand: 2026-11-13
 
 Diese Dokumentation richtet sich an Entwicklerinnen und Entwickler, die PDF Utopia bauen, verstehen oder erweitern
 wollen. Bedienung und Regeln aus Anwendersicht stehen in der [Anwenderdokumentation](ANWENDERDOKUMENTATION.md) und im
@@ -95,6 +95,7 @@ PdfUtopia.slnx
 │  ├─ PdfUtopia.Pdf    – PDFium (Lesen/Rendern) und PDFsharp (Schreiben), Tesseract-Anbindung
 │  └─ PdfUtopia.App    – Avalonia-Oberfläche (MVVM)
 ├─ tests/
+│  ├─ PdfUtopia.App.Tests  – ViewModels ohne Oberfläche (Einstellungen, Farbprofile)
 │  ├─ PdfUtopia.Core.Tests
 │  └─ PdfUtopia.Pdf.Tests  – erzeugt Test-PDFs, prüft Struktur, Text und gerenderte Pixel
 ├─ testdata/   – erzeugte Testdateien (siehe Abschnitt 8)
@@ -121,7 +122,7 @@ PDFsharp; dadurch ist die Fachlogik ohne Oberfläche testbar.
 | `History/` | `UndoHistory`, `DelegateCommand` |
 | `Settings/` | `AppSettings` (JSON, mit `Normalized()`), `SettingsStore` |
 | `Signatures/` | gespeicherte Unterschriften und ihre Datei |
-| `Theming/` | Akzentpalette, Zeichenfarben |
+| `Theming/` | Akzentpalette, Zeichenfarben, `ThemePalette`/`ThemeTint` (Flächen mit Farbstich und Helligkeit), `ColorProfile` mit mitgelieferten Profilen, Austauschformat `ColorProfileFile` (A56) |
 
 ### PdfUtopia.Pdf
 
@@ -299,8 +300,13 @@ zeichnet PDFium nur, wenn die Seite nicht ausfüllbar dargestellt wird (sonst li
 ### 7.4 Lokalisierung und Theme
 
 Texte stehen als Paare (Deutsch, Englisch) in `Strings.All`, abgerufen mit `Loc.T(key)` / `Loc.F(key, …)` bzw. in
-XAML mit `{loc:T Key}`. Ein Sprachwechsel baut das Hauptfenster neu auf (`App.RebuildMainWindow`). `ThemeService` setzt Hell/Dunkel und die
-Akzentfarbe als Ressourcen (`AccentBorderBrush`, `AccentSoftBrush` …).
+XAML mit `{loc:T Key}`. Ein Sprachwechsel baut das Hauptfenster neu auf (`App.RebuildMainWindow`). `ThemeService` (`IThemeService`) setzt
+Hell/Dunkel und schreibt alle Flächen-, Text- und Akzentfarben des geltenden Designs als Anwendungsressourcen
+(`SurfaceBrush`, `TextBrush`, `AccentBorderBrush`, `AccentSoftBrush`, Hintergründe der Fluent-Felder …). Diese
+Schlüssel stehen bewusst nicht in den ThemeDictionaries von `App.axaml`, sonst hätten diese Vorrang (A56). Farben je
+Design liegen in `AppSettings.LightColors`/`DarkColors` (`ThemeColorSettings`); `ThemePalette.For` berechnet daraus
+die Flächen. Der Einstellungsdialog (`SettingsWindow`, `SettingsViewModel`) ist aus dem AI Asset Manager
+übernommen und zeigt Änderungen sofort als Vorschau (`IThemeService.Apply`), „Abbrechen“ ruft `Revert` auf.
 
 ### 7.5 Gespeicherte Daten
 
@@ -314,7 +320,10 @@ beschädigte Datei den Start nicht verhindert.
 ## 8. Tests
 
 - **Core-Tests** prüfen Geometrie, Anmerkungen, Rückgängig, Seitenliste, Seitenansichten (`PageLayoutTests`),
-  Parser, Einstellungen, erkannten Text.
+  Parser, Einstellungen, erkannten Text, Farbpalette, Farbprofile und ihr Austauschformat.
+- **App-Tests** prüfen ViewModels ohne Oberfläche mit Attrappen für Dialoge und Theme (`FakeDialogs`,
+  `FakeTheme`): Einstellungsdialog, Farbprofile mit Export/Import. Sie laufen nacheinander (`xunit.runner.json`),
+  weil die Sprache (`Loc`) global ist.
 - **Pdf-Tests** erzeugen ihre Eingaben mit `TestPdfFactory` (14 Seiten, Überschrift „Seite N“, Seite 3 in der Datei
   gedreht; Varianten mit Lesezeichen, Formular, Passwort) in einem `TempDirectory`. Geprüft wird das Ergebnis über
   - die Struktur (PDFsharp: Subtype, Einträge, Objekte),
@@ -387,6 +396,7 @@ Checkliste (Beispiel: `StampAnnotation`, A51):
 | Rahmen außerhalb der Seite | Die Zoom-`LayoutTransformControl` schneidet alles außerhalb ihres Inhalts ab | Hervorhebungen innerhalb der Seite zeichnen (A55) |
 | Einstellungen laden | Setzen der ersten Eigenschaft speichert die zweite, noch ungeladene mit | erst nach dem Laden speichern (`_layoutLoaded`, A55) |
 | Schieberegler (Fluent) | höher als Knöpfe und Farbpunkte; die Optionsleiste wuchs je Werkzeug | feste Höhe der Leiste, Schieberegler mit Rand −8 px (P19) |
+| Akzentknöpfe (Fluent-Klasse `accent`) | Die Vorlage setzt im Inneren immer weiße Schrift, auch auf hellen Akzentfarben | `Button.accent /template/ ContentPresenter` mit `AccentForegroundBrush` überschreiben (P21) |
 
 Hinweis: Die Projektdatei von PdfUtopia.App enthält `InternalsVisibleTo` für ein nicht vorhandenes Projekt
 `PdfUtopia.App.Tests`; der Eintrag ist ohne Wirkung und für künftige Oberflächentests vorgesehen.
