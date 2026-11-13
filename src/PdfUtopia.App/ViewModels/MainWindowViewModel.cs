@@ -43,7 +43,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private const double ZoomStep = 0.1;
 
     private readonly IDialogService _dialogs;
-    private readonly ThemeService _theme;
+    private readonly IThemeService _theme;
     private readonly SettingsStore _settingsStore;
     private readonly SignatureStore _signatureStore;
     private AppSettings _settings;
@@ -55,7 +55,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <param name="settingsStore">Ablage der Einstellungen.</param>
     /// <param name="dialogs">Dialoge.</param>
     /// <param name="theme">Theme-Dienst.</param>
-    public MainWindowViewModel(SettingsStore settingsStore, IDialogService dialogs, ThemeService theme)
+    public MainWindowViewModel(SettingsStore settingsStore, IDialogService dialogs, IThemeService theme)
     {
         _settingsStore = settingsStore;
         _dialogs = dialogs;
@@ -90,8 +90,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
             PastelSaturation = ColorPicker.Saturation,
             CustomColors = ColorPicker.Custom.Select(swatch => swatch.Hex).ToList(),
         });
-        _theme.Apply(_settings.Theme);
-        _theme.ApplyAccent(_settings.AccentColor);
+        _theme.Apply(_settings);
     }
 
     /// <summary>Wird nach einem Sprachwechsel ausgelöst; die App baut das Fenster neu auf.</summary>
@@ -237,9 +236,6 @@ public sealed partial class MainWindowViewModel : ObservableObject
 
     /// <summary>Gewählte Sprache.</summary>
     public UiLanguage Language => Loc.Language;
-
-    /// <summary>Wirksame Akzentfarbe (für den Farbpunkt).</summary>
-    public string AccentHex => _theme.CurrentAccent;
 
     /// <summary>Treffer der Suche im Dokument.</summary>
     public string SearchHitsText
@@ -1039,9 +1035,8 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private void SetTheme(ThemePreference theme)
     {
         SaveSettings(_settings with { Theme = theme });
-        _theme.Apply(theme);
+        _theme.Apply(_settings);
         OnPropertyChanged(nameof(Theme));
-        OnPropertyChanged(nameof(AccentHex));
     }
 
     /// <summary>Setzt die Sprache und baut das Fenster neu auf.</summary>
@@ -1050,6 +1045,12 @@ public sealed partial class MainWindowViewModel : ObservableObject
     private void SetLanguage(UiLanguage language)
     {
         SaveSettings(_settings with { Language = language });
+        ApplyLanguage(language);
+    }
+
+    /// <summary>Zeigt die Oberfläche in einer Sprache; baut das Fenster nur bei einem Wechsel neu auf.</summary>
+    private void ApplyLanguage(UiLanguage language)
+    {
         if (Loc.Language != language)
         {
             Loc.Language = language;
@@ -1058,25 +1059,33 @@ public sealed partial class MainWindowViewModel : ObservableObject
         }
     }
 
-    /// <summary>Zeigt die Einstellungen.</summary>
+    /// <summary>
+    /// Zeigt die Einstellungen mit Design, Sprache, Farben und Farbprofilen (A56). Farben wirken schon während der
+    /// Bearbeitung; „Abbrechen“ stellt den alten Zustand wieder her.
+    /// </summary>
     [RelayCommand]
     private async Task OpenSettingsAsync()
     {
-        var choice = await _dialogs.EditSettingsAsync(new SettingsChoice(_settings.Theme, Loc.Language, _settings.UndoLimit, _settings.UserName));
-        if (choice is null)
+        var settings = new SettingsViewModel(_settings, _theme, _dialogs);
+        if (!await _dialogs.ShowSettingsAsync(settings))
         {
+            settings.Revert();
             return;
         }
 
-        SaveSettings(_settings with { UndoLimit = choice.UndoLimit, UserName = choice.UserName });
+        var chosen = settings.ToSettings();
+        SaveSettings(chosen);
+        _theme.Apply(_settings);
         ToolOptions.UserName = _settings.UserName;
+        ColorPicker.SetCustomColors(_settings.CustomColors);
         foreach (var document in Documents)
         {
-            document.Document.History.Limit = choice.UndoLimit;
+            document.Document.History.Limit = _settings.UndoLimit;
         }
 
-        SetTheme(choice.Theme);
-        SetLanguage(choice.Language);
+        OnPropertyChanged(nameof(Theme));
+        // „System“ bleibt gespeichert; angezeigt wird die Sprache des Betriebssystems
+        ApplyLanguage(_settings.ResolveLanguage(System.Globalization.CultureInfo.CurrentUICulture.TwoLetterISOLanguageName));
     }
 
     /// <summary>Bereitet die Farbwahl für ein Ziel vor (wird vor dem Öffnen des Flyouts aufgerufen).</summary>
@@ -1271,24 +1280,13 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <summary>
     /// Aktuelle Farbe eines Ziels der Farbwahl (<c>null</c> = Standard).
     /// </summary>
-    private string? CurrentColorOf(ColorTarget target) =>
-        target == ColorTarget.Accent ? _settings.AccentColor : ToolOptions.ColorOf(target);
+    private string? CurrentColorOf(ColorTarget target) => ToolOptions.ColorOf(target);
 
     /// <summary>
     /// Übernimmt eine in der Farbwahl gewählte Farbe.
     /// </summary>
-    private void OnColorChosen(ColorTarget target, string? hex)
-    {
-        if (target == ColorTarget.Accent)
-        {
-            SaveSettings(_settings with { AccentColor = hex });
-            _theme.ApplyAccent(hex);
-            OnPropertyChanged(nameof(AccentHex));
-            return;
-        }
-
+    private void OnColorChosen(ColorTarget target, string? hex) =>
         ToolOptions.SetColor(target, hex ?? ToolOptionsViewModel.DefaultColorOf(target));
-    }
 
     /// <summary>
     /// Merkt und speichert Einstellungen.

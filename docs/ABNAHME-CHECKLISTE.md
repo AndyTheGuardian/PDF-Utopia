@@ -1,6 +1,6 @@
-# PDF Utopia – Abnahme-Checkliste Funktionen 1–11
+# PDF Utopia – Abnahme-Checkliste Funktionen 1–12
 
-Stand: 2026-11-07 · Funktionen 1–10 aus `feature/weitere-funktionen`, Funktion 11 aus `feature/seitenansichten` (beide in `main`) · Testversion: `publish/single-linux-x64/PdfUtopia`
+Stand: 2026-11-13 · Funktionen 1–10 aus `feature/weitere-funktionen`, Funktion 11 aus `feature/seitenansichten` (beide in `main`), Funktion 12 aus `feature/farbprofile` · Testversion: `publish/single-linux-x64/PdfUtopia`
 
 Jede Zeile: Schritte ausführen, Ergebnis vergleichen, abhaken. Abweichungen bitte mit Nummer melden (z. B. „4.3:
 Lesezeichen springt auf falsche Seite“).
@@ -132,6 +132,22 @@ und bearbeitbar ist (außer bei Schwärzen – dort ist das Ergebnis endgültig)
 | 11.9 | Anmerkung einer weit entfernten Seite in der Anmerkungsübersicht anklicken | Ansicht scrollt dorthin, Anmerkung blinkt kurz | ✓ |
 | 11.10 | Fenster schmal ziehen | Ansichtsknöpfe zeigen nur Symbole mit Tooltip; breit wieder mit Namen | ✓ |
 | 11.11 | PDF Utopia neu starten | Gewählte Ansicht und „Erste Seite einzeln“ sind erhalten | ✓ |
+
+## 12. Farben und Farbprofile (Funktion 12, A56)
+
+| Nr. | Schritte | Erwartet | ✓ |
+|---|---|---|---|
+| 12.1 | Bisherige Version mit eigener Akzentfarbe benutzt, neue Version starten | Akzentfarbe bleibt, in Hell und Dunkel; sonst sieht alles aus wie vorher | ☐ |
+| 12.2 | Farbpunkt oben rechts anklicken | Dialog „Einstellungen“ mit Darstellung, Akzentfarbe, Farbe anpassen, Allgemein; Hinweis, welches Design bearbeitet wird | ☐ |
+| 12.3 | Farbprofil „Salbei“ (Hell) bzw. „Petrol & Kupfer“ (Dunkel) wählen | Akzent und Hintergrund des Hauptfensters ändern sich sofort; die PDF-Seite bleibt weiß | ☐ |
+| 12.4 | **Hintergrund** wählen, Farbton und Stärke ziehen, Zahl eintippen | Flächen färben sich, Profil zeigt „Eigene Einstellung (nicht gespeichert)“ | ☐ |
+| 12.5 | **Abbrechen** | Vorherige Farben sind zurück | ☐ |
+| 12.6 | Farben ändern, **Speichern unter …**, Namen eingeben, **Übernehmen**, neu starten | Eigenes Profil in der Liste, Farben erhalten | ☐ |
+| 12.7 | Eigenes Profil **Umbenennen …**, über **⋯** **Löschen …** | Name geändert bzw. Profil weg, Farben bleiben | ☐ |
+| 12.8 | **⋯ → Alle Profile exportieren …**, im AI Asset Manager importieren (und umgekehrt) | Profile kommen mit Akzent, Farbstich und Helligkeit an | ☐ |
+| 12.9 | Design im Dialog von Hell auf Dunkel umstellen | Regler und Profile zeigen die Farben des dunklen Designs; die hellen bleiben erhalten | ☐ |
+| 12.10 | Rückgängig-Schritte und Name für Stempel ändern, **Übernehmen** | Werte gelten (Statusleiste, Stempel mit Name) | ☐ |
+| 12.11 | Farbwahl eines Werkzeugs (z. B. Kommentar) öffnen | Unverändert; eigene Farben aus den Einstellungen sind auch hier | ☐ |
 
 ## Ergebnis
 

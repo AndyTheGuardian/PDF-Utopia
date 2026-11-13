@@ -115,6 +115,53 @@ public static partial class AccentPalette
     }
 
     /// <summary>
+    /// Zerlegt eine Farbe in Farbton, Sättigung und Hellwert (HSV/HSB), für die Regler der Akzentfarbe (A56).
+    /// </summary>
+    /// <param name="hex">Die Farbe.</param>
+    /// <returns>Farbton in Grad (0–360), Sättigung und Hellwert (0–1).</returns>
+    public static (double Hue, double Saturation, double Value) ToHsv(string hex)
+    {
+        var rgb = ToRgb(hex).Select(channel => channel / 255.0).ToArray();
+        double max = rgb.Max(), min = rgb.Min(), delta = max - min;
+        double hue = 0;
+        if (delta > 0)
+        {
+            hue = max == rgb[0] ? 60 * (((rgb[1] - rgb[2]) / delta) % 6)
+                : max == rgb[1] ? 60 * (((rgb[2] - rgb[0]) / delta) + 2)
+                : 60 * (((rgb[0] - rgb[1]) / delta) + 4);
+        }
+
+        return ((hue + 360) % 360, max == 0 ? 0 : delta / max, max);
+    }
+
+    /// <summary>
+    /// Setzt eine Farbe aus Farbton, Sättigung und Hellwert (HSV/HSB) zusammen.
+    /// </summary>
+    /// <param name="hue">Farbton in Grad.</param>
+    /// <param name="saturation">Sättigung (0–1).</param>
+    /// <param name="value">Hellwert (0–1).</param>
+    /// <returns>Die Farbe als <c>#RRGGBB</c>.</returns>
+    public static string FromHsv(double hue, double saturation, double value)
+    {
+        var h = ((hue % 360) + 360) % 360;
+        var s = Math.Clamp(saturation, 0, 1);
+        var v = Math.Clamp(value, 0, 1);
+        var chroma = v * s;
+        var x = chroma * (1 - Math.Abs((h / 60 % 2) - 1));
+        var m = v - chroma;
+        var (r, g, b) = h switch
+        {
+            < 60 => (chroma, x, 0d),
+            < 120 => (x, chroma, 0d),
+            < 180 => (0d, chroma, x),
+            < 240 => (0d, x, chroma),
+            < 300 => (x, 0d, chroma),
+            _ => (chroma, 0d, x),
+        };
+        return ToHex([.. new[] { r, g, b }.Select(c => (int)Math.Round((c + m) * 255, MidpointRounding.AwayFromZero))]);
+    }
+
+    /// <summary>
     /// Prüft das Format <c>#RRGGBB</c>.
     /// </summary>
     /// <param name="text">Der Text.</param>

@@ -64,7 +64,9 @@ public sealed class SettingsStoreTests : IDisposable
 
         Assert.Equal(ThemePreference.Dark, loaded.Theme);
         Assert.Equal(UiLanguage.English, loaded.Language);
-        Assert.Equal("#FACC15", loaded.AccentColor);
+        // Die alte Akzentfarbe gilt seit A56 für beide Designs
+        Assert.Equal("#FACC15", loaded.ColorsFor(dark: false).AccentColor);
+        Assert.Equal("#FACC15", loaded.ColorsFor(dark: true).AccentColor);
         Assert.Equal(["#336699"], loaded.CustomColors);
         Assert.Equal(120, loaded.UndoLimit);
         Assert.True(loaded.PressureSensitive);

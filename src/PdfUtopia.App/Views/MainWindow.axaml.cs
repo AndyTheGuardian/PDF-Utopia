@@ -565,15 +565,6 @@ public sealed partial class MainWindow : Window
     }
 
     /// <summary>
-    /// Öffnet die Farbwahl am Farbpunkt (Menü „Ansicht → Akzentfarbe…“).
-    /// </summary>
-    private void OnAccentMenuClick(object? sender, RoutedEventArgs e)
-    {
-        ViewModel?.PrepareColorPickerCommand.Execute(ColorTarget.Accent);
-        AccentButton.Flyout?.ShowAt(AccentButton);
-    }
-
-    /// <summary>
     /// Beendet die Anwendung.
     /// </summary>
     private void OnExitClick(object? sender, RoutedEventArgs e) => Close();

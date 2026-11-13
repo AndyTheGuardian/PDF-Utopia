@@ -282,7 +282,7 @@
             <MenuItem Header="{loc:T Menu.ThemeDark}" ToggleType="Radio" GroupName="theme"
                       IsChecked="{Binding Theme, Mode=OneWay, Converter={StaticResource EnumEquals}, ConverterParameter=Dark}"
                       Command="{Binding SetThemeCommand}" CommandParameter="{x:Static settings:ThemePreference.Dark}" />
-            <MenuItem Header="{loc:T Menu.Accent}" Click="OnAccentMenuClick" />
+            <MenuItem Header="{loc:T Menu.Accent}" Command="{Binding OpenSettingsCommand}" />
             <Separator />
             <MenuItem Header="{loc:T Menu.ZoomIn}" Command="{Binding ZoomInCommand}" InputGesture="Ctrl+OemPlus" />
             <MenuItem Header="{loc:T Menu.ZoomOut}" Command="{Binding ZoomOutCommand}" InputGesture="Ctrl+OemMinus" />
@@ -381,14 +381,8 @@
               </StackPanel>
             </TextBox.InnerRightContent>
           </TextBox>
-          <Button x:Name="AccentButton" Classes="accentDot" ToolTip.Tip="{loc:T Toolbar.Accent}"
-                  Command="{Binding PrepareColorPickerCommand}" CommandParameter="{x:Static vm:ColorTarget.Accent}">
-            <Button.Flyout>
-              <Flyout Placement="BottomEdgeAlignedRight">
-                <views:ColorPickerView DataContext="{Binding ColorPicker}" />
-              </Flyout>
-            </Button.Flyout>
-          </Button>
+          <!-- Farbpunkt: öffnet die Einstellungen mit Akzent, Hintergrund und Farbprofilen (A56) -->
+          <Button x:Name="AccentButton" Classes="accentDot" ToolTip.Tip="{loc:T Toolbar.Accent}" Command="{Binding OpenSettingsCommand}" />
         </StackPanel>
       </Grid>
     </Border>

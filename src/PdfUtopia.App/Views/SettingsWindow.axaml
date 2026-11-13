@@ -1,0 +1,221 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PdfUtopia.App.ViewModels"
+        xmlns:loc="using:PdfUtopia.App.Localization"
+        x:Class="PdfUtopia.App.Views.SettingsWindow"
+        x:DataType="vm:SettingsViewModel"
+        Title="{loc:T Settings.Title}"
+        Width="580" MinWidth="360" MinHeight="360" SizeToContent="Height" CanResize="True" ShowInTaskbar="False"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource SurfaceBrush}">
+
+  <Window.Styles>
+    <Style Selector="TextBlock.section">
+      <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}" />
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="LetterSpacing" Value="0.6" />
+    </Style>
+    <Style Selector="TextBlock.groupTitle">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource MutedTextBrush}" />
+      <Setter Property="Margin" Value="0,4,0,0" />
+    </Style>
+    <!-- Umschalter als Segmente; das gewählte in Akzentfarbe hinterlegt -->
+    <Style Selector="RadioButton.segment">
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <ContentPresenter Name="PART_ContentPresenter" Background="{DynamicResource Surface2Brush}" BorderBrush="{DynamicResource AppBorderBrush}"
+                            BorderThickness="1" Padding="{TemplateBinding Padding}" Content="{TemplateBinding Content}"
+                            Foreground="{TemplateBinding Foreground}" CornerRadius="{TemplateBinding CornerRadius}" />
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="RadioButton.segment.first">
+      <Setter Property="CornerRadius" Value="6,0,0,6" />
+    </Style>
+    <Style Selector="RadioButton.segment.last">
+      <Setter Property="CornerRadius" Value="0,6,6,0" />
+    </Style>
+    <Style Selector="RadioButton.segment:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource HoverBrush}" />
+    </Style>
+    <!-- Gewählter Umschalter wie der Akzent-Knopf „Übernehmen“ -->
+    <Style Selector="RadioButton.segment:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource AccentBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource AccentBorderBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource AccentForegroundBrush}" />
+    </Style>
+    <Style Selector="RadioButton.segment:checked">
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+  </Window.Styles>
+
+  <Window.DataTemplates>
+    <!-- Farbprofil: Punkt mit Hintergrund und Akzent, Name, Kennzeichen „mitgeliefert“ (A56) -->
+    <DataTemplate x:DataType="vm:ColorProfileViewModel">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Width="30" Height="16" CornerRadius="4" BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+                Background="{Binding BackgroundHex, Converter={StaticResource HexToBrush}}" VerticalAlignment="Center">
+          <Border Width="10" Height="10" CornerRadius="5" Background="{Binding AccentHex, Converter={StaticResource HexToBrush}}" />
+        </Border>
+        <TextBlock Text="{Binding DisplayName}" VerticalAlignment="Center" />
+        <TextBlock Classes="hint" Text="{loc:T Settings.ProfileBuiltInMark}" IsVisible="{Binding IsBuiltIn}" VerticalAlignment="Center" />
+      </StackPanel>
+    </DataTemplate>
+    <DataTemplate x:DataType="vm:AccentSwatchViewModel">
+      <Panel>
+        <Button Classes="swatch" Classes.selected="{Binding IsSelected}" ToolTip.Tip="{Binding ToolTip}"
+                Background="{Binding Hex, Converter={StaticResource HexToBrush}}"
+                Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).ChooseSwatchCommand}" CommandParameter="{Binding}" />
+        <Button Content="✕" IsVisible="{Binding IsCustom}" ToolTip.Tip="{loc:T Settings.AccentRemove}" FontSize="9" Padding="0"
+                Width="16" Height="16" CornerRadius="8" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-6,2,0"
+                HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                Command="{Binding $parent[Window].((vm:SettingsViewModel)DataContext).RemoveCustomCommand}" CommandParameter="{Binding}" />
+      </Panel>
+    </DataTemplate>
+  </Window.DataTemplates>
+
+  <Panel>
+  <DockPanel>
+    <!-- Knöpfe bleiben unten; der Inhalt scrollt, wenn das Fenster kleiner gezogen wird (A56) -->
+    <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right" Margin="22,12,22,22">
+      <Button Content="{loc:T Dialog.Cancel}" MinWidth="90" HorizontalContentAlignment="Center" Click="OnCancel" IsCancel="True" />
+      <Button Classes="accent" Content="{loc:T Settings.Save}" MinWidth="90" HorizontalContentAlignment="Center" Click="OnSave" IsDefault="True" />
+    </StackPanel>
+  <ScrollViewer HorizontalScrollBarVisibility="Disabled">
+  <StackPanel Margin="22,22,22,0" Spacing="6">
+    <TextBlock Classes="section" Margin="0,0,0,2" Text="{loc:T Settings.Appearance}" />
+    <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="8">
+      <TextBlock Text="{loc:T Settings.Theme}" VerticalAlignment="Center" />
+      <ComboBox Grid.Column="1" ItemsSource="{Binding Themes}" SelectedItem="{Binding SelectedTheme}" HorizontalAlignment="Stretch" />
+      <TextBlock Grid.Row="1" Text="{loc:T Settings.Language}" VerticalAlignment="Center" />
+      <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding SelectedLanguage}" HorizontalAlignment="Stretch" />
+      <!-- Farbprofile des bearbeiteten Designs (A56) -->
+      <TextBlock Grid.Row="2" Text="{loc:T Settings.Profile}" VerticalAlignment="Center" />
+      <ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}"
+                PlaceholderText="{loc:T Settings.ProfileNone}" HorizontalAlignment="Stretch" MaxDropDownHeight="420" />
+      <WrapPanel Grid.Row="3" Grid.Column="1" ItemSpacing="8" LineSpacing="6">
+        <Button Content="{loc:T Settings.ProfileSaveAs}" ToolTip.Tip="{loc:T Settings.ProfileSaveAsTip}" Command="{Binding SaveProfileAsCommand}" />
+        <Button Content="{loc:T Settings.ProfileRename}" Command="{Binding RenameProfileCommand}" />
+        <Button Content="⋯" Width="34" HorizontalContentAlignment="Center" ToolTip.Tip="{loc:T Settings.ProfileMore}">
+          <Button.Flyout>
+            <MenuFlyout Placement="BottomEdgeAlignedRight">
+              <MenuItem Header="{loc:T Settings.ProfileDelete}" Command="{Binding DeleteProfileCommand}" />
+              <Separator />
+              <MenuItem Header="{loc:T Settings.ProfileExport}" Command="{Binding ExportProfileCommand}" />
+              <MenuItem Header="{loc:T Settings.ProfileExportAll}" Command="{Binding ExportAllProfilesCommand}" />
+              <MenuItem Header="{loc:T Settings.ProfileExportEvery}" Command="{Binding ExportEveryProfileCommand}" />
+              <MenuItem Header="{loc:T Settings.ProfileImport}" Command="{Binding ImportProfilesCommand}" />
+            </MenuFlyout>
+          </Button.Flyout>
+        </Button>
+      </WrapPanel>
+    </Grid>
+    <TextBlock Classes="hint" Text="{Binding ProfileMessage}" IsVisible="{Binding HasProfileMessage}" TextWrapping="Wrap" />
+    <TextBlock Classes="hint" Text="{Binding EditedThemeHint}" TextWrapping="Wrap" />
+
+    <!-- Akzentfarbe: je kräftiger Farbe eine Pastellfarbe; die Sättigung der Pastell-Reihe stellt der Regler darunter ein (A56) -->
+    <TextBlock Text="{loc:T Settings.Accent}" FontWeight="SemiBold" Margin="0,8,0,0" />
+    <!-- Farbreihen paarweise nebeneinander; bei zu wenig Platz brechen die Farben innerhalb der Spalte um (A56) -->
+    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="16" RowSpacing="4">
+      <StackPanel Spacing="4">
+        <TextBlock Classes="groupTitle" Text="{loc:T Settings.AccentPastel}" />
+        <ItemsControl ItemsSource="{Binding Pastel}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+      <StackPanel Grid.Column="1" Spacing="4">
+        <TextBlock Classes="groupTitle" Text="{loc:T Settings.AccentStrong}" />
+        <ItemsControl ItemsSource="{Binding Strong}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+      <StackPanel Grid.Row="1" Spacing="4">
+        <TextBlock Classes="groupTitle" Text="{loc:T Settings.AccentNeutral}" />
+        <ItemsControl ItemsSource="{Binding Neutral}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        </ItemsControl>
+      </StackPanel>
+      <StackPanel Grid.Row="1" Grid.Column="1" Spacing="4">
+        <TextBlock Classes="groupTitle" Text="{loc:T Settings.AccentCustom}" />
+        <ItemsControl ItemsSource="{Binding Custom}" IsVisible="{Binding HasCustomColors}">
+          <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+        </ItemsControl>
+        <TextBlock Classes="hint" Text="{loc:T Settings.AccentNoCustom}" IsVisible="{Binding !HasCustomColors}" TextWrapping="Wrap" />
+      </StackPanel>
+    </Grid>
+
+    <!-- Gemeinsame Regler für Akzentfarbe und Farbstich des Hintergrunds (A56) -->
+    <!-- Bricht bei schmalem Fenster um, statt zu überlappen (A56) -->
+    <WrapPanel Margin="0,12,0,0" ItemSpacing="10" LineSpacing="6">
+      <TextBlock Text="{loc:T Settings.Adjust}" FontWeight="SemiBold" VerticalAlignment="Center" />
+      <StackPanel Orientation="Horizontal">
+        <RadioButton Classes="segment first" GroupName="target" Content="{loc:T Settings.TargetAccent}" IsChecked="{Binding IsAccentTarget}" />
+        <RadioButton Classes="segment last" GroupName="target" Content="{loc:T Settings.TargetBackground}" IsChecked="{Binding IsBackgroundTarget}" />
+      </StackPanel>
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <Border Width="22" Height="22" CornerRadius="11" VerticalAlignment="Center"
+                BorderBrush="{DynamicResource AppBorderBrush}" BorderThickness="1"
+                Background="{Binding PreviewHex, Converter={StaticResource HexToBrush}}" />
+        <Button Content="{Binding ResetLabel}" Command="{Binding ResetCurrentCommand}" ToolTip.Tip="{Binding ResetToolTip}" />
+      </StackPanel>
+    </WrapPanel>
+    <!-- Regler mit Zahlenfeld: zeigt den Wert und erlaubt die direkte Eingabe (A56) -->
+    <Grid x:Name="SliderGrid" ColumnDefinitions="Auto,*,72" RowDefinitions="Auto,Auto,Auto" ColumnSpacing="10" RowSpacing="2">
+      <Grid.Styles>
+        <Style Selector="Slider">
+          <Setter Property="Margin" Value="0,-6" />
+          <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+        <Style Selector="NumericUpDown">
+          <Setter Property="ShowButtonSpinner" Value="False" />
+          <Setter Property="Increment" Value="1" />
+          <Setter Property="FormatString" Value="0" />
+          <Setter Property="HorizontalContentAlignment" Value="Right" />
+          <Setter Property="VerticalAlignment" Value="Center" />
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+        </Style>
+        <Style Selector="NumericUpDown TextBox">
+          <Setter Property="VerticalContentAlignment" Value="Center" />
+          <Setter Property="HorizontalContentAlignment" Value="Right" />
+        </Style>
+      </Grid.Styles>
+      <TextBlock Grid.Row="0" Text="{loc:T Settings.TintHue}" VerticalAlignment="Center" />
+      <Slider Grid.Row="0" Grid.Column="1" Minimum="0" Maximum="359" Value="{Binding SliderHue}" />
+      <NumericUpDown Grid.Row="0" Grid.Column="2" Minimum="0" Maximum="359" Value="{Binding HueInput}" />
+      <TextBlock Grid.Row="1" Text="{Binding SaturationLabel}" VerticalAlignment="Center" />
+      <Slider Grid.Row="1" Grid.Column="1" Minimum="{Binding SaturationMinimum}" Maximum="{Binding SaturationMaximum}" Value="{Binding SliderSaturation}" />
+      <NumericUpDown Grid.Row="1" Grid.Column="2" Minimum="{Binding SaturationMinimum}" Maximum="{Binding SaturationMaximum}" Value="{Binding SaturationInput}" />
+      <TextBlock Grid.Row="2" Text="{loc:T Settings.Brightness}" VerticalAlignment="Center" />
+      <Slider Grid.Row="2" Grid.Column="1" Minimum="{Binding BrightnessMinimum}" Maximum="{Binding BrightnessMaximum}" Value="{Binding SliderBrightness}" />
+      <NumericUpDown Grid.Row="2" Grid.Column="2" Minimum="{Binding BrightnessMinimum}" Maximum="{Binding BrightnessMaximum}" Value="{Binding BrightnessInput}" />
+    </Grid>
+    <WrapPanel ItemSpacing="8" LineSpacing="6">
+      <TextBox Width="140" Text="{Binding HexInput}" MaxLength="7" PlaceholderText="#RRGGBB" FontFamily="Cascadia Mono, Consolas, DejaVu Sans Mono, monospace">
+        <TextBox.KeyBindings><KeyBinding Gesture="Enter" Command="{Binding ApplyHexCommand}" /></TextBox.KeyBindings>
+      </TextBox>
+      <Button Content="{loc:T Settings.AccentApply}" Command="{Binding ApplyHexCommand}" />
+      <TextBlock Classes="hint" Text="{Binding HexHint}" VerticalAlignment="Center" />
+    </WrapPanel>
+    <TextBlock Text="{Binding HexError}" Foreground="{DynamicResource DangerBrush}" IsVisible="{Binding HasHexError}" />
+
+    <!-- Bisherige Einstellungen von PDF Utopia -->
+    <TextBlock Classes="section" Margin="0,12,0,2" Text="{loc:T Settings.General}" />
+    <Grid ColumnDefinitions="120,*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="4">
+      <TextBlock Text="{loc:T Settings.UndoSteps}" VerticalAlignment="Center" TextWrapping="Wrap" />
+      <NumericUpDown Grid.Column="1" Width="120" HorizontalAlignment="Left" Minimum="{Binding UndoMinimum}" Maximum="{Binding UndoMaximum}"
+                     Increment="1" FormatString="0" Value="{Binding UndoLimit}" />
+      <TextBlock Grid.Row="1" Grid.Column="1" Classes="hint" Text="{loc:T Settings.UndoHelp}" TextWrapping="Wrap" />
+      <TextBlock Grid.Row="2" Text="{loc:T Settings.UserName}" VerticalAlignment="Center" Margin="0,6,0,0" />
+      <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding UserName}" MaxLength="60" Margin="0,6,0,0" />
+      <TextBlock Grid.Row="3" Grid.Column="1" Classes="hint" Text="{loc:T Settings.UserNameHelp}" TextWrapping="Wrap" />
+    </Grid>
+
+  </StackPanel>
+  </ScrollViewer>
+  </DockPanel>
+  </Panel>
+</Window>

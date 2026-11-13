@@ -1,6 +1,6 @@
 # PDF Utopia – Funktionsübersicht
 
-Verdichteter Chatverlauf mit Fokus auf den eingebauten Funktionen. Stand: 2026-11-07.
+Verdichteter Chatverlauf mit Fokus auf den eingebauten Funktionen. Stand: 2026-11-13.
 
 **Grundlage:** C# / .NET 10 mit Avalonia 12. PDFium zeigt die Seiten an, PDFsharp 6.2.4 schreibt die Datei. Alle
 Änderungen werden als normale PDF-Annotationen gespeichert, mit Erscheinungsbild, damit jeder PDF-Betrachter sie
@@ -72,6 +72,14 @@ Entwickelt im Branch `feature/seitenansichten` (A55, Mockup v10).
 
 Danach: Die Optionsleiste ist bei jedem Werkzeug gleich hoch (P19). Einzeldateien für Linux und macOS (Intel,
 Apple Silicon) lassen sich bauen (E9).
+
+## Phase 5 – Farben und Farbprofile
+
+Entwickelt im Branch `feature/farbprofile` (A56), übernommen aus dem AI Asset Manager.
+
+12. **Farben und Farbprofile:** Akzentfarbe und Hintergrund (Farbstich, Helligkeit) je Design im neuen
+    Einstellungsdialog, mitgelieferte und eigene Farbprofile, Export und Import im gemeinsamen Format
+    `*.colorprofiles.json`. Startprofil „Standard“ mit den bisherigen Farben.
 
 ## Noch offen
 

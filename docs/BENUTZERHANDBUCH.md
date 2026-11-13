@@ -1,6 +1,6 @@
 # PDF Utopia – Benutzerhandbuch
 
-Stand: 2026-11-07
+Stand: 2026-11-13
 
 Dieses Handbuch führt Schritt für Schritt durch alle Aufgaben in PDF Utopia. Hintergründe, Regeln im Detail,
 Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokumentation](ANWENDERDOKUMENTATION.md).
@@ -407,13 +407,26 @@ Eingefügte Seiten haben in der Seitenliste einen Rahmen in der Akzentfarbe und 
 ### Design
 **Ansicht → System / Hell / Dunkel**. „System“ folgt der Einstellung Ihres Betriebssystems.
 
-### Akzentfarbe
-Klicken Sie auf den **Farbpunkt** oben rechts (oder **Ansicht → Akzentfarbe…**). Die Akzentfarbe färbt das
-gewählte Werkzeug, die gewählte Seite, Auswahlfelder und die Hinterlegung von Suchtreffern.
+### Akzentfarbe und Hintergrund
+Klicken Sie auf den **Farbpunkt** oben rechts (oder **Ansicht → Akzentfarbe…**). Es öffnen sich die
+**Einstellungen**. Hell und Dunkel haben eigene Farben; bearbeitet werden die des gerade geltenden Designs.
 
-### Die Farbwahl bedienen
-Dieselbe Farbwahl gibt es für die Akzentfarbe und – über den Farbpunkt in der Optionsleiste – für Freihand,
-Formen, Kommentar und Text. Der Titel zeigt, wofür Sie gerade wählen.
+1. **Farbprofil wählen:** Die Liste enthält „Standard“, „Neutral“ und weitere abgestimmte Profile wie „Salbei“.
+   Die Farben wirken sofort.
+2. **Akzentfarbe ändern:** eine Farbe unter Pastell, Kräftig, Neutral oder Eigene Farben anklicken.
+3. **Fein einstellen:** Unter **Farbe anpassen** zwischen **Akzentfarbe** und **Hintergrund** umschalten und die
+   Regler ziehen oder Werte eintippen. Beim Hintergrund färbt **Stärke** alle Flächen leicht ein, **Helligkeit**
+   macht sie heller oder dunkler. Ein Hex-Code wie `#70A15E` mit **Übernehmen** setzt die Farbe direkt.
+4. **Als Profil speichern:** **Speichern unter …**, Namen eingeben. Eigene Profile können Sie umbenennen; über
+   **⋯** löschen, exportieren oder importieren Sie Profile – auch solche aus dem AI Asset Manager.
+5. **Übernehmen** speichert, **Abbrechen** stellt die vorherigen Farben wieder her.
+
+Die Akzentfarbe färbt das gewählte Werkzeug, die gewählte Seite, Auswahlfelder und die Hinterlegung von
+Suchtreffern. Die PDF-Seite selbst bleibt immer weiß.
+
+### Die Farbwahl der Werkzeuge bedienen
+Über den Farbpunkt in der Optionsleiste wählen Sie die Farbe für Freihand, Formen, Kommentar und Text. Der Titel
+zeigt, wofür Sie gerade wählen.
 
 | Bereich | Bedienung |
 |---|---|
@@ -439,8 +452,13 @@ ist. Ihre Auswahl wird gespeichert.
 | Einstellung | Bedeutung |
 |---|---|
 | Design | System, Hell oder Dunkel |
-| Sprache | Deutsch oder English |
+| Sprache | System, Deutsch oder English |
+| Farbprofil, Akzentfarbe, Farbe anpassen | Farben des geltenden Designs, siehe [Farben, Design und Sprache](#16-farben-design-und-sprache) |
 | Anzahl Rückgängig-Schritte | 1 bis 500 (Standard 50); ältere Schritte werden verworfen |
+| Name für Stempel | erscheint auf Stempeln, wenn „Name“ angehakt ist |
+
+Das Fenster lässt sich größer und kleiner ziehen; bei wenig Höhe scrollt der Inhalt, **Abbrechen** und
+**Übernehmen** bleiben unten.
 
 Werkzeugeinstellungen (Farben, Strichstärken, Glättung, Druckempfindlichkeit, Radiergröße) stellen Sie direkt
 in der Optionsleiste ein; auch sie werden gespeichert.

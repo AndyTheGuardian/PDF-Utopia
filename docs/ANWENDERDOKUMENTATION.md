@@ -1,6 +1,6 @@
 # PDF Utopia – Anwenderdokumentation
 
-Stand: 2026-11-07
+Stand: 2026-11-13
 
 Diese Dokumentation ist das Nachschlagewerk zu PDF Utopia: Voraussetzungen, Installation, Funktionsumfang,
 die Regeln hinter den Funktionen, gespeicherte Daten und bekannte Einschränkungen. Wie man die einzelnen
@@ -542,10 +542,35 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
 ### 5.20 Erscheinungsbild, Sprache und Farben
 
 - **Design:** System, Hell oder Dunkel (Menü **Ansicht** oder Einstellungen). Das helle Design verzichtet auf
-  reines Weiß, das dunkle ist neutral grau; die PDF-Seite selbst bleibt immer weiß.
-- **Sprache:** Deutsch oder Englisch (Menü **Sprache**). Ohne eigene Wahl richtet sie sich nach dem
-  Betriebssystem – Deutsch bei deutscher Systemsprache, sonst Englisch.
-- **Farbwahl** (Akzentfarbe sowie Farben für Freihand, Formen, Kommentar und Text):
+  reines Weiß, das dunkle ist neutral grau; die PDF-Seite selbst, das Papier der Fußnoten und die Seitenansicht
+  bleiben immer weiß.
+- **Sprache:** Deutsch, Englisch oder System (Menü **Sprache** oder Einstellungen). Ohne eigene Wahl richtet sie
+  sich nach dem Betriebssystem – Deutsch bei deutscher Systemsprache, sonst Englisch.
+- **Farben je Design (A56):** Hell und Dunkel haben je eigene Akzentfarbe, Pastell-Sättigung und einen eigenen
+  **Hintergrund** (Farbstich und Helligkeit). Eingestellt wird im Dialog **Einstellungen** (Farbpunkt oben rechts,
+  **Ansicht → Akzentfarbe …** oder **Bearbeiten → Einstellungen …**); er bearbeitet die Farben des gerade
+  geltenden Designs. Bei „System“ gelten die Farben des Designs, das das Betriebssystem gerade zeigt.
+
+  | Bereich | Inhalt |
+  |---|---|
+  | Akzentfarbe | Pastell, Kräftig, Neutral und eigene Farben wie in der Farbwahl unten |
+  | Farbe anpassen | Umschalter **Akzentfarbe**/**Hintergrund**, Farbkreis, **Zurücksetzen** und je ein Regler mit Zahlenfeld: bei der Akzentfarbe Farbton (0–359°), Sättigung und Helligkeit (0–100 %, bei einer Pastellfarbe verschiebt die Sättigung die ganze Pastell-Reihe, 10–90 %); beim Hintergrund Farbton, Stärke des Farbstichs (0–100 %) und Helligkeit (−25 bis +25) |
+  | Hex-Feld | Akzentfarbe bzw. Farbstich als `#RRGGBB`; **Übernehmen** setzt die Farbe (eine Akzentfarbe kommt zu den eigenen Farben) |
+  | Farbprofil | gespeicherte Kombination aus Akzentfarbe, Pastell-Sättigung, Farbstich und Helligkeit (siehe unten) |
+
+  Flächen, Rahmen und Hinterlegungen bekommen Farbstich und Helligkeit, Texte nur den halben Farbstich, damit sie
+  lesbar bleiben. Änderungen wirken sofort als Vorschau; **Abbrechen** stellt den vorherigen Zustand wieder her,
+  **Übernehmen** speichert. **Zurücksetzen** stellt die Farben des zuletzt gewählten Profils wieder her.
+- **Farbprofile (A56):** Mitgeliefert sind je Design **Standard** (die bisherigen Farben von PDF Utopia,
+  Startprofil), **Neutral** und fünf abgestimmte Profile (Hell: Salbei, Sand & Terrakotta, Fjord, Lavendel &
+  Pflaume, Graphit & Koralle; Dunkel: Salbei, Mitternacht, Bernstein, Aubergine, Petrol & Kupfer). Mitgelieferte
+  Profile sind schreibgeschützt. Eigene Profile (höchstens 50) entstehen mit **Speichern unter …** und lassen sich
+  **umbenennen**; über **⋯** gibt es **Löschen**, **Dieses Profil exportieren**, **Alle eigenen Profile
+  exportieren**, **Alle Profile exportieren** und **Profile importieren**. Die Datei (`*.colorprofiles.json`) hat
+  dasselbe Format wie im AI Asset Manager; Profile lassen sich zwischen beiden Programmen austauschen. Beim Import
+  werden unveränderte mitgelieferte Profile übersprungen; gibt es ein eigenes Profil gleichen Namens, fragt PDF
+  Utopia „Überschreiben“ oder „Beide behalten“.
+- **Farbwahl der Werkzeuge** (Freihand, Formen, Kommentar und Text, über den Farbpunkt in der Optionsleiste):
 
   | Gruppe | Inhalt |
   |---|---|
@@ -554,8 +579,9 @@ wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten
   | Neutral | 95 % Schwarz, 95 % Weiß |
   | Benutzerdefiniert | eigene Farben per Hex-Code (`#RRGGBB`), höchstens 10, die älteste fällt bei mehr weg |
 
-  Sättigung und eigene Farben gelten gemeinsam für alle Ziele. **Standard** setzt das jeweilige Ziel auf seine
-  Standardfarbe zurück (Akzent und Kommentar Indigo, Freihand Rot, Formen Blau, Text fast Schwarz). Schrift auf der Akzentfarbe
+  Die Sättigung gilt für alle Werkzeuge gemeinsam, die eigenen Farben zusätzlich auch für die Akzentfarbe.
+  **Standard** setzt das jeweilige Werkzeug auf seine Standardfarbe zurück (Kommentar Indigo, Freihand Rot, Formen
+  Blau, Text fast Schwarz). Schrift auf der Akzentfarbe
   wird automatisch hell oder dunkel gesetzt; hebt sich eine Akzentfarbe zu wenig vom Hintergrund ab, bekommen
   Akzentflächen einen Rahmen in einer satteren Variante der Farbe (bei neutralen Farben in Textfarbe).
 
@@ -606,8 +632,8 @@ PDF Utopia speichert seine Einstellungen bei jeder Änderung in einer JSON-Datei
 | Linux | `~/.config/PDF Utopia/settings.json` |
 | macOS | `~/Library/Application Support/PDF Utopia/settings.json` |
 
-Gespeichert werden Design, Sprache, Akzentfarbe, Pastell-Sättigung, eigene Farben, Anzahl der
-Rückgängig-Schritte, der Name für Stempel, eigene Stempel, die Seitenansicht mit „Erste Seite einzeln“ sowie Farben
+Gespeichert werden Design, Sprache, die Farben beider Designs (Akzentfarbe, Pastell-Sättigung, Farbstich,
+Helligkeit), eigene Farbprofile, eigene Farben, Anzahl der Rückgängig-Schritte, der Name für Stempel, eigene Stempel, die Seitenansicht mit „Erste Seite einzeln“ sowie Farben
 und Einstellungen der Werkzeuge. Ist die Datei beschädigt oder enthält
 ungültige Werte, startet PDF Utopia mit den Standardwerten bzw. ersetzt nur die ungültigen Werte. Zum
 Zurücksetzen aller Einstellungen genügt es, die Datei zu löschen, während PDF Utopia geschlossen ist.
@@ -643,6 +669,7 @@ Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
 | – | Geschwärzte Seiten werden als Bild gespeichert: Text darauf ist nicht mehr auswählbar oder durchsuchbar, Links und Formularfelder dieser Seiten entfallen. Dokumenteigenschaften, Lesezeichen-Texte und Dateianhänge werden nicht geschwärzt. |
 | – | Eingefügte Bilder werden nur als PNG oder JPEG gelesen; Bilder über 2000 Pixel werden verkleinert. Stempel und Bilder zeigt die Seitenminiatur erst nach dem Speichern und erneuten Öffnen. |
 | – | Doppelseite: Liegt eine Seite eines Paars quer oder ist sie anders groß, wird diese Zeile breiter; die Spalten stehen dann nicht genau untereinander (E10). |
+| – | Sehr helle Akzentfarben (z. B. Pastell oder „Salbei“) sind als Schrift, etwa beim gewählten Werkzeug, nur schwach lesbar. Eine automatisch lesbare Akzentschrift wie im AI Asset Manager wurde bewusst nicht übernommen (E11). |
 | – | Beim Einfügen von Seiten werden Lesezeichen und Verknüpfungen der eingefügten Datei nicht übernommen; ihre Formularfelder schon (gleichnamige werden umbenannt). Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 
 ---

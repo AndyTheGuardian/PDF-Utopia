@@ -59,53 +59,20 @@
       <StreamGeometry x:Key="IconViewDoubleContinuous">M3 2v7h8V2 M13 2v7h8V2 M3 22v-7h8v7 M13 22v-7h8v7</StreamGeometry>
       <StreamGeometry x:Key="IconLock">M5 11h14v10H5z M8 11V8a4 4 0 0 1 8 0v3</StreamGeometry>
 
+      <!-- Flächen- und Textfarben setzt ThemeService je Design mit Farbstich und Helligkeit (A56) -->
       <ResourceDictionary.ThemeDictionaries>
-        <!-- Helles Theme ohne reines Weiß (A11), Werte aus Mockup v2 -->
+        <!-- Helles Theme: Warn- und Fehlerfarben (Flächen siehe ThemeService) -->
         <ResourceDictionary x:Key="Light">
-          <SolidColorBrush x:Key="AppBackgroundBrush" Color="#ECEEF2" />
-          <SolidColorBrush x:Key="SurfaceBrush" Color="#F7F8FA" />
-          <SolidColorBrush x:Key="Surface2Brush" Color="#F1F2F5" />
-          <SolidColorBrush x:Key="AppBorderBrush" Color="#DCDFE6" />
-          <SolidColorBrush x:Key="TextBrush" Color="#1D2330" />
-          <SolidColorBrush x:Key="MutedTextBrush" Color="#6B7280" />
-          <SolidColorBrush x:Key="HoverBrush" Color="#ECEEF3" />
-          <SolidColorBrush x:Key="CanvasBrush" Color="#E4E6EC" />
           <SolidColorBrush x:Key="WarnBackgroundBrush" Color="#FFF7E6" />
           <SolidColorBrush x:Key="WarnTextBrush" Color="#8A5A00" />
           <SolidColorBrush x:Key="DangerBrush" Color="#DC2626" />
-
-          <SolidColorBrush x:Key="TextControlBackground" Color="#F1F2F5" />
-          <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#ECEEF3" />
-          <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#F7F8FA" />
-          <SolidColorBrush x:Key="ComboBoxBackground" Color="#F1F2F5" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#ECEEF3" />
-          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#F7F8FA" />
-          <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#F7F8FA" />
-          <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#F7F8FA" />
         </ResourceDictionary>
 
-        <!-- Dunkles Theme in neutralem Grau, Dokumenthintergrund #252525 -->
+        <!-- Dunkles Theme: Warn- und Fehlerfarben -->
         <ResourceDictionary x:Key="Dark">
-          <SolidColorBrush x:Key="AppBackgroundBrush" Color="#181818" />
-          <SolidColorBrush x:Key="SurfaceBrush" Color="#1F1F1F" />
-          <SolidColorBrush x:Key="Surface2Brush" Color="#2B2B2B" />
-          <SolidColorBrush x:Key="AppBorderBrush" Color="#3A3A3A" />
-          <SolidColorBrush x:Key="TextBrush" Color="#E6E6E6" />
-          <SolidColorBrush x:Key="MutedTextBrush" Color="#A0A0A0" />
-          <SolidColorBrush x:Key="HoverBrush" Color="#303030" />
-          <SolidColorBrush x:Key="CanvasBrush" Color="#252525" />
           <SolidColorBrush x:Key="WarnBackgroundBrush" Color="#3A2E12" />
           <SolidColorBrush x:Key="WarnTextBrush" Color="#F2C66D" />
           <SolidColorBrush x:Key="DangerBrush" Color="#F06A6A" />
-
-          <SolidColorBrush x:Key="TextControlBackground" Color="#2B2B2B" />
-          <SolidColorBrush x:Key="TextControlBackgroundPointerOver" Color="#303030" />
-          <SolidColorBrush x:Key="TextControlBackgroundFocused" Color="#1F1F1F" />
-          <SolidColorBrush x:Key="ComboBoxBackground" Color="#2B2B2B" />
-          <SolidColorBrush x:Key="ComboBoxBackgroundPointerOver" Color="#303030" />
-          <SolidColorBrush x:Key="ComboBoxDropDownBackground" Color="#1F1F1F" />
-          <SolidColorBrush x:Key="MenuFlyoutPresenterBackground" Color="#1F1F1F" />
-          <SolidColorBrush x:Key="FlyoutPresenterBackground" Color="#1F1F1F" />
         </ResourceDictionary>
       </ResourceDictionary.ThemeDictionaries>
     </ResourceDictionary>
