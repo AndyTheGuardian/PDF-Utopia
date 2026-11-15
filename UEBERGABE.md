@@ -32,9 +32,10 @@ fortzusetzen. Es ergänzt die übrige Dokumentation und wiederholt sie nicht. Le
 | `main` | Funktionen 1–13 | – |
 | `feature/komprimieren`, `feature/farbprofile`, `feature/seitenansichten`, `feature/weitere-funktionen` | frühere Funktionen | ja (können gelöscht werden) |
 
-**Achtung:** Das lokale `main` ist dem GitHub-Stand `origin/main` um mehrere Commits voraus (Stand 2026-11-15: alles seit Funktion 12).
-Wer von einem anderen Rechner aus weiterarbeiten will, muss vorher pushen (der Anwender pusht selbst, die
-Zugangsdaten liegen bei ihm):
+**Vor dem Wechsel pushen:** Der Anwender hat `main` am 2026-11-15 bis zum Merge von Funktion 13 auf GitHub
+veröffentlicht; die danach entstandenen Abnahme-Commits sind nur lokal. Wer von einem anderen Rechner aus
+weiterarbeiten will, muss vorher pushen (der Anwender pusht selbst, die Zugangsdaten liegen bei ihm). Ob etwas
+fehlt, zeigt `git status` nach `git fetch`:
 
 ```bash
 git push origin main
