@@ -17,10 +17,10 @@ fortzusetzen. Es ergänzt die übrige Dokumentation und wiederholt sie nicht. Le
 
 | Thema | Stand |
 |---|---|
-| Programm | Funktionen 1–12 abgenommen und in `main`; Funktion 13 **Komprimieren** (A57) umgesetzt, Abnahme offen |
-| Aktueller Branch | `feature/komprimieren` (Commit `b7a9556`), noch **nicht** in `main` gemergt |
+| Programm | Funktionen 1–12 abgenommen; Funktion 13 **Komprimieren** (A57) umgesetzt und am 2026-11-15 in `main` gemergt, Abnahme anhand der Checkliste offen |
+| Aktueller Branch | `main` (Merge-Commit `99ecb02`) |
 | Tests | Core 496, Pdf 163 (davon 3 nur ausdrücklich), App 35 – alle grün |
-| Testversion | `publish/single-linux-x64/PdfUtopia` (Linux x64, Einzeldatei, Stand `feature/komprimieren`) |
+| Testversion | `publish/single-linux-x64/PdfUtopia` (Linux x64, Einzeldatei, Stand Funktion 13) |
 | Offene Fragen | F24 Lizenz (zurückgestellt, Vorschlag MIT), F47 Android-Version (zurückgestellt) |
 | Probleme | keine offenen |
 | Repository | `https://github.com/AndyTheGuardian/PDF-Utopia.git` (Remote `origin`) |
@@ -29,16 +29,15 @@ fortzusetzen. Es ergänzt die übrige Dokumentation und wiederholt sie nicht. Le
 
 | Branch | Inhalt | In `main` |
 |---|---|---|
-| `main` | Funktionen 1–12, zuletzt `2400857` | – |
-| `feature/komprimieren` | Funktion 13 Komprimieren | **nein**, wartet auf Abnahme |
-| `feature/farbprofile`, `feature/seitenansichten`, `feature/weitere-funktionen` | frühere Funktionen | ja (können gelöscht werden) |
+| `main` | Funktionen 1–13 | – |
+| `feature/komprimieren`, `feature/farbprofile`, `feature/seitenansichten`, `feature/weitere-funktionen` | frühere Funktionen | ja (können gelöscht werden) |
 
-**Achtung:** Das lokale `main` ist **7 Commits vor** `origin/main`; `feature/komprimieren` ist gar nicht
-veröffentlicht. Wer von einem anderen Rechner aus weiterarbeiten will, muss vorher pushen (der Anwender pusht
-selbst, die Zugangsdaten liegen bei ihm):
+**Achtung:** Das lokale `main` ist dem GitHub-Stand `origin/main` um 10 Commits voraus (Stand 2026-11-15).
+Wer von einem anderen Rechner aus weiterarbeiten will, muss vorher pushen (der Anwender pusht selbst, die
+Zugangsdaten liegen bei ihm):
 
 ```bash
-git push origin main feature/komprimieren
+git push origin main
 ```
 
 ### Nächste Schritte
@@ -46,9 +45,9 @@ git push origin main feature/komprimieren
 1. Anwender prüft Funktion 13 mit Abschnitt 13 der [Abnahme-Checkliste](docs/ABNAHME-CHECKLISTE.md) (13.1–13.10).
 2. Nach der Abnahme: Abschnitt 13 abhaken, A57 in OFFENE-PUNKTE.md nach „Erledigt“ verschieben (mit Datum),
    Kopf der Checkliste auf Funktionen 1–13 anpassen, committen.
-3. Auf Anweisung des Anwenders `feature/komprimieren` in `main` mergen (`--no-ff`, Nachricht wie
-   „Merge feature/komprimieren: compress (feature 13)“).
-4. Abweichungen aus der Abnahme bekommen eine P-Nummer in OFFENE-PUNKTE.md und werden auf dem Feature-Branch behoben.
+3. Abweichungen aus der Abnahme bekommen eine P-Nummer in OFFENE-PUNKTE.md und werden auf einem Branch
+   (z. B. `fix/komprimieren`) behoben und danach gemergt.
+4. Neue Funktionen wie gewohnt auf `feature/<name>` beginnen (Ablauf in Abschnitt 2).
 
 ---
 
