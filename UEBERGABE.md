@@ -17,8 +17,8 @@ fortzusetzen. Es ergänzt die übrige Dokumentation und wiederholt sie nicht. Le
 
 | Thema | Stand |
 |---|---|
-| Programm | Funktionen 1–12 abgenommen; Funktion 13 **Komprimieren** (A57) umgesetzt und am 2026-11-15 in `main` gemergt, Abnahme anhand der Checkliste offen |
-| Aktueller Branch | `main` (Merge-Commit `99ecb02`) |
+| Programm | Funktionen 1–13 abgenommen und in `main`; zuletzt Funktion 13 **Komprimieren** (A57), abgenommen am 2026-11-15 |
+| Aktueller Branch | `main` |
 | Tests | Core 496, Pdf 163 (davon 3 nur ausdrücklich), App 35 – alle grün |
 | Testversion | `publish/single-linux-x64/PdfUtopia` (Linux x64, Einzeldatei, Stand Funktion 13) |
 | Offene Fragen | F24 Lizenz (zurückgestellt, Vorschlag MIT), F47 Android-Version (zurückgestellt) |
@@ -32,7 +32,7 @@ fortzusetzen. Es ergänzt die übrige Dokumentation und wiederholt sie nicht. Le
 | `main` | Funktionen 1–13 | – |
 | `feature/komprimieren`, `feature/farbprofile`, `feature/seitenansichten`, `feature/weitere-funktionen` | frühere Funktionen | ja (können gelöscht werden) |
 
-**Achtung:** Das lokale `main` ist dem GitHub-Stand `origin/main` um 10 Commits voraus (Stand 2026-11-15).
+**Achtung:** Das lokale `main` ist dem GitHub-Stand `origin/main` um mehrere Commits voraus (Stand 2026-11-15: alles seit Funktion 12).
 Wer von einem anderen Rechner aus weiterarbeiten will, muss vorher pushen (der Anwender pusht selbst, die
 Zugangsdaten liegen bei ihm):
 
@@ -42,12 +42,13 @@ git push origin main
 
 ### Nächste Schritte
 
-1. Anwender prüft Funktion 13 mit Abschnitt 13 der [Abnahme-Checkliste](docs/ABNAHME-CHECKLISTE.md) (13.1–13.10).
-2. Nach der Abnahme: Abschnitt 13 abhaken, A57 in OFFENE-PUNKTE.md nach „Erledigt“ verschieben (mit Datum),
-   Kopf der Checkliste auf Funktionen 1–13 anpassen, committen.
-3. Abweichungen aus der Abnahme bekommen eine P-Nummer in OFFENE-PUNKTE.md und werden auf einem Branch
-   (z. B. `fix/komprimieren`) behoben und danach gemergt.
-4. Neue Funktionen wie gewohnt auf `feature/<name>` beginnen (Ablauf in Abschnitt 2).
+Es ist keine Arbeit angefangen. Mögliche Themen:
+
+1. `main` auf GitHub pushen (macht der Anwender).
+2. Zurückgestellte Fragen wieder aufgreifen, wenn der Anwender es wünscht: F24 Lizenz, F47 Android-Version.
+3. Neue Funktionen wie gewohnt auf `feature/<name>` beginnen (Ablauf in Abschnitt 2); die Abnahme-Checkliste
+   bekommt dafür einen neuen Abschnitt 14.
+4. Erledigte Feature-Branches können gelöscht werden (nur auf Wunsch des Anwenders).
 
 ---
 

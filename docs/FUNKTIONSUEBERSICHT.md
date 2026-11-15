@@ -81,7 +81,7 @@ Entwickelt im Branch `feature/farbprofile` (A56), übernommen aus dem AI Asset M
     Einstellungsdialog, mitgelieferte und eigene Farbprofile, Export und Import im gemeinsamen Format
     `*.colorprofiles.json`. Startprofil „Standard“ mit den bisherigen Farben.
 
-## Phase 6 – Komprimieren
+## Phase 6 – Komprimieren (abgenommen am 2026-11-15)
 
 Entwickelt im Branch `feature/komprimieren` (A57, Mockup v11).
 
