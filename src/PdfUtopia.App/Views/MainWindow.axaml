@@ -239,6 +239,7 @@
             <MenuItem Header="{loc:T Menu.Open}" Command="{Binding OpenCommand}" InputGesture="Ctrl+O" />
             <MenuItem Header="{loc:T Menu.SaveAs}" Command="{Binding SaveAsCommand}" InputGesture="Ctrl+Shift+S" />
             <Separator />
+            <MenuItem Header="{loc:T Menu.Compress}" Command="{Binding CompressCommand}" />
             <MenuItem Header="{loc:T Menu.Extract}" Command="{Binding ExtractCommand}" InputGesture="Ctrl+E" />
             <MenuItem Header="{loc:T Menu.InsertPages}" Command="{Binding InsertPagesCommand}" InputGesture="Ctrl+I" />
             <MenuItem Header="{loc:T Menu.Print}" Command="{Binding PrintCommand}" InputGesture="Ctrl+P" />
@@ -347,6 +348,7 @@
             </RadioButton>
             <Border Classes="divider" />
             <Button Classes="tb" Command="{Binding ExtractCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconExtract}" /><TextBlock Text="{loc:T Toolbar.Extract}" /></StackPanel></Button>
+            <Button Classes="tb" Command="{Binding CompressCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconCompress}" /><TextBlock Text="{loc:T Toolbar.Compress}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding InsertPagesCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconInsertPages}" /><TextBlock Text="{loc:T Toolbar.InsertPages}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding RotateCurrentPageCommand}" ToolTip.Tip="{loc:T Toolbar.RotateTip}"><StackPanel Spacing="2"><Path Classes="icon" Classes.mirrored="{Binding ReverseRotation}" Data="{StaticResource IconRotate}" /><TextBlock Text="{loc:T Toolbar.Rotate}" /></StackPanel></Button>
             <Button Classes="tb" Command="{Binding DeleteCurrentPageCommand}"><StackPanel Spacing="2"><Path Classes="icon" Data="{StaticResource IconTrash}" /><TextBlock Text="{loc:T Toolbar.Delete}" /></StackPanel></Button>
@@ -607,7 +609,7 @@
         </StackPanel>
         <TextBlock Grid.Column="1" Classes="hint" Margin="18,0,0,0" Text="{Binding UndoStatus}" />
         <TextBlock x:Name="StatusNoticeText" Grid.Column="3" Classes="hint" Margin="18,0,0,0" Text="{Binding StatusNotice}" Foreground="{DynamicResource AccentTextBrush}"
-                   TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                   ToolTip.Tip="{Binding StatusNotice}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
         <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="18,0,0,0" IsVisible="{Binding HasDocument}">
           <TextBlock Classes="hint" Text="{Binding ActiveDocument.FileName, FallbackValue=''}" />
           <TextBlock Classes="hint" Text=" · " />

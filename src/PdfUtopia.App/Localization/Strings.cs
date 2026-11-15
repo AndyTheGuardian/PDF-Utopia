@@ -14,6 +14,7 @@ public static class Strings
         ["Menu.File"] = ("_Datei", "_File"),
         ["Menu.Open"] = ("_Öffnen…", "_Open…"),
         ["Menu.SaveAs"] = ("_Speichern unter…", "Save _as…"),
+        ["Menu.Compress"] = ("_Komprimieren…", "Co_mpress…"),
         ["Menu.Extract"] = ("Seiten _extrahieren…", "_Extract pages…"),
         ["Menu.InsertPages"] = ("Seiten _einfügen…", "_Insert pages…"),
         ["Menu.InsertBlankPage"] = ("_Leere Seite einfügen", "Insert _blank page"),
@@ -45,6 +46,7 @@ public static class Strings
         ["Toolbar.Undo"] = ("Rückgängig", "Undo"),
         ["Toolbar.Redo"] = ("Wiederholen", "Redo"),
         ["Toolbar.Extract"] = ("Extrahieren", "Extract"),
+        ["Toolbar.Compress"] = ("Komprimieren", "Compress"),
         ["Toolbar.InsertPages"] = ("Einfügen", "Insert"),
         ["Toolbar.Rotate"] = ("Drehen", "Rotate"),
         ["Toolbar.RotateTip"] = ("Im Uhrzeigersinn drehen · Strg+Klick: gegen den Uhrzeigersinn", "Rotate clockwise · Ctrl+click: counterclockwise"),
@@ -342,6 +344,22 @@ public static class Strings
         ["Save.Continue"] = ("Weiter…", "Continue…"),
         ["Save.SuggestedSuffix"] = ("-bearbeitet", "-edited"),
         ["Save.ExtractSuffix"] = ("-auszug", "-extract"),
+        ["Save.CompressSuffix"] = ("-komprimiert", "-compressed"),
+
+        // Komprimieren (A57, Mockup v11)
+        ["Compress.Title"] = ("Komprimieren", "Compress"),
+        ["Compress.Original"] = ("Originalgröße", "Original size"),
+        ["Compress.Quality"] = ("Qualität", "Quality"),
+        ["Compress.QualityDesc"] = ("Bilder höchstens 150 dpi, JPEG 85 % – gut zum Drucken", "Images at most 150 dpi, JPEG 85 % – good for printing"),
+        ["Compress.Economy"] = ("Sparsam", "Economy"),
+        ["Compress.EconomyDesc"] = ("Bilder höchstens 96 dpi, JPEG 60 % – für Bildschirm und E-Mail", "Images at most 96 dpi, JPEG 60 % – for screen and email"),
+        ["Compress.Calculating"] = ("wird berechnet …", "calculating …"),
+        ["Compress.Busy"] = ("Beide Stufen werden berechnet …", "Calculating both levels …"),
+        ["Compress.None"] = ("keine Ersparnis", "no saving"),
+        ["Compress.Save"] = ("Speichern unter…", "Save as…"),
+        ["Compress.Note"] = ("Text, Schriften und Vektorgrafik bleiben verlustfrei; Anmerkungen, Formularwerte und Schwärzungen werden mitgeschrieben. Das Original bleibt unverändert.",
+            "Text, fonts and vector graphics stay lossless; annotations, form values and redactions are included. The original stays unchanged."),
+        ["Compress.Saved"] = ("Gespeichert: „{0}“ ({1}, −{2} %)", "Saved: “{0}” ({1}, −{2} %)"),
 
         // Passwort beim Öffnen
         ["Password.Title"] = ("Passwortgeschütztes Dokument", "Password-protected document"),

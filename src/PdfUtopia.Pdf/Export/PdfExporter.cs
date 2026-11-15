@@ -80,7 +80,31 @@ public static class PdfExporter
     /// <param name="targetPath">Zieldatei; darf die Quelldatei sein.</param>
     /// <param name="options">Exporteinstellungen; der Passwortschutz richtet sich nach der geöffneten Datei.</param>
     public static void Save(IReadOnlyList<PdfSource> sources, EditableDocument document, string targetPath, ExportOptions? options = null) =>
-        Write(sources, document, document.Pages.ToList(), targetPath, options ?? new ExportOptions());
+        Write(sources, document, document.Pages.ToList(), options ?? new ExportOptions(), (output, password) =>
+        {
+            Protect(output, password);
+            SaveAtomically(output, targetPath);
+        });
+
+    /// <summary>
+    /// Baut alle Seiten wie beim Speichern, aber ohne Passwortschutz in den Speicher – Ausgangspunkt für das
+    /// Komprimieren (A57), das den Schutz erst beim Schreiben der Zieldatei setzt.
+    /// </summary>
+    /// <param name="sources">Quelldateien nach <see cref="PageEntry.SourceIndex"/>; die erste ist die geöffnete Datei.</param>
+    /// <param name="document">Das Bearbeitungsmodell.</param>
+    /// <param name="options">Exporteinstellungen; <see cref="ExportOptions.PasswordMode"/> wird hier nicht angewendet.</param>
+    /// <returns>Die ungeschützte PDF-Datei.</returns>
+    public static byte[] SaveUnprotected(IReadOnlyList<PdfSource> sources, EditableDocument document, ExportOptions? options = null)
+    {
+        byte[] result = [];
+        Write(sources, document, document.Pages.ToList(), options ?? new ExportOptions(), (output, _) =>
+        {
+            using var buffer = new MemoryStream();
+            output.Save(buffer, closeStream: false);
+            result = buffer.ToArray();
+        });
+        return result;
+    }
 
     /// <summary>
     /// Speichert ausgewählte Seiten in eine neue Datei, z. B. aus <see cref="PageSelectionParser"/>.
@@ -120,13 +144,19 @@ public static class PdfExporter
             ArgumentOutOfRangeException.ThrowIfGreaterThan(position, document.Pages.Count);
         }
 
-        Write(sources, document, positions.Select(position => document.Pages[position - 1]).ToList(), targetPath, options ?? new ExportOptions());
+        Write(sources, document, positions.Select(position => document.Pages[position - 1]).ToList(), options ?? new ExportOptions(), (output, password) =>
+        {
+            Protect(output, password);
+            SaveAtomically(output, targetPath);
+        });
     }
 
     /// <summary>
-    /// Baut das Zieldokument und speichert es. Jede benötigte Quelldatei wird einmal zum Import geöffnet.
+    /// Baut das Zieldokument und übergibt es mit dem Zielpasswort an <paramref name="finish"/> (Speichern).
+    /// Jede benötigte Quelldatei wird einmal zum Import geöffnet.
     /// </summary>
-    private static void Write(IReadOnlyList<PdfSource> sources, EditableDocument document, IReadOnlyList<PageEntry> entries, string targetPath, ExportOptions options)
+    private static void Write(
+        IReadOnlyList<PdfSource> sources, EditableDocument document, IReadOnlyList<PageEntry> entries, ExportOptions options, Action<PdfDocument, string?> finish)
     {
         if (sources.Count == 0)
         {
@@ -185,8 +215,7 @@ public static class PdfExporter
             if (redactions.Count == 0)
             {
                 WriteRecognizedText(output, recognized);
-                Protect(output, targetPassword);
-                SaveAtomically(output, targetPath);
+                finish(output, targetPassword);
                 return;
             }
 
@@ -195,8 +224,7 @@ public static class PdfExporter
             output.Save(buffer, closeStream: false);
             using var redacted = Redactor.Apply(buffer.ToArray(), redactions);
             WriteRecognizedText(redacted, recognized);
-            Protect(redacted, targetPassword);
-            SaveAtomically(redacted, targetPath);
+            finish(redacted, targetPassword);
         }
         finally
         {
@@ -297,7 +325,7 @@ public static class PdfExporter
     /// <summary>
     /// Schützt das Zieldokument (Benutzer- und Besitzerpasswort gleich); <c>null</c> = ungeschützt.
     /// </summary>
-    private static void Protect(PdfDocument output, string? password)
+    internal static void Protect(PdfDocument output, string? password)
     {
         if (password is null)
         {
@@ -312,7 +340,7 @@ public static class PdfExporter
     /// Speichert erst in eine temporäre Datei und ersetzt dann das Ziel – ein Fehler beim Schreiben
     /// lässt eine vorhandene Datei unversehrt.
     /// </summary>
-    private static void SaveAtomically(PdfDocument output, string targetPath)
+    internal static void SaveAtomically(PdfDocument output, string targetPath)
     {
         var temporary = $"{targetPath}.{Guid.NewGuid():N}.tmp";
         try

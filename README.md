@@ -2,7 +2,7 @@
 
 Plattformübergreifender PDF-Editor für Windows, Linux und macOS, geschrieben in C# mit
 [Avalonia](https://avaloniaui.net/). PDF Utopia ist für Anmerkungen gemacht: kommentieren, markieren und zeichnen,
-mit Maus oder Stift. Dazu kommen Seiten umsortieren, drehen, löschen und extrahieren. Alle Änderungen werden als
+mit Maus oder Stift. Dazu kommen Seiten umsortieren, drehen, löschen und extrahieren sowie Dateien komprimieren. Alle Änderungen werden als
 echte PDF-Annotationen gespeichert. Jeder PDF-Betrachter zeigt sie an, und PDF Utopia kann sie später
 weiterbearbeiten.
 
@@ -22,6 +22,7 @@ weiterbearbeiten.
 - **Formulare:** direkt auf der Seite ausfüllen (Text, Kästchen, Optionen, Listen); sie bleiben beim Speichern ausfüllbar.
 - **Lesezeichen:** Inhaltsverzeichnis der Datei als Baum zum Springen; beim Speichern bleibt es erhalten.
 - **Extrahieren:** Seitenauswahl wie `2`, `4-8` oder `2,4,8,13-15`, mit Vorschau.
+- **Komprimieren:** verkleinerte Kopie mit den Stufen „Qualität“ (150 dpi, JPEG 85 %) und „Sparsam“ (96 dpi, JPEG 60 %); der Dialog zeigt die Größe beider Stufen vorab.
 - **Einfügen:** Seiten aus einer anderen PDF-Datei übernehmen, per Dialog oder Drag & Drop auf die Seitenliste; Anmerkungen kommen mit.
 - **Rückgängig/Wiederholen:** mit einstellbarer Anzahl von Schritten (Standard 50).
 - **Seitenansichten:** Einzelseite, Fortlaufend, Doppelseite und Doppelseite fortlaufend, auf Wunsch mit der ersten Seite allein; bearbeiten auf jeder sichtbaren Seite.
@@ -43,6 +44,19 @@ Bestehender Text im PDF lässt sich nicht bearbeiten. Weitere bekannte Einschrä
 
 Die PDFium-Bibliotheken für alle drei Plattformen kommen über das NuGet-Paket PDFiumCore mit. Weitere Installationen
 sind nicht nötig.
+
+## Quellcode holen
+
+```bash
+git clone https://github.com/AndyTheGuardian/PDF-Utopia.git
+```
+
+```bash
+cd PDF-Utopia
+```
+
+`main` enthält den abgenommenen Stand. Neue Funktionen entstehen auf Branches `feature/<name>` und werden nach der
+Abnahme in `main` gemergt.
 
 ## Bauen, starten, testen
 
@@ -94,7 +108,7 @@ Gatekeeper auf (siehe Anwenderdokumentation 3.2).
 | Pfad | Inhalt |
 |---|---|
 | `src/PdfUtopia.Core` | Fachlogik ohne Oberfläche und ohne PDF-Bibliothek: Geometrie, Seitenliste, Annotationen, Rückgängig-Verlauf, Strichaufzeichnung, Radierer, Farben, Einstellungen |
-| `src/PdfUtopia.Pdf` | PDF-Anbindung: Rendern, Text und Suche (PDFium), Speichern, Extrahieren und Annotationen schreiben (PDFsharp), gespeicherte Annotationen wieder einlesen |
+| `src/PdfUtopia.Pdf` | PDF-Anbindung: Rendern, Text und Suche (PDFium), Speichern, Extrahieren, Komprimieren und Annotationen schreiben (PDFsharp, SkiaSharp), gespeicherte Annotationen wieder einlesen |
 | `src/PdfUtopia.App` | Avalonia-Oberfläche (MVVM mit CommunityToolkit.Mvvm): Fenster, Dialoge, Seiteneditor, Lokalisierung, Themes |
 | `tests/PdfUtopia.App.Tests` | Tests der ViewModels (Einstellungen, Farbprofile) |
 | `tests/PdfUtopia.Core.Tests` | Unit-Tests der Fachlogik |
@@ -105,6 +119,7 @@ Gatekeeper auf (siehe Anwenderdokumentation 3.2).
 | `docs/` | Anwender-, Benutzer- und Entwicklerdokumentation, Funktionsübersicht, Abnahme-Checkliste |
 | `SPECS.md` | Ursprüngliche Spezifikation |
 | `OFFENE-PUNKTE.md` | Getroffene Annahmen, bekannte Einschränkungen und erledigte Punkte |
+| `UEBERGABE.md` | Übergabe: Stand, Arbeitsweise und nächste Schritte |
 
 ## Dokumentation
 
@@ -115,6 +130,17 @@ Gatekeeper auf (siehe Anwenderdokumentation 3.2).
 - [Entwicklerdokumentation](docs/ENTWICKLERDOKUMENTATION.md): Architektur, Kernkonzepte, Lesen und Schreiben von Dateien,
   Oberfläche, Tests, neue Anmerkungsarten, Konventionen und Fallstricke
 - [Offene Punkte](OFFENE-PUNKTE.md): Entscheidungen und Annahmen aus der Entwicklung
+- [Übergabe](UEBERGABE.md): Projektstand, Arbeitsweise, Umgebung und nächste Schritte zum Weiterarbeiten
+
+## Mitarbeit
+
+- Bezeichner und Commit-Nachrichten englisch, Kommentare, Dokumentation und Oberflächentexte deutsch (Oberfläche
+  zusätzlich englisch).
+- Warnungen gelten als Fehler; neue Logik bekommt Unit-Tests.
+- Neue Oberfläche zuerst als HTML-Mockup in `mockups/`, dann umsetzen.
+- Entscheidungen und Einschränkungen in [OFFENE-PUNKTE.md](OFFENE-PUNKTE.md) festhalten.
+
+Details stehen in der [Entwicklerdokumentation](docs/ENTWICKLERDOKUMENTATION.md), Abschnitt 10.
 
 ## Verwendete Bibliotheken
 
@@ -125,6 +151,7 @@ Gatekeeper auf (siehe Anwenderdokumentation 3.2).
 | PDFiumCore | 157.0.8100 | Rendern, Text, Suche | MIT (PDFium: BSD-3-Clause/Apache-2.0) |
 | PDFsharp | 6.2.4 | Schreiben, Extrahieren, Annotationen | MIT |
 | System.Security.Cryptography.Pkcs | 10.0.14 | Behebt eine Sicherheitslücke der PDFsharp-Abhängigkeit | MIT |
+| SkiaSharp | 3.119.4 | Bilder verkleinern beim Komprimieren (kommt ohnehin mit Avalonia) | MIT |
 | xUnit v3 | 4.0.2 | Tests | Apache-2.0 |
 
 PDFsharp bleibt bewusst auf 6.2.4: Ab Version 6.3 steht es unter AGPL-3.0 und prüft die Lizenz zur Laufzeit.

@@ -49,6 +49,7 @@ Grundprinzipien:
 | PDFiumCore | 157.0.8100 | Rendern, Text, Formular-Anzeige, Lesezeichen | bringt PDFium für alle drei Systeme mit |
 | PDFsharp | **6.2.4** | Schreiben, Import, Passwortschutz | **nicht aktualisieren**: ab 6.3 AGPL mit Lizenzprüfung zur Laufzeit (A21) |
 | System.Security.Cryptography.Pkcs | 10.0.14 | direkt angehoben | Sicherheitslücke in der PDFsharp-Abhängigkeit 8.0.1 (A21) |
+| SkiaSharp, SkiaSharp.NativeAssets.Linux | 3.119.4 | Bilder dekodieren, verkleinern, als JPEG kodieren (Komprimieren, A57) | gleiche Version wie in Avalonia; beim Aktualisieren von Avalonia mitziehen |
 | xunit.v3 | 4.0.2 | Tests (Microsoft Testing Platform) | |
 | Tesseract | extern, ≥ 4 | Texterkennung | separat installiertes Programm, kein Paket (F41) |
 
@@ -131,7 +132,7 @@ PDFsharp; dadurch ist die Fachlogik ohne Oberfläche testbar.
 | `Rendering/PdfSource.cs` | eine geöffnete Datei: Laden (mit Passwort), Rendern, Text, Suche, Absätze, Formularumgebung, Lesezeichen, eingelesene eigene Anmerkungen |
 | `Rendering/PdfiumLibrary.cs` | Initialisierung und **globale Sperre** für alle PDFium-Aufrufe |
 | `Import/` | `SavedAnnotationImporter` (eigene Anmerkungen zurücklesen, A25), `FormReader` |
-| `Export/` | `PdfExporter` (Speichern/Extrahieren), `AnnotationWriter`, `ContentBuilder`, `FootnoteLayout`, `FormRebuilder`, `Redactor`, `RecognizedTextWriter`, `PageGeometry`, `StandardFont`, `AnnotationSerializer` |
+| `Export/` | `PdfExporter` (Speichern/Extrahieren, `SaveUnprotected` in den Speicher), `PdfCompressor` (Komprimieren, A57), `AnnotationWriter`, `ContentBuilder`, `FootnoteLayout`, `FormRebuilder`, `Redactor`, `RecognizedTextWriter`, `PageGeometry`, `StandardFont`, `AnnotationSerializer` |
 | `Ocr/TesseractEngine.cs` | Tesseract finden, Seite erkennen (A53) |
 
 ### PdfUtopia.App
@@ -246,6 +247,32 @@ ab, das die Textebene der Datei mit erkanntem Text verbindet (`PageText`, `FindT
    die eine Schwärzung berühren, entfallen.
 7. Passwortschutz nach `ExportOptions.PasswordMode` (F22), dann atomar speichern (temporäre Datei, `File.Move`).
 
+### 6.1 Komprimieren
+
+`MainWindowViewModel.CompressAsync` (A57):
+
+1. Offene Schwärzungen bestätigen lassen, dann `PdfExporter.SaveUnprotected` – derselbe Aufbau wie beim Speichern,
+   aber **ohne Passwortschutz** in den Speicher (einmal, für beide Stufen).
+2. Der Dialog (`CompressDialog`) ruft für `CompressionPreset.Quality` und `Economy` nacheinander
+   `PdfCompressor.Compress(bytes, preset, progress, cancellation)` im Hintergrund auf.
+3. `PdfCompressor.Compress`:
+   - sammelt die Bild-XObjects aller Seiten, auch in Formular-XObjects und Erscheinungsbildern von Anmerkungen
+     (`ImageCollector`), jeweils mit der längsten Kante der größten Seite, auf der sie vorkommen;
+   - `ImageRecompressor.Prepare` liest geeignete Bilder aus (8 Bit, `/DeviceGray`, `/DeviceRGB` oder `/ICCBased`
+     mit N = 1/3, Filter keiner/DCT/Flate, ohne `/SMask`, `/Mask`, `/ImageMask`, `/Decode`);
+   - `Recompress` läuft **parallel** und greift nicht auf das Dokument zu: dekodieren (DCT mit Skia, Flate ohne
+     Prädiktor mit `ZLibStream`, sonst PDFsharp-`Filtering`), auf `CompressionPreset.TargetSize` verkleinern (bis
+     Faktor 0,5 bikubisch Mitchell, darunter Mipmaps), als JPEG kodieren; nur übernehmen, wenn kleiner;
+   - `Apply` setzt die Ergebnisse nacheinander ein (`/Filter /DCTDecode`, neue `/Width`/`/Height`);
+   - alle übrigen Ströme außer Bildern und `/Metadata` mit `PdfFlateEncodeMode.BestCompression` packen bzw.
+     neu packen, wenn kleiner;
+   - liefert die Eingabe zurück, wenn das Ergebnis nicht kleiner ist.
+4. Nach der Wahl: Passwortfrage und Dateiauswahl wie beim Speichern, dann `PdfCompressor.Save` (ohne Passwort die
+   Bytes atomar schreiben, sonst mit PDFsharp öffnen, schützen, atomar speichern).
+
+Die Stufen (150 dpi/JPEG 85, 96 dpi/JPEG 60), die Zielgröße, die 98-%-Schwelle für „keine Ersparnis“ und die
+Prozentangabe stehen testbar in `PdfUtopia.Core.Compression` (`CompressionPreset`, `FileSize`).
+
 Texte in Erscheinungsbildern nutzen die nicht eingebetteten Standardschriften Helvetica/Helvetica-Bold mit
 WinAnsi-Kodierung (`StandardFont`). Zeichen außerhalb davon werden zu „?“ (E5).
 
@@ -329,6 +356,8 @@ beschädigte Datei den Start nicht verhindert.
   - die Struktur (PDFsharp: Subtype, Einträge, Objekte),
   - den Text (PDFium: `PageText`, `FindText`),
   - **gerenderte Pixel** (`Render(...).PixelAt`), meist im Vergleich zur unveränderten Seite.
+- `CompressionTests` erzeugen fotoähnliche Testbilder (RGB, JPEG, Grau, mit Transparenz) und prüfen Verkleinerung,
+  Reihenfolge der Stufen, unveränderte Bilder mit Transparenz, „nie größer“, Fortschritt, Abbruch und Passwortschutz.
 - `RoundTripTests` speichern alle Anmerkungsarten und lesen sie wieder ein; neue Arten gehören in `AllKinds`.
 - `TestdataGenerator` (mit `[Fact(Explicit = true)]`) erzeugt die Dateien in `testdata/` neu; diese Tests laufen nur
   ausdrücklich.
@@ -396,6 +425,8 @@ Checkliste (Beispiel: `StampAnnotation`, A51):
 | Rahmen außerhalb der Seite | Die Zoom-`LayoutTransformControl` schneidet alles außerhalb ihres Inhalts ab | Hervorhebungen innerhalb der Seite zeichnen (A55) |
 | Einstellungen laden | Setzen der ersten Eigenschaft speichert die zweite, noch ungeladene mit | erst nach dem Laden speichern (`_layoutLoaded`, A55) |
 | Schieberegler (Fluent) | höher als Knöpfe und Farbpunkte; die Optionsleiste wuchs je Werkzeug | feste Höhe der Leiste, Schieberegler mit Rand −8 px (P19) |
+| Dateidialoge bei Oberflächentests | Avalonia nutzt das xdg-desktop-portal über den Sitzungs-D-Bus; der Dialog erscheint auf dem echten Bildschirm statt im Xephyr | Testinstanz mit `dbus-run-session -- …` starten |
+| Bildgröße beim Komprimieren | Mipmaps für große Scans kosten pro Seite mehrere hundert Millisekunden | bis Faktor 0,5 bikubisch verkleinern, nur darunter Mipmaps (A57) |
 | Akzentknöpfe (Fluent-Klasse `accent`) | Die Vorlage setzt im Inneren immer weiße Schrift, auch auf hellen Akzentfarben | `Button.accent /template/ ContentPresenter` mit `AccentForegroundBrush` überschreiben (P21) |
 
 Hinweis: Die Projektdatei von PdfUtopia.App enthält `InternalsVisibleTo` für ein nicht vorhandenes Projekt

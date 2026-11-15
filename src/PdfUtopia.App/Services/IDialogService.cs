@@ -139,6 +139,13 @@ public interface IDialogService
     Task<OcrOutcome?> RecognizeTextAsync(OcrRequest request);
 
     /// <summary>
+    /// Zeigt den Dialog „Komprimieren“ (A57) und berechnet beide Stufen vorab.
+    /// </summary>
+    /// <param name="request">Angaben und Komprimierung.</param>
+    /// <returns>Gewählte Stufe mit Ergebnis, ein Fehler oder <c>null</c> bei Abbruch.</returns>
+    Task<CompressOutcome?> CompressAsync(CompressRequest request);
+
+    /// <summary>
     /// Erklärt, wie Tesseract installiert wird (A53, F41).
     /// </summary>
     /// <returns><c>true</c> für „Erneut suchen“.</returns>

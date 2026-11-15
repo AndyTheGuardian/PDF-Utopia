@@ -81,6 +81,15 @@ Entwickelt im Branch `feature/farbprofile` (A56), übernommen aus dem AI Asset M
     Einstellungsdialog, mitgelieferte und eigene Farbprofile, Export und Import im gemeinsamen Format
     `*.colorprofiles.json`. Startprofil „Standard“ mit den bisherigen Farben.
 
+## Phase 6 – Komprimieren
+
+Entwickelt im Branch `feature/komprimieren` (A57, Mockup v11).
+
+13. **Komprimieren:** verkleinerte Kopie über Werkzeugleiste oder „Datei → Komprimieren…“. Der Dialog zeigt die
+    Originalgröße und berechnet die Stufen „Qualität“ (150 dpi, JPEG 85 %) und „Sparsam“ (96 dpi, JPEG 60 %)
+    vorab mit neuer Größe und Ersparnis. Gespeichert wird wie mit „Speichern unter“, das Original bleibt
+    unverändert.
+
 ## Noch offen
 
 - Lizenzfrage (F24) und der Test des Radiererendes am Stift (A27), siehe `OFFENE-PUNKTE.md`.

@@ -20,6 +20,7 @@ PDF Utopia ist ein Editor zum Bearbeiten und Kommentieren von PDF-Dateien. Mit i
 - Inhalte **schwärzen** und Text in Scans **erkennen** (Texterkennung),
 - Seiten **umsortieren, drehen, löschen** und aus anderen PDF-Dateien **einfügen**,
 - einzelne Seiten oder Seitenbereiche **extrahieren**,
+- die Datei **komprimieren**, z. B. für den Versand per E-Mail,
 - das Dokument als **Einzelseite, fortlaufend oder als Doppelseite** lesen und bearbeiten,
 - im Dokument **suchen**,
 - das Ergebnis als **PDF speichern** – auch passwortgeschützt – und **drucken**.
@@ -117,7 +118,7 @@ Terminalfenster). Die macOS-Dateien wurden unter Linux erstellt und sind auf ein
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ PDF Utopia   Datei  Bearbeiten  Ansicht  Sprache                  (Menü) │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ Öffnen Speichern Drucken │ ↶ ↷ │ Werkzeuge │ Extrahieren Einfügen Drehen Löschen │
+│ Öffnen Speichern Drucken │ ↶ ↷ │ Werkzeuge │ Extrahieren Komprimieren Einfügen Drehen Löschen │
 │                                                 [Suche … ×]  ● Akzentfarbe │
 ├─────────────────────────────────────────────────────────────────────────┤
 │ Werkzeug: Farbe, Strichstärke, … (Optionsleiste)                 Hinweis │
@@ -143,7 +144,7 @@ Terminalfenster). Die macOS-Dateien wurden unter Linux erstellt und sind auf ein
 | Optionsleiste | Einstellungen des gewählten Werkzeugs und ein Hinweis zur Bedienung; sie ist bei jedem Werkzeug gleich hoch |
 | Tabs | jedes geöffnete Dokument hat einen Tab; ein Schloss kennzeichnet geschützte Dateien, ein Punkt ungespeicherte Änderungen. Führt Rückgängig/Wiederholen genau zum gespeicherten Stand zurück, verschwindet der Punkt wieder. |
 | Linke Leiste | Reiter **Seiten**, **Anmerkungen** (mit Anzahl, sobald das Dokument Anmerkungen hat) und **Lesezeichen** (wenn die Datei welche hat); ohne beides nur die Seitenliste. Die Leiste lässt sich am rechten Rand von 180 bis 420 Pixel breit ziehen (Standard 220, wird gespeichert); die Seitenminiaturen wachsen und schrumpfen mit und werden kurz nach dem Ziehen scharf neu gezeichnet; passen die drei Reiter nicht nebeneinander, steht der dritte darunter. **Seiten:** Miniaturen aller Seiten in der aktuellen Reihenfolge; oben links zeigen kleine Symbole in der Akzentfarbe, welche Annotationsarten die Seite enthält (Kommentar, Marker, Freihand, Formen, Text, Unterschrift, Stempel/Bild, Schwärzung); die Liste scrollt beim Blättern mit, sodass die aktuelle Seite immer sichtbar ist; eingefügte Seiten haben einen Rahmen in der Akzentfarbe und zeigen ihre Herkunft (z. B. „anhang.pdf S. 2“) |
-| Seitenansicht | je nach Seitenansicht eine Seite, ein Seitenpaar oder alle Seiten bzw. Paare untereinander (siehe 5.16), mit Annotationen; unter jeder Seite die Fußnoten ihrer Kommentare. Sind mehrere Seiten zu sehen, hat die aktuelle Seite einen Rahmen in der Akzentfarbe |
+| Seitenansicht | je nach Seitenansicht eine Seite, ein Seitenpaar oder alle Seiten bzw. Paare untereinander (siehe 5.17), mit Annotationen; unter jeder Seite die Fußnoten ihrer Kommentare. Sind mehrere Seiten zu sehen, hat die aktuelle Seite einen Rahmen in der Akzentfarbe |
 | Statusleiste | Seite, Rückgängig-Schritte, Datei und Größe, Seitenansicht (Einzelseite, Fortlaufend, Doppelseite, Doppelseite fortlaufend; bei wenig Platz nur Symbole), Zoom-Ansichten und Zoom (− / Eingabefeld / +) |
 
 ---
@@ -428,7 +429,39 @@ extrahieren und durchsuchen. Gespeichert wird mit dem Passwortschutz des aktuell
 - Gespeichert wird erst in eine temporäre Datei, die dann das Ziel ersetzt – ein Fehler beim Schreiben lässt
   eine vorhandene Datei unversehrt.
 
-### 5.13 Wie Annotationen in der PDF-Datei stehen
+### 5.13 Komprimieren
+
+**Komprimieren** (Werkzeugleiste) oder **Datei → Komprimieren…** speichert eine verkleinerte Kopie des
+Dokuments. Das Original bleibt unverändert.
+
+Der Dialog zeigt den Dateinamen und die **Originalgröße** und berechnet sofort im Hintergrund beide Stufen; ein
+Fortschrittsbalken zeigt den Stand. Danach steht bei jeder Stufe die neue Größe mit der Ersparnis in Prozent:
+
+| Stufe | Bilder | Gedacht für |
+|---|---|---|
+| **Qualität** (vorgewählt) | höchstens 150 dpi, JPEG-Qualität 85 % | Drucken |
+| **Sparsam** | höchstens 96 dpi, JPEG-Qualität 60 % | Bildschirm und E-Mail |
+
+- **Speichern unter…** ist erst nach dem Berechnen möglich. Spart eine Stufe weniger als 2 %, zeigt sie
+  „keine Ersparnis“ und lässt sich nicht speichern (z. B. bei Dateien ohne Bilder).
+- Danach folgen wie beim Speichern die Frage nach dem **Passwortschutz** (5.12) und die Dateiauswahl;
+  vorgeschlagen wird „*Name*-komprimiert.pdf“. Die Statusleiste meldet Dateiname, neue Größe und Ersparnis.
+- **Abbrechen** beendet auch eine laufende Berechnung.
+
+Was dabei passiert:
+
+- Gespeichert wird der **aktuelle Stand** wie bei „Speichern unter“: Seitenreihenfolge, Drehung, Anmerkungen,
+  Formularwerte, erkannter Text. Offene Schwärzungen werden wie beim Speichern erst nach Rückfrage ausgeführt.
+- **Bilder** werden auf die Auflösung der Stufe verkleinert (bezogen auf die größte Seite, auf der sie
+  vorkommen) und als JPEG neu gespeichert – aber nur, wenn das Bild dadurch kleiner wird. Bilder werden nie
+  vergrößert.
+- Unverändert bleiben Bilder mit Transparenz oder Maske, CMYK-, Index- und Schwarz-Weiß-Bilder (z. B. Faxe) und
+  JPEG-2000-Bilder.
+- **Text, Schriften und Vektorgrafik** bleiben verlustfrei; alle übrigen Datenströme werden mit der besten
+  verlustfreien Komprimierung (Flate) geschrieben, nicht mehr benötigte Objekte entfallen.
+- Das Ergebnis ist nie größer als der aufgebaute Stand vor dem Komprimieren.
+
+### 5.14 Wie Annotationen in der PDF-Datei stehen
 
 Kommentare, Marker, Freihandlinien, Formen und Texte werden als **echte PDF-Annotationen** gespeichert
 (Square, Circle, Line, Highlight, Ink, FreeText) – mit eigenem Erscheinungsbild, damit sie in jedem PDF-Betrachter
@@ -441,12 +474,12 @@ bearbeitbar. Die Seitenverlängerung wird dabei zurückgenommen und beim nächst
 wächst also nicht bei jedem Speichern. Annotationen anderer Programme bleiben unverändert erhalten und werden
 mit angezeigt, sind aber in PDF Utopia nicht bearbeitbar.
 
-### 5.14 Drucken
+### 5.15 Drucken
 
 PDF Utopia speichert das Dokument mit allen Änderungen als temporäre, ungeschützte PDF-Datei und öffnet sie im
 PDF-Betrachter des Systems. Gedruckt wird dort über dessen Druckdialog.
 
-### 5.15 Suche
+### 5.16 Suche
 
 Gesucht wird im Text aller Seiten, ohne Unterscheidung von Groß- und Kleinschreibung. Das Suchfeld zeigt die
 Anzahl der Treffer; **Enter** springt zur nächsten Seite mit Treffern; **×** oder **Esc** beendet die Suche.
@@ -454,7 +487,7 @@ Treffer werden auf der Seite in der Akzentfarbe hinterlegt. Die Deckkraft wird j
 Text darauf gut lesbar bleibt; sehr helle Farben bekommen zusätzlich einen Rahmen. Gescannte Seiten ohne
 Textebene liefern keine Treffer.
 
-### 5.16 Ansichten und Zoom
+### 5.17 Ansichten und Zoom
 
 **Seitenansichten (A55):** Wie die Seiten angeordnet sind, wählen die vier Knöpfe in der Statusleiste links neben
 „Volle Höhe“ oder das Menü **Ansicht**:
@@ -495,7 +528,7 @@ wieder eine gewählt wird. Der Zoom lässt sich auch direkt in das Feld zwischen
 Verlassen des Felds ohne Enter stellen den aktuellen Zoom wieder her. Zoomen gibt es nur in der Statusleiste,
 im Menü **Ansicht** und per Tastatur, nicht mehr in der Werkzeugleiste.
 
-### 5.17 Anmerkungsübersicht
+### 5.18 Anmerkungsübersicht
 
 Der Reiter **Anmerkungen** in der linken Leiste erscheint, sobald das Dokument Anmerkungen hat; ohne Anmerkungen
 zeigt die Leiste nur die Seitenliste, und nach dem Entfernen der letzten Anmerkung kehrt sie dorthin zurück. Er
@@ -520,7 +553,7 @@ Eintrag bietet **Anzeigen** und **Löschen**; Löschen entfernt die Anmerkung (b
 Rückgängig-Schritt. Anmerkungen anderer
 Programme erscheinen nicht, weil sie nicht bearbeitbar sind.
 
-### 5.18 Lesezeichen
+### 5.19 Lesezeichen
 
 Hat die Datei Lesezeichen (Inhaltsverzeichnis), erscheint in der linken Leiste der Reiter **Lesezeichen**. Er zeigt
 die Lesezeichen als Baum; die erste Ebene ist aufgeklappt, tiefere Ebenen wie in der Datei vorgegeben. Ein Klick
@@ -533,13 +566,13 @@ Lesezeichen gelöschter (bzw. nicht extrahierter) Seiten entfallen, ihre Unterpu
 Gliederungspunkte ohne Ziel bleiben, solange sie Unterpunkte haben. Lesezeichen lassen sich nicht anlegen oder
 umbenennen.
 
-### 5.19 Mehrere Dokumente
+### 5.20 Mehrere Dokumente
 
 Jedes Dokument öffnet in einem eigenen Tab. Eine bereits geöffnete Datei wird nicht doppelt geöffnet – ihr Tab
 wird angezeigt. Beim Schließen eines Tabs oder des Fensters mit ungespeicherten Änderungen fragt PDF Utopia:
 **Speichern**, **Verwerfen** oder **Abbrechen**.
 
-### 5.20 Erscheinungsbild, Sprache und Farben
+### 5.21 Erscheinungsbild, Sprache und Farben
 
 - **Design:** System, Hell oder Dunkel (Menü **Ansicht** oder Einstellungen). Das helle Design verzichtet auf
   reines Weiß, das dunkle ist neutral grau; die PDF-Seite selbst, das Papier der Fußnoten und die Seitenansicht
@@ -675,6 +708,7 @@ Gespeicherte Unterschriften liegen im selben Ordner in `signatures.json`.
 | – | Geschwärzte Seiten werden als Bild gespeichert: Text darauf ist nicht mehr auswählbar oder durchsuchbar, Links und Formularfelder dieser Seiten entfallen. Dokumenteigenschaften, Lesezeichen-Texte und Dateianhänge werden nicht geschwärzt. |
 | – | Eingefügte Bilder werden nur als PNG oder JPEG gelesen; Bilder über 2000 Pixel werden verkleinert. Stempel und Bilder zeigt die Seitenminiatur erst nach dem Speichern und erneuten Öffnen. |
 | – | Doppelseite: Liegt eine Seite eines Paars quer oder ist sie anders groß, wird diese Zeile breiter; die Spalten stehen dann nicht genau untereinander (E10). |
+| – | Komprimieren verkleinert nur Bilder in 8 Bit Grau oder RGB ohne Maske; Bilder mit Transparenz, CMYK-, Index-, Schwarz-Weiß- und JPEG-2000-Bilder bleiben unverändert. Große Scans mit vielen Seiten brauchen beim Berechnen einige Sekunden. |
 | – | Beim Einfügen von Seiten werden Lesezeichen und Verknüpfungen der eingefügten Datei nicht übernommen; ihre Formularfelder schon (gleichnamige werden umbenannt). Aus einem geöffneten Dokument wird der zuletzt gespeicherte Stand eingefügt. |
 
 ---
@@ -690,6 +724,7 @@ PDF Utopia ist ein Open-Source-Projekt. Es verwendet ausschließlich Bibliotheke
 | PDFiumCore | 157.0.8100 | Anzeigen und Textauslesen | MIT (PDFium-Binärdateien: BSD-3 / Apache-2.0) |
 | PDFsharp | 6.2.4 | Schreiben von PDF-Dateien | MIT |
 | System.Security.Cryptography.Pkcs | 10.0.14 | Sicherheitsaktualisierung einer PDFsharp-Abhängigkeit | MIT |
+| SkiaSharp (mit Avalonia ohnehin enthalten) | 3.119.4 | Bilder verkleinern und als JPEG speichern (Komprimieren) | MIT |
 
 PDFsharp wird bewusst in Version 6.2.4 verwendet: Ab Version 6.3 steht PDFsharp unter der AGPL-3.0 mit
 Lizenzprüfung. Für Texte in gespeicherten Annotationen nutzt PDF Utopia die PDF-Standardschrift Helvetica, die

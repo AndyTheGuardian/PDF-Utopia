@@ -13,6 +13,9 @@
     <PackageReference Include="PDFsharp" Version="6.2.4" />
     <!-- PDFsharp verlangt 8.0.1 mit bekannter Sicherheitslücke (GHSA-846f-f764-76mx): korrigierte Version erzwingen -->
     <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.14" />
+    <!-- Bilder verkleinern und als JPEG speichern (Komprimieren, A57); gleiche Version wie in Avalonia, MIT -->
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="3.119.4" />
   </ItemGroup>
 
   <ItemGroup>
