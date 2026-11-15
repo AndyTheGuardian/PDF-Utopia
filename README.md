@@ -45,6 +45,19 @@ Bestehender Text im PDF lässt sich nicht bearbeiten. Weitere bekannte Einschrä
 Die PDFium-Bibliotheken für alle drei Plattformen kommen über das NuGet-Paket PDFiumCore mit. Weitere Installationen
 sind nicht nötig.
 
+## Quellcode holen
+
+```bash
+git clone https://github.com/AndyTheGuardian/PDF-Utopia.git
+```
+
+```bash
+cd PDF-Utopia
+```
+
+`main` enthält den abgenommenen Stand. Neue Funktionen entstehen auf Branches `feature/<name>` und werden nach der
+Abnahme in `main` gemergt.
+
 ## Bauen, starten, testen
 
 ```bash
@@ -106,6 +119,7 @@ Gatekeeper auf (siehe Anwenderdokumentation 3.2).
 | `docs/` | Anwender-, Benutzer- und Entwicklerdokumentation, Funktionsübersicht, Abnahme-Checkliste |
 | `SPECS.md` | Ursprüngliche Spezifikation |
 | `OFFENE-PUNKTE.md` | Getroffene Annahmen, bekannte Einschränkungen und erledigte Punkte |
+| `UEBERGABE.md` | Übergabe: Stand, Arbeitsweise und nächste Schritte |
 
 ## Dokumentation
 
@@ -116,6 +130,17 @@ Gatekeeper auf (siehe Anwenderdokumentation 3.2).
 - [Entwicklerdokumentation](docs/ENTWICKLERDOKUMENTATION.md): Architektur, Kernkonzepte, Lesen und Schreiben von Dateien,
   Oberfläche, Tests, neue Anmerkungsarten, Konventionen und Fallstricke
 - [Offene Punkte](OFFENE-PUNKTE.md): Entscheidungen und Annahmen aus der Entwicklung
+- [Übergabe](UEBERGABE.md): Projektstand, Arbeitsweise, Umgebung und nächste Schritte zum Weiterarbeiten
+
+## Mitarbeit
+
+- Bezeichner und Commit-Nachrichten englisch, Kommentare, Dokumentation und Oberflächentexte deutsch (Oberfläche
+  zusätzlich englisch).
+- Warnungen gelten als Fehler; neue Logik bekommt Unit-Tests.
+- Neue Oberfläche zuerst als HTML-Mockup in `mockups/`, dann umsetzen.
+- Entscheidungen und Einschränkungen in [OFFENE-PUNKTE.md](OFFENE-PUNKTE.md) festhalten.
+
+Details stehen in der [Entwicklerdokumentation](docs/ENTWICKLERDOKUMENTATION.md), Abschnitt 10.
 
 ## Verwendete Bibliotheken
 
