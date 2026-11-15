@@ -5,6 +5,7 @@ using PdfUtopia.App.Localization;
 using PdfUtopia.App.Services;
 using PdfUtopia.Core;
 using PdfUtopia.Core.Annotations;
+using PdfUtopia.Core.Compression;
 using PdfUtopia.Core.Geometry;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Pdf.Rendering;
@@ -162,14 +163,10 @@ public sealed partial class DocumentViewModel : ObservableObject, IDisposable
     public bool IsProtected => Source.Password is not null;
 
     /// <summary>Dateigröße für die Statusleiste.</summary>
-    public string FileSizeText
-    {
-        get
-        {
-            var bytes = File.Exists(Source.FilePath) ? new FileInfo(Source.FilePath).Length : 0;
-            return bytes >= 1024 * 1024 ? $"{bytes / 1024d / 1024:0.0} MB" : $"{Math.Max(1, bytes / 1024)} KB";
-        }
-    }
+    public string FileSizeText => FileSize.Format(FileBytes, Loc.Culture);
+
+    /// <summary>Größe der geöffneten Datei auf dem Datenträger in Bytes (0, wenn sie fehlt).</summary>
+    public long FileBytes => File.Exists(Source.FilePath) ? new FileInfo(Source.FilePath).Length : 0;
 
     /// <summary>Position der angezeigten Seite (0-basiert).</summary>
     [ObservableProperty]

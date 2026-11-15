@@ -13,6 +13,9 @@ public static class Loc
     /// <summary>Aktuelle Sprache.</summary>
     public static UiLanguage Language { get; set; } = UiLanguage.German;
 
+    /// <summary>Kultur der Sprache für Zahlen, z. B. Dezimaltrennzeichen in Dateigrößen.</summary>
+    public static CultureInfo Culture => CultureInfo.GetCultureInfo(Language == UiLanguage.German ? "de-DE" : "en-US");
+
     /// <summary>
     /// Liefert einen Text.
     /// </summary>

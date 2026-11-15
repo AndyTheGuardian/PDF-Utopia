@@ -150,6 +150,21 @@ und bearbeitbar ist (außer bei Schwärzen – dort ist das Ergebnis endgültig)
 | 12.11 | Farbwahl eines Werkzeugs (z. B. Kommentar) öffnen | Unverändert; eigene Farben aus den Einstellungen sind auch hier | ✓ |
 | 12.12 | In den Einstellungen Design und Sprache wechseln, dann **Abbrechen** | Umschalter in voller Breite mit gleich breiten Feldern, je ein Klick; Design mit Symbolen Monitor, Sonne, Mond. Die Sprache wechselt sofort in Dialog und Hauptfenster (Eingaben bleiben), **Abbrechen** stellt sie zurück (P22) | ✓ |
 
+## 13. Komprimieren (Funktion 13, A57)
+
+| Nr. | Schritte | Erwartet | ✓ |
+|---|---|---|---|
+| 13.1 | Datei mit Fotos oder Scans öffnen, **Komprimieren** in der Werkzeugleiste | Dialog „Komprimieren“ mit Dateiname und Originalgröße; beide Stufen „wird berechnet …“ mit Fortschrittsbalken, „Speichern unter…“ gesperrt | |
+| 13.2 | Berechnung abwarten | Bei „Qualität“ und „Sparsam“ neue Größe und Ersparnis in Prozent; „Sparsam“ ist kleiner; „Speichern unter…“ aktiv | |
+| 13.3 | Karte „Sparsam“ anklicken, **Speichern unter…** | Passwortfrage wie beim Speichern, dann Dateiauswahl mit Vorschlag „*Name*-komprimiert.pdf“ | |
+| 13.4 | Speichern | Statusleiste meldet Dateiname, Größe und Ersparnis; die neue Datei ist entsprechend klein, das Original unverändert | |
+| 13.5 | Neue Datei in PDF Utopia und einem anderen Betrachter öffnen | Text scharf, Fotos etwas weicher; Anmerkungen, Formularwerte und Schwärzungen vorhanden | |
+| 13.6 | Reine Textdatei komprimieren | Beide Stufen „keine Ersparnis“, „Speichern unter…“ bleibt gesperrt | |
+| 13.7 | Bei großer Datei während der Berechnung **Abbrechen** | Dialog schließt sofort, nichts wird gespeichert | |
+| 13.8 | Geschützte Datei komprimieren, „Passwort behalten“ | Neue Datei verlangt dasselbe Passwort | |
+| 13.9 | Ungespeicherte Schwärzung, dann **Datei → Komprimieren…** | Erst die Rückfrage „Schwärzungen anwenden“, dann der Dialog | |
+| 13.10 | Sprache Englisch | Dialog „Compress“ mit „Quality“/„Economy“, Größen mit Dezimalpunkt | |
+
 ## Ergebnis
 
 - [ ] Alle Punkte bestanden bzw. Abweichungen gemeldet und behoben

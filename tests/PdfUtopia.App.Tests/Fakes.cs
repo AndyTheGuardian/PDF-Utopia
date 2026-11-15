@@ -86,6 +86,8 @@ internal sealed class FakeDialogs : IDialogService
 
     public Task<OcrOutcome?> RecognizeTextAsync(OcrRequest request) => throw new NotSupportedException();
 
+    public Task<CompressOutcome?> CompressAsync(CompressRequest request) => throw new NotSupportedException();
+
     public Task<bool> ShowTesseractMissingAsync() => throw new NotSupportedException();
 
     public Task<UnsavedChangesChoice> AskUnsavedChangesAsync(string fileName) => throw new NotSupportedException();

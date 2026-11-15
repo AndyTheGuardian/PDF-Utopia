@@ -19,13 +19,14 @@ Systemvoraussetzungen und bekannte Einschränkungen stehen in der [Anwenderdokum
 10. [Rückgängig und Wiederholen](#10-rückgängig-und-wiederholen)
 11. [Suchen](#11-suchen)
 12. [Speichern](#12-speichern)
-13. [Seiten extrahieren](#13-seiten-extrahieren)
-14. [Seiten aus anderer PDF-Datei einfügen](#14-seiten-aus-anderer-pdf-datei-einfügen)
-15. [Drucken](#15-drucken)
-16. [Farben, Design und Sprache](#16-farben-design-und-sprache)
-17. [Einstellungen](#17-einstellungen)
-18. [Arbeiten mit dem Stift](#18-arbeiten-mit-dem-stift)
-19. [Häufige Fragen und Lösungen](#19-häufige-fragen-und-lösungen)
+13. [Datei verkleinern (Komprimieren)](#13-datei-verkleinern-komprimieren)
+14. [Seiten extrahieren](#14-seiten-extrahieren)
+15. [Seiten aus anderer PDF-Datei einfügen](#15-seiten-aus-anderer-pdf-datei-einfügen)
+16. [Drucken](#16-drucken)
+17. [Farben, Design und Sprache](#17-farben-design-und-sprache)
+18. [Einstellungen](#18-einstellungen)
+19. [Arbeiten mit dem Stift](#19-arbeiten-mit-dem-stift)
+20. [Häufige Fragen und Lösungen](#20-häufige-fragen-und-lösungen)
 
 ---
 
@@ -137,7 +138,7 @@ darauf. Kommentar und Fußnote verschwinden; die übrigen Kommentare werden neu 
 
 ### Die Kommentarfarbe ändern
 Klicken Sie beim Werkzeug **Kommentar** in der Optionsleiste auf den **Farbpunkt** und wählen Sie eine Farbe
-(siehe [Farben](#16-farben-design-und-sprache)). Die Farbe gilt für neue Kommentare.
+(siehe [Farben](#17-farben-design-und-sprache)). Die Farbe gilt für neue Kommentare.
 
 ---
 
@@ -319,7 +320,7 @@ auch hinter jeder anderen Seite.
 Rückgängig machen lässt sich alles, was Sie am Dokument ändern: Kommentare, Fußnotentexte, Markierungen,
 Zeichnungen, Formen, Texte, Radieren sowie Verschieben, Drehen und Löschen von Seiten. Die Statusleiste zeigt, wie
 viele Schritte verfügbar sind (z. B. „Rückgängig: 4 / 50 Schritte“). Die Höchstzahl stellen Sie in den
-[Einstellungen](#17-einstellungen) ein.
+[Einstellungen](#18-einstellungen) ein.
 
 ---
 
@@ -350,7 +351,31 @@ bearbeiten.
 
 ---
 
-## 13. Seiten extrahieren
+## 13. Datei verkleinern (Komprimieren)
+
+Eine PDF-Datei mit vielen Fotos oder Scans ist oft zu groß für eine E-Mail. So speichern Sie eine kleinere Kopie:
+
+1. **Komprimieren** (Schaltfläche oder **Datei → Komprimieren…**).
+2. Der Dialog zeigt oben die **Originalgröße** und rechnet beide Stufen aus. Warten Sie kurz, bis bei beiden
+   Stufen eine Größe steht:
+   - **Qualität** – Bilder mit höchstens 150 dpi, gut zum Drucken,
+   - **Sparsam** – Bilder mit höchstens 96 dpi, für Bildschirm und E-Mail, deutlich kleiner.
+3. Wählen Sie eine Stufe (Klick auf die Karte) und klicken Sie **Speichern unter…**.
+4. Passwortschutz wählen wie beim Speichern, dann Speicherort und Namen festlegen (vorgeschlagen wird
+   „*Name*-komprimiert.pdf“).
+
+Unten in der Statusleiste steht danach, wie groß die neue Datei ist und wie viel sie gespart hat. Ihr Original
+bleibt unverändert.
+
+> **Tipp:** Steht bei einer Stufe „keine Ersparnis“, enthält die Datei kaum Bilder, die sich verkleinern lassen –
+> etwa reine Textdokumente. Dann lässt sich diese Stufe nicht speichern.
+
+> **Gut zu wissen:** Text und Schriften bleiben gestochen scharf; nur Fotos und Scans werden verkleinert. Ihre
+> Kommentare, Zeichnungen, Formularwerte und Schwärzungen kommen mit in die neue Datei.
+
+---
+
+## 14. Seiten extrahieren
 
 1. **Extrahieren** (Schaltfläche, **Datei → Seiten extrahieren…** oder **Strg+E**).
 2. Geben Sie die Seiten ein, z. B.
@@ -366,7 +391,7 @@ bearbeiten.
 
 ---
 
-## 14. Seiten aus anderer PDF-Datei einfügen
+## 15. Seiten aus anderer PDF-Datei einfügen
 
 So holen Sie Seiten einer anderen Datei in das angezeigte Dokument:
 
@@ -394,7 +419,7 @@ Eingefügte Seiten haben in der Seitenliste einen Rahmen in der Akzentfarbe und 
 
 ---
 
-## 15. Drucken
+## 16. Drucken
 
 1. **Drucken** (Schaltfläche, **Datei → Drucken…** oder **Strg+P**).
 2. PDF Utopia öffnet das Dokument mit allen Änderungen im **PDF-Betrachter Ihres Systems**.
@@ -402,7 +427,7 @@ Eingefügte Seiten haben in der Seitenliste einen Rahmen in der Akzentfarbe und 
 
 ---
 
-## 16. Farben, Design und Sprache
+## 17. Farben, Design und Sprache
 
 ### Design
 **Ansicht → System / Hell / Dunkel**. „System“ folgt der Einstellung Ihres Betriebssystems.
@@ -445,7 +470,7 @@ ist. Ihre Auswahl wird gespeichert.
 
 ---
 
-## 17. Einstellungen
+## 18. Einstellungen
 
 **Bearbeiten → Einstellungen…**
 
@@ -453,7 +478,7 @@ ist. Ihre Auswahl wird gespeichert.
 |---|---|
 | Design | Umschalter System (Monitor), Hell (Sonne) oder Dunkel (Mond) – ein Klick genügt |
 | Sprache | Umschalter System, Deutsch oder English – wirkt sofort, **Abbrechen** stellt die vorherige Sprache wieder her |
-| Farbprofil, Akzentfarbe, Farbe anpassen | Farben des geltenden Designs, siehe [Farben, Design und Sprache](#16-farben-design-und-sprache) |
+| Farbprofil, Akzentfarbe, Farbe anpassen | Farben des geltenden Designs, siehe [Farben, Design und Sprache](#17-farben-design-und-sprache) |
 | Anzahl Rückgängig-Schritte | 1 bis 500 (Standard 50); ältere Schritte werden verworfen |
 | Name für Stempel | erscheint auf Stempeln, wenn „Name“ angehakt ist |
 
@@ -465,7 +490,7 @@ in der Optionsleiste ein; auch sie werden gespeichert.
 
 ---
 
-## 18. Arbeiten mit dem Stift
+## 19. Arbeiten mit dem Stift
 
 - **Zeichnen**: Freihand, Marker und Formen funktionieren mit dem Stift wie mit der Maus. Gezeichnet wird nur,
   solange der Stift aufliegt. Während Sie zeichnen, verschiebt der Stift die Seite nicht.
@@ -480,7 +505,7 @@ in der Optionsleiste ein; auch sie werden gespeichert.
 
 ---
 
-## 19. Häufige Fragen und Lösungen
+## 20. Häufige Fragen und Lösungen
 
 **Der Klick mit dem Kommentar-Werkzeug macht nichts.**
 Unter dem Mauszeiger wurde kein Absatz erkannt (z. B. bei gescannten Seiten) oder der Absatz ist schon
@@ -490,11 +515,15 @@ kommentiert. Ziehen Sie stattdessen einen Bereich auf.
 Bei Spalten, Tabellen oder ungewöhnlichem Satz kann das vorkommen. Ziehen Sie den gewünschten Bereich auf.
 
 **Meine Linie ist trotz „Druckempfindlich“ gleich dick.**
-Ihr Stift meldet keinen Andruck – siehe [Arbeiten mit dem Stift](#18-arbeiten-mit-dem-stift). Mit der Maus
+Ihr Stift meldet keinen Andruck – siehe [Arbeiten mit dem Stift](#19-arbeiten-mit-dem-stift). Mit der Maus
 wirkt die Einstellung grundsätzlich nicht.
 
 **Der Radierer entfernt meinen Kommentar nicht.**
 Das ist gewollt: Kommentare entfernen Sie über das × an der Fußnotenzahl.
+
+**Die PDF-Datei ist zu groß für eine E-Mail.**
+Speichern Sie mit **Komprimieren** eine kleinere Kopie – siehe
+[Datei verkleinern](#13-datei-verkleinern-komprimieren). Die Stufe „Sparsam“ spart am meisten.
 
 **Ich habe versehentlich etwas gelöscht.**
 **Strg+Z** – auch gelöschte Seiten kommen mit allen Kommentaren zurück.

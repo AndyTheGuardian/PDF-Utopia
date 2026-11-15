@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Input;
 using PdfUtopia.App.Localization;
 using PdfUtopia.App.Services;
 using PdfUtopia.Core.Annotations;
+using PdfUtopia.Core.Compression;
 using PdfUtopia.Core.Geometry;
 using PdfUtopia.Core.Pages;
 using PdfUtopia.Core.Settings;
@@ -108,7 +109,7 @@ public sealed partial class MainWindowViewModel : ObservableObject
     /// <summary>Angezeigtes Dokument.</summary>
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(HasDocument), nameof(NoDocument))]
-    [NotifyCanExecuteChangedFor(nameof(SaveAsCommand), nameof(ExtractCommand), nameof(InsertPagesCommand), nameof(PrintCommand), nameof(CloseDocumentCommand),
+    [NotifyCanExecuteChangedFor(nameof(SaveAsCommand), nameof(ExtractCommand), nameof(CompressCommand), nameof(InsertPagesCommand), nameof(PrintCommand), nameof(CloseDocumentCommand),
         nameof(RotateCurrentPageCommand), nameof(RotateCurrentPageClockwiseCommand), nameof(RotateCurrentPageCounterclockwiseCommand), nameof(DeleteCurrentPageCommand), nameof(InsertBlankPageCommand), nameof(UndoCommand), nameof(RedoCommand),
         nameof(RecognizeTextCommand), nameof(MarkRedactionsCommand))]
     public partial DocumentViewModel? ActiveDocument { get; set; }
@@ -343,6 +344,54 @@ public sealed partial class MainWindowViewModel : ObservableObject
         if (target is not null)
         {
             await RunExportAsync(() => PdfExporter.Extract(document.Sources, document.Document, positions, target, options));
+        }
+    }
+
+    /// <summary>
+    /// Speichert eine verkleinerte Kopie (A57): Dokument wie beim Speichern aufbauen, beide Stufen im Dialog vorab
+    /// berechnen, dann wie „Speichern unter“ nach Passwortschutz und Zieldatei fragen. Das Original bleibt unverändert.
+    /// </summary>
+    [RelayCommand(CanExecute = nameof(HasDocument))]
+    private async Task CompressAsync()
+    {
+        var document = ActiveDocument!;
+        document.CommitEdits();
+        if (!await ConfirmRedactionsAsync(document, document.Document.Pages.ToList(), Loc.T("Redact.Save")))
+        {
+            return;
+        }
+
+        var exportOptions = new ExportOptions { FootnoteHeading = Loc.T("Footnotes.Heading") };
+        Task<byte[]>? exported = null;
+        var original = document.FileBytes;
+        var outcome = await _dialogs.CompressAsync(new CompressRequest(document.FileName, original, async (preset, progress, cancellation) =>
+        {
+            // Einmal ohne Passwortschutz aufbauen, für beide Stufen; der Schutz kommt erst beim Schreiben dazu
+            exported ??= Task.Run(() => PdfExporter.SaveUnprotected(document.Sources, document.Document, exportOptions));
+            var data = await exported;
+            return await Task.Run(() => PdfCompressor.Compress(data, preset, progress, cancellation), cancellation);
+        }));
+        if (outcome is null)
+        {
+            return;
+        }
+
+        if (outcome is not { Data: { } compressed })
+        {
+            await _dialogs.ShowMessageAsync(Loc.T("Error.SaveTitle"), Loc.F("Error.SaveMessage", outcome.Error ?? string.Empty));
+            return;
+        }
+
+        if (await AskSaveOptionsAsync(document) is not { } options
+            || await _dialogs.PickSaveFileAsync(SuggestedName(document, "Save.CompressSuffix")) is not { } target)
+        {
+            return;
+        }
+
+        if (await RunExportAsync(() => PdfCompressor.Save(compressed, target, options.TargetPassword(document.Source.Password))))
+        {
+            var saved = new FileInfo(target).Length;
+            ShowStatusNotice(Loc.F("Compress.Saved", Path.GetFileName(target), FileSize.Format(saved, Loc.Culture), CompressionPreset.SavingPercent(original, saved)));
         }
     }
 

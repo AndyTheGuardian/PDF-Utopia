@@ -184,6 +184,9 @@ public sealed class DialogService(Window owner) : IDialogService
     public async Task<OcrOutcome?> RecognizeTextAsync(OcrRequest request) => await new OcrDialog(this, request).ShowAsync();
 
     /// <inheritdoc />
+    public async Task<CompressOutcome?> CompressAsync(CompressRequest request) => await new CompressDialog(this, request).ShowAsync();
+
+    /// <inheritdoc />
     public async Task<bool> ShowTesseractMissingAsync()
     {
         static TextBox Command(string text) => new()
