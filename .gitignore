@@ -10,3 +10,6 @@ TestResults/
 *.user
 *.suo
 .vscode/
+Chatverlauf-PDF-Utopia-Teil-2.pdf
+Chatverlauf-PDF-Utopia.pdf
+.claude/launch.json
